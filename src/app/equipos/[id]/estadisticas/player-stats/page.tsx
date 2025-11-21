@@ -239,9 +239,17 @@ export default function PlayerStatsPage() {
         leastMinutes: getTopPlayer('minutesPlayed', 'min', undefined, 'Portero'),
     };
     
-    const tablePlayers = Array.from(playersMap.values())
-        .filter(player => searchFilteredPlayerIds.has(player.id))
-        .sort((a, b) => Number(a.number) - Number(b.number));
+    const tablePlayers = useMemo(() => {
+        return Array.from(playersMap.values())
+            .filter(player => searchFilteredPlayerIds.has(player.id))
+            .sort((a, b) => {
+                const statsA = playerStats[a.id];
+                const statsB = playerStats[b.id];
+                const minutesA = statsA?.minutesPlayed || 0;
+                const minutesB = statsB?.minutesPlayed || 0;
+                return minutesB - minutesA; // Sort descending
+            });
+    }, [playersMap, searchFilteredPlayerIds, playerStats]);
 
     const tableTotals = useMemo(() => {
         return tablePlayers.reduce((acc, player) => {

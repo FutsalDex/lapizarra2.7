@@ -14,14 +14,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { Chrome, Loader2, Eye, EyeOff } from "lucide-react";
-import { auth, db } from "@/firebase/config";
+import { Loader2, Eye, EyeOff } from "lucide-react";
+import { auth } from "@/firebase/config";
 import { 
-  signInWithEmailAndPassword, 
-  GoogleAuthProvider, 
-  signInWithPopup 
+  signInWithEmailAndPassword
 } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
@@ -42,36 +39,6 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Error al iniciar sesión",
-        description: error.message,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      const userRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(userRef);
-
-      if (!docSnap.exists()) {
-        await setDoc(userRef, {
-          displayName: user.displayName,
-          email: user.email,
-          photoURL: user.photoURL,
-        });
-      }
-      
-      router.push("/panel");
-    } catch (error: any) {
-       toast({
-        variant: "destructive",
-        title: "Error con Google",
         description: error.message,
       });
     } finally {
@@ -135,10 +102,6 @@ export default function LoginPage() {
               {loading ? <Loader2 className="animate-spin" /> : 'Iniciar sesión'}
             </Button>
           </form>
-          <Button variant="outline" className="w-full mt-4" onClick={handleGoogleSignIn} disabled={loading}>
-            <Chrome className="mr-2 h-4 w-4" />
-            Iniciar sesión con Google
-          </Button>
           <div className="mt-4 text-center text-sm">
             ¿No tienes una cuenta?{" "}
             <Link href="/registro" className="underline">
