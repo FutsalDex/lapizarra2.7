@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -37,12 +38,10 @@ service cloud.firestore {
 
     // Miembro de un equipo (o dueño)
     function isTeamMember(teamId) {
+      let teamData = get(/databases/$(database)/documents/teams/$(teamId)).data;
       return isSignedIn() &&
              exists(/databases/$(database)/documents/teams/$(teamId)) &&
-             (
-               request.auth.uid in get(/databases/$(database)/documents/teams/$(teamId)).data.memberIds ||
-               isTeamOwner(teamId)
-             );
+             (request.auth.uid == teamData.ownerId || request.auth.uid in teamData.memberIds);
     }
 
     // ============================================================
@@ -75,15 +74,23 @@ service cloud.firestore {
     // ============================================================
 
     match /teams/{teamId} {
+      
+      // Permitir que cualquier usuario autenticado pueda listar los equipos para que la UI los filtre.
+      // La seguridad de lectura de datos sensibles se hace en el 'get'.
+      allow list: if isSignedIn();
 
-      // Leer info del equipo
-      allow get, list: if isTeamMember(teamId) || isAdmin();
+      // Leer info del equipo si eres miembro o admin
+      allow get: if isTeamMember(teamId) || isAdmin();
 
       // Crear equipo
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
 
-      // Modificar o eliminar
-      allow update, delete: if isTeamOwner(teamId) || isAdmin();
+      // Modificar (incluye añadir miembros) o eliminar
+      // Permitimos update si es el dueño O si el que hace el cambio se está añadiendo a sí mismo (aceptar invitación).
+      allow update: if isTeamOwner(teamId) || 
+                       (isSignedIn() && request.auth.uid in request.resource.data.memberIds) ||
+                       isAdmin();
+      allow delete: if isTeamOwner(teamId) || isAdmin();
 
       // --- 📅 Asistencias ---
       match /attendance/{date} {
@@ -117,8 +124,19 @@ service cloud.firestore {
     }
 
     match /invitations/{invitationId} {
-      allow get, list, create, update, delete: if isSignedIn();
+        // Leer si eres el invitado o el que invita
+        allow read: if isSignedIn() && (request.auth.token.email == resource.data.inviteeEmail || request.auth.uid == resource.data.inviterId);
+        
+        // El que invita puede crear la invitación
+        allow create: if isSignedIn() && request.resource.data.inviterId == request.auth.uid;
+        
+        // El invitado puede actualizarla para completarla
+        allow update: if isSignedIn() && request.auth.token.email == resource.data.inviteeEmail;
+        
+        // Solo el que invita o un admin puede borrarla
+        allow delete: if isSignedIn() && (request.auth.uid == resource.data.inviterId || isAdmin());
     }
+
 
     // ============================================================
     // ❌ Colecciones obsoletas (bloqueadas)
@@ -128,3 +146,5 @@ service cloud.firestore {
     match /referrals/{referralId} { allow read, write: if false; }
   }
 }
+
+    

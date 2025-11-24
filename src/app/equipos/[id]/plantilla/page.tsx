@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollection, useDocumentData } from "react-firebase-hooks/firestore";
-import { collection, doc, writeBatch } from "firebase/firestore";
+import { collection, doc, writeBatch, addDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -157,25 +157,36 @@ export default function PlantillaPage() {
             const staffCollectionRef = collection(db, "teams", teamId, "staff");
             const initialStaff = staffSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() })) || [];
 
-            // Delete staff that are no longer in local state
+            for (const member of staff) {
+                const { id, ...staffData } = member;
+                if (id) { // Existing member
+                    batch.update(doc(staffCollectionRef, id), staffData);
+                } else { // New member
+                    if(staffData.name && staffData.email && staffData.role){
+                        const newStaffDocRef = doc(collection(db, "teams", teamId, "staff"));
+                        batch.set(newStaffDocRef, staffData);
+                        
+                        if (user) {
+                           const invitationData = {
+                                teamId: teamId,
+                                inviterId: user.uid,
+                                inviterEmail: user.email,
+                                inviteeEmail: staffData.email,
+                                status: "pending",
+                                createdAt: new Date(),
+                            };
+                            await addDoc(collection(db, "invitations"), invitationData);
+                        }
+                    }
+                }
+            }
+
             initialStaff.forEach(initialMember => {
                 if (initialMember.id && !staff.find(s => s.id === initialMember.id)) {
                     batch.delete(doc(staffCollectionRef, initialMember.id));
                 }
             });
             
-            // Add or update staff
-            for (const member of staff) {
-                const { id, ...staffData } = member;
-                if (id) {
-                    batch.update(doc(staffCollectionRef, id), staffData);
-                } else {
-                     if(staffData.name && staffData.email && staffData.role){
-                        batch.set(doc(collection(db, "teams", teamId, "staff")), staffData);
-                    }
-                }
-            }
-
             await batch.commit();
             toast({ title: "Staff guardado", description: "Los cambios en el cuerpo técnico han sido guardados." });
         } catch (error: any) {
@@ -409,3 +420,5 @@ export default function PlantillaPage() {
     </div>
   );
 }
+
+    
