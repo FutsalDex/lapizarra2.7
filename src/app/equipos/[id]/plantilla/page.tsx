@@ -30,6 +30,7 @@ type StaffMember = {
     name: string;
     role: string;
     email: string;
+    invitationId?: string; // To store the invitation ID
 };
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -151,35 +152,47 @@ export default function PlantillaPage() {
     };
 
     const handleSaveStaff = async () => {
+        if (!user || !user.email) {
+            toast({ variant: 'destructive', title: "Error", description: "Debes estar autenticado para guardar." });
+            return;
+        }
+
         setIsSavingStaff(true);
         try {
             const batch = writeBatch(db);
             const staffCollectionRef = collection(db, "teams", teamId, "staff");
-            const initialStaff = staffSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() })) || [];
+            const initialStaff = staffSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() as StaffMember })) || [];
+            
+            const updatedStaffList: StaffMember[] = [];
 
             for (const member of staff) {
                 const { id, ...staffData } = member;
+                
                 if (!id && staffData.name && staffData.email && staffData.role) {
-                    // This is a new member, create invitation
-                    const newStaffDocRef = doc(staffCollectionRef);
-                    batch.set(newStaffDocRef, staffData);
+                     // This is a new member, create invitation and staff doc
+                    const invitationData = {
+                        teamId: teamId,
+                        teamName: team?.name || 'un equipo',
+                        inviterId: user.uid,
+                        inviterEmail: user.email,
+                        inviteeEmail: staffData.email,
+                        status: "pending",
+                        createdAt: new Date(),
+                    };
+                    const invitationRef = await addDoc(collection(db, "invitations"), invitationData);
                     
-                    if (user && user.email) {
-                       const invitationData = {
-                            teamId: teamId,
-                            teamName: team?.name || 'un equipo',
-                            inviterId: user.uid,
-                            inviterEmail: user.email,
-                            inviteeEmail: staffData.email,
-                            status: "pending",
-                            createdAt: new Date(),
-                        };
-                        const invitationRef = await addDoc(collection(db, "invitations"), invitationData);
-                        handleInviteStaff(staffData, invitationRef.id);
-                    }
+                    const staffWithInvitation = { ...staffData, invitationId: invitationRef.id };
+                    const newStaffDocRef = doc(staffCollectionRef);
+                    batch.set(newStaffDocRef, staffWithInvitation);
+                    updatedStaffList.push({ id: newStaffDocRef.id, ...staffWithInvitation });
+
                 } else if (id) {
-                    // This is an existing member, update it
-                    batch.update(doc(staffCollectionRef, id), staffData);
+                    // This is an existing member, update it if needed
+                    const existingMember = initialStaff.find(s => s.id === id);
+                    if (existingMember && (existingMember.name !== staffData.name || existingMember.role !== staffData.role)) {
+                         batch.update(doc(staffCollectionRef, id), { name: staffData.name, role: staffData.role });
+                    }
+                    updatedStaffList.push(member);
                 }
             }
             
@@ -190,7 +203,8 @@ export default function PlantillaPage() {
             });
             
             await batch.commit();
-            toast({ title: "Staff guardado", description: "Los cambios en el cuerpo técnico han sido guardados." });
+            setStaff(updatedStaffList);
+            toast({ title: "Staff guardado", description: "Los cambios se han guardado. Ahora puedes enviar las invitaciones." });
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Error", description: error.message });
         } finally {
@@ -198,11 +212,15 @@ export default function PlantillaPage() {
         }
     };
     
-    const handleInviteStaff = (staffMember: Omit<StaffMember, 'id'>, invitationId: string) => {
+    const handleInviteStaff = (staffMember: StaffMember) => {
+        if (!staffMember.invitationId) {
+            toast({ variant: 'destructive', title: 'Error', description: 'No se encontró ID de invitación. Guarda primero los cambios.' });
+            return;
+        }
         const teamName = team?.name || 'tu equipo';
-        // Use window.location.origin to get the base URL dynamically
-        const baseUrl = window.location.origin;
-        const invitationUrl = `${baseUrl}/invitacion/${invitationId}`;
+        // Use a production-ready URL
+        const baseUrl = "https://lapizarra27--lapizarra-95eqd.us-east5.hosted.app";
+        const invitationUrl = `${baseUrl}/invitacion/${staffMember.invitationId}`;
         const message = `¡Hola ${staffMember.name}! Te invito a unirte al cuerpo técnico del equipo "${teamName}" en LaPizarra. Con este acceso, podrás gestionar la plantilla, partidos y estadísticas. Haz clic aquí para empezar: ${invitationUrl}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
@@ -264,7 +282,7 @@ export default function PlantillaPage() {
          <Card>
             <CardHeader>
                 <CardTitle>Staff Técnico</CardTitle>
-                <CardDescription>Gestiona a los miembros del cuerpo técnico. Las invitaciones se envían al guardar.</CardDescription>
+                <CardDescription>Gestiona a los miembros del cuerpo técnico. Guarda los cambios para poder enviar la invitación por WhatsApp.</CardDescription>
             </CardHeader>
             <CardContent>
                 {loadingStaff ? <Skeleton className="h-24 w-full" /> : (
@@ -317,6 +335,11 @@ export default function PlantillaPage() {
                                         />
                                     </TableCell>
                                     <TableCell className="text-right space-x-1">
+                                        {isOwner && member.id && member.invitationId && (
+                                            <Button variant="ghost" size="icon" onClick={() => handleInviteStaff(member)}>
+                                                 <WhatsAppIcon className="w-5 h-5 text-green-500" />
+                                            </Button>
+                                        )}
                                         {isOwner && (
                                             <Button variant="ghost" size="icon" onClick={() => handleRemoveStaffMember(index)}>
                                                 <Trash2 className="w-5 h-5 text-destructive" />
@@ -426,3 +449,5 @@ export default function PlantillaPage() {
     </div>
   );
 }
+
+    
