@@ -24,7 +24,7 @@ type StatRowProps = {
 const StatRow = ({ label, localValue, visitorValue }: StatRowProps) => (
     <div className="flex justify-between items-center py-2 border-b last:border-none">
         <span className="font-bold text-lg">{localValue}</span>
-        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-sm text-muted-foreground text-center">{label}</span>
         <span className="font-bold text-lg">{visitorValue}</span>
     </div>
 );
@@ -220,41 +220,41 @@ export default function PartidoDetallePage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-            <div className="bg-muted p-3 rounded-full">
+            <div className="bg-muted p-3 rounded-full hidden sm:flex">
                 <History className="w-6 h-6 text-primary" />
             </div>
             <div>
-                <h1 className="text-2xl font-bold font-headline">Detalles del Partido</h1>
-                <p className="text-muted-foreground">{format(matchDate, "EEEE, dd MMMM yyyy", { locale: es })} - {competition}</p>
+                <h1 className="text-xl sm:text-2xl font-bold font-headline">Detalles del Partido</h1>
+                <p className="text-sm sm:text-base text-muted-foreground">{format(matchDate, "dd MMM yyyy", { locale: es })} - {competition}</p>
             </div>
         </div>
         <div className="flex gap-2">
             <Button variant="outline" asChild>
                 <Link href="/partidos">
                     <ArrowLeft className="mr-2" />
-                    Volver
+                    <span className="hidden sm:inline">Volver</span>
                 </Link>
             </Button>
             <Button asChild>
                  <Link href={`/partidos/${matchId}/estadisticas`}>
                     <BarChart className="mr-2" />
-                    Gestionar
+                    <span className="hidden sm:inline">Gestionar</span>
                 </Link>
             </Button>
         </div>
       </div>
       
       <Card className="mb-8 text-center">
-        <CardContent className="p-6">
-            <h2 className="text-2xl font-bold mb-2">{displayLocalTeam} vs {displayVisitorTeam}</h2>
-            <p className="text-6xl font-bold text-primary">{localScore} - {visitorScore}</p>
+        <CardContent className="p-4 sm:p-6">
+            <h2 className="text-lg sm:text-2xl font-bold mb-2 truncate">{displayLocalTeam} vs {displayVisitorTeam}</h2>
+            <p className="text-5xl sm:text-6xl font-bold text-primary">{localScore} - {visitorScore}</p>
         </CardContent>
       </Card>
       
       <Tabs defaultValue="datos">
         <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="datos">Datos del Partido</TabsTrigger>
-            <TabsTrigger value="estadisticas">Estadísticas de Jugadores</TabsTrigger>
+            <TabsTrigger value="estadisticas">Estadísticas</TabsTrigger>
         </TabsList>
         <TabsContent value="datos">
             <Card>
@@ -264,15 +264,15 @@ export default function PartidoDetallePage() {
                             <h3 className="font-bold text-lg mb-4">Cronología de Goles</h3>
                         </div>
                         <div className="flex justify-between font-bold text-sm text-muted-foreground border-b pb-2">
-                            <h4 className="w-1/2">{displayLocalTeam}</h4>
-                            <h4 className="w-1/2 text-right">{displayVisitorTeam}</h4>
+                            <h4 className="w-1/2 truncate">{displayLocalTeam}</h4>
+                            <h4 className="w-1/2 text-right truncate">{displayVisitorTeam}</h4>
                         </div>
-                        <div className="space-y-4">
+                        <div className="space-y-4 max-h-60 overflow-y-auto">
                             {events.filter((e: any) => e.type === 'goal').sort((a:any, b:any) => a.minute - b.minute).map((goal: any, index: number) => (
                                 <div key={index} className="flex items-center text-sm border-b last:border-none pb-2">
                                     {goal.team === 'local' ? (
                                         <div className="w-1/2 flex justify-between items-center pr-4">
-                                            <span className="font-medium">{goal.playerName}</span>
+                                            <span className="font-medium truncate">{goal.playerName}</span>
                                             <span className="text-muted-foreground">{goal.minute}'</span>
                                         </div>
                                     ) : <div className="w-1/2 pr-4"></div>}
@@ -282,7 +282,7 @@ export default function PartidoDetallePage() {
                                     {goal.team === 'visitor' ? (
                                         <div className="w-1/2 flex justify-between items-center pl-4">
                                             <span className="text-muted-foreground">{goal.minute}'</span>
-                                            <span className="font-medium text-right">{goal.playerName === myTeamName ? 'RIVAL' : goal.playerName}</span>
+                                            <span className="font-medium text-right truncate">{goal.playerName === myTeamName ? 'RIVAL' : goal.playerName}</span>
                                         </div>
                                     ) : <div className="w-1/2 pl-4"></div>}
                                 </div>
@@ -292,8 +292,8 @@ export default function PartidoDetallePage() {
                      <div className="space-y-4">
                        <h3 className="font-bold text-center text-lg">Estadísticas del Equipo</h3>
                        <div className="flex justify-between font-bold border-b pb-2 mb-2">
-                            <h4 className="text-left">{displayLocalTeam}</h4>
-                            <h4 className="text-right">{displayVisitorTeam}</h4>
+                            <h4 className="text-left truncate">{displayLocalTeam}</h4>
+                            <h4 className="text-right truncate">{displayVisitorTeam}</h4>
                         </div>
                        <div className="space-y-2">
                             <StatRow label="Tiros a Puerta" localValue={teamStats.local.tirosPuerta} visitorValue={teamStats.visitor.tirosPuerta} />
@@ -331,7 +331,7 @@ export default function PartidoDetallePage() {
                             <TableBody>
                                 {finalPlayerStats.map((player) => (
                                     <TableRow key={player.id}>
-                                        <TableCell className="py-2 px-4 font-medium">{player.name || 'Desconocido'}</TableCell>
+                                        <TableCell className="py-2 px-4 font-medium truncate">{player.name || 'Desconocido'}</TableCell>
                                         <TableCell className="text-center py-2 px-4">{formatTime(player.minutesPlayed || 0)}</TableCell>
                                         <TableCell className="text-center py-2 px-4">{player.g || 0}</TableCell>
                                         <TableCell className="text-center py-2 px-4">{player.a || 0}</TableCell>
