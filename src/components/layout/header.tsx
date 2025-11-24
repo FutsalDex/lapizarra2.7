@@ -22,10 +22,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useState } from "react";
-import { auth } from "@/firebase/config";
+import { auth, db } from "@/firebase/config";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { signOut } from "firebase/auth";
 import { FirebaseLogo } from "./logo";
+import { useCollection } from "react-firebase-hooks/firestore";
+import { collection, query, where } from "firebase/firestore";
 
 
 const navLinks = [
@@ -42,17 +44,26 @@ const adminNavLinks = [
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, loading] = useAuthState(auth);
+  const [user, loadingAuth] = useAuthState(auth);
   const isLoggedIn = !!user;
   
-  // Asumimos que el usuario es admin si tiene un email específico para desarrollo
   const isAdmin = isLoggedIn && user.email === 'futsaldex@gmail.com'; 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  // Fetch pending users (users without a subscription)
+  const [usersSnapshot, loadingUsers] = useCollection(
+    isAdmin ? query(collection(db, 'users'), where('subscription', '==', null)) : null
+  );
+  const pendingUsers = usersSnapshot?.docs.length || 0;
+
+  // Fetch pending invitations (completed but not approved)
+  const [invitationsSnapshot, loadingInvitations] = useCollection(
+    isAdmin ? query(collection(db, 'invitations'), where('status', '==', 'completed')) : null
+  );
+  const pendingInvitations = invitationsSnapshot?.docs.filter(doc => !doc.data().isApproved).length || 0;
+
   
-  const pendingInvitations = 2;
-  const pendingUsers = 5;
-  
-  const visibleNavLinks = navLinks; // Todos los enlaces son visibles para todos
+  const visibleNavLinks = navLinks;
   const visibleAdminNavLinks = adminNavLinks.filter(link => !link.auth || isAdmin);
 
   const handleLinkClick = () => {
