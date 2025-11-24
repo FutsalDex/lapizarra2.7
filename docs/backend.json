@@ -149,6 +149,8 @@
         "title": "Invitation",
         "type": "object",
         "properties": {
+            "teamId": { "type": "string" },
+            "teamName": { "type": "string" },
             "inviterId": { "type": "string" },
             "inviterEmail": { "type": "string", "format": "email" },
             "inviteeEmail": { "type": "string", "format": "email" },

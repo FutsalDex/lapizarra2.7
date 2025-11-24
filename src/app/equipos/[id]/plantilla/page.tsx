@@ -159,29 +159,30 @@ export default function PlantillaPage() {
 
             for (const member of staff) {
                 const { id, ...staffData } = member;
-                if (id) { // Existing member
-                    batch.update(doc(staffCollectionRef, id), staffData);
-                } else { // New member
-                    if(staffData.name && staffData.email && staffData.role){
-                        const newStaffDocRef = doc(collection(db, "teams", teamId, "staff"));
-                        batch.set(newStaffDocRef, staffData);
-                        
-                        if (user) {
-                           const invitationData = {
-                                teamId: teamId,
-                                teamName: team?.name || 'un equipo',
-                                inviterId: user.uid,
-                                inviterEmail: user.email,
-                                inviteeEmail: staffData.email,
-                                status: "pending",
-                                createdAt: new Date(),
-                            };
-                            await addDoc(collection(db, "invitations"), invitationData);
-                        }
+                if (!id && staffData.name && staffData.email && staffData.role) {
+                    // This is a new member, create invitation
+                    const newStaffDocRef = doc(staffCollectionRef);
+                    batch.set(newStaffDocRef, staffData);
+                    
+                    if (user && user.email) {
+                       const invitationData = {
+                            teamId: teamId,
+                            teamName: team?.name || 'un equipo',
+                            inviterId: user.uid,
+                            inviterEmail: user.email,
+                            inviteeEmail: staffData.email,
+                            status: "pending",
+                            createdAt: new Date(),
+                        };
+                        const invitationRef = await addDoc(collection(db, "invitations"), invitationData);
+                        handleInviteStaff(staffData, invitationRef.id);
                     }
+                } else if (id) {
+                    // This is an existing member, update it
+                    batch.update(doc(staffCollectionRef, id), staffData);
                 }
             }
-
+            
             initialStaff.forEach(initialMember => {
                 if (initialMember.id && !staff.find(s => s.id === initialMember.id)) {
                     batch.delete(doc(staffCollectionRef, initialMember.id));
@@ -197,10 +198,12 @@ export default function PlantillaPage() {
         }
     };
     
-    const handleInviteStaff = (staffMember: StaffMember) => {
+    const handleInviteStaff = (staffMember: Omit<StaffMember, 'id'>, invitationId: string) => {
         const teamName = team?.name || 'tu equipo';
-        const publicUrl = "https://lapizarra27--lapizarra-95eqd.us-east5.hosted.app/";
-        const message = `¡Hola ${staffMember.name}! Te invito a unirte al cuerpo técnico del equipo "${teamName}" en LaPizarra. Con este acceso, podrás gestionar la plantilla, partidos y estadísticas. Haz clic aquí para empezar: ${publicUrl}`;
+        // Use window.location.origin to get the base URL dynamically
+        const baseUrl = window.location.origin;
+        const invitationUrl = `${baseUrl}/invitacion/${invitationId}`;
+        const message = `¡Hola ${staffMember.name}! Te invito a unirte al cuerpo técnico del equipo "${teamName}" en LaPizarra. Con este acceso, podrás gestionar la plantilla, partidos y estadísticas. Haz clic aquí para empezar: ${invitationUrl}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     };
@@ -261,7 +264,7 @@ export default function PlantillaPage() {
          <Card>
             <CardHeader>
                 <CardTitle>Staff Técnico</CardTitle>
-                <CardDescription>Gestiona a los miembros del cuerpo técnico.</CardDescription>
+                <CardDescription>Gestiona a los miembros del cuerpo técnico. Las invitaciones se envían al guardar.</CardDescription>
             </CardHeader>
             <CardContent>
                 {loadingStaff ? <Skeleton className="h-24 w-full" /> : (
@@ -283,12 +286,14 @@ export default function PlantillaPage() {
                                             value={member.name}
                                             onChange={(e) => handleStaffChange(index, 'name', e.target.value)}
                                             placeholder="Nombre"
+                                            disabled={!isOwner}
                                         />
                                     </TableCell>
                                     <TableCell>
                                         <Select
                                             value={member.role}
                                             onValueChange={(value) => handleStaffChange(index, 'role', value)}
+                                            disabled={!isOwner}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Rol"/>
@@ -308,17 +313,15 @@ export default function PlantillaPage() {
                                             value={member.email}
                                             onChange={(e) => handleStaffChange(index, 'email', e.target.value)}
                                             placeholder="Email"
+                                            disabled={!isOwner || !!member.id}
                                         />
                                     </TableCell>
                                     <TableCell className="text-right space-x-1">
                                         {isOwner && (
-                                            <Button variant="ghost" size="icon" onClick={() => handleInviteStaff(member)}>
-                                                <WhatsAppIcon className="w-5 h-5 text-green-500" />
+                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveStaffMember(index)}>
+                                                <Trash2 className="w-5 h-5 text-destructive" />
                                             </Button>
                                         )}
-                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveStaffMember(index)}>
-                                            <Trash2 className="w-5 h-5 text-destructive" />
-                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -328,16 +331,18 @@ export default function PlantillaPage() {
                 )}
                  {errorStaff && <p className="text-destructive mt-4">{errorStaff.message}</p>}
             </CardContent>
-            <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={handleAddStaffMember}>
-                    <PlusCircle className="mr-2" />
-                    Añadir Miembro
-                </Button>
-                <Button onClick={handleSaveStaff} disabled={isSavingStaff}>
-                   {isSavingStaff ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2" />}
-                    Guardar Staff
-                </Button>
-            </CardFooter>
+            {isOwner && (
+                <CardFooter className="flex justify-between">
+                    <Button variant="outline" onClick={handleAddStaffMember}>
+                        <PlusCircle className="mr-2" />
+                        Añadir Miembro
+                    </Button>
+                    <Button onClick={handleSaveStaff} disabled={isSavingStaff}>
+                    {isSavingStaff ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2" />}
+                        Guardar Staff
+                    </Button>
+                </CardFooter>
+            )}
         </Card>
 
         <Card>
@@ -421,5 +426,3 @@ export default function PlantillaPage() {
     </div>
   );
 }
-
-    
