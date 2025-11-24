@@ -212,7 +212,7 @@ export default function EstadisticasPartidoPage() {
 
 
     const saveStats = useCallback(async (auto = false) => {
-        if (!match) return;
+        if (!match || isFinished) return;
         if (!auto) setIsSaving(true);
         
         const updateData = {
@@ -242,6 +242,15 @@ export default function EstadisticasPartidoPage() {
             if (!auto) setIsSaving(false);
         }
     }, [match, period, playerStats, opponentStats, localTimeoutTaken, opponentTimeoutTaken, isFinished, localScore, visitorScore, events, matchId, toast]);
+    
+    // Auto-save effect
+    useEffect(() => {
+        const interval = setInterval(() => {
+            saveStats(true);
+        }, 5000); // Save every 5 seconds
+
+        return () => clearInterval(interval);
+    }, [saveStats]);
     
     const handlePeriodChange = (newPeriod: string) => {
         if (period === newPeriod) return;
