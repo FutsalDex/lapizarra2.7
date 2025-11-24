@@ -359,8 +359,8 @@ export default function EquiposPage() {
 
                 {!(loadingUser || loadingMemberTeams) && memberTeams && memberTeams.length > 0 ? (
                     <div className="space-y-2">
-                        {memberTeams.map((team: any) => (
-                           <TeamCard key={team.id} team={team} isOwner={false} />
+                        {memberTeams.map((team: any, index: number) => (
+                           <TeamCard key={`${team.id}-${index}`} team={team} isOwner={false} />
                         ))}
                     </div>
                 ) : null}
