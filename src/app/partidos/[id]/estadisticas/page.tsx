@@ -216,10 +216,21 @@ export default function EstadisticasPartidoPage() {
         if (!auto) setIsSaving(true);
         
         const updateData = {
-            [`playerStats.${period}`]: playerStats,
-            [`opponentStats.${period}`]: opponentStats,
-            [`timeouts.${period}.local`]: localTimeoutTaken,
-            [`timeouts.${period}.visitor`]: opponentTimeoutTaken,
+            playerStats: {
+                ...match.playerStats,
+                [period]: playerStats,
+            },
+            opponentStats: {
+                ...match.opponentStats,
+                [period]: opponentStats,
+            },
+            timeouts: {
+                ...match.timeouts,
+                [period]: {
+                    local: localTimeoutTaken,
+                    visitor: opponentTimeoutTaken,
+                }
+            },
             isFinished,
             localScore,
             visitorScore,
@@ -245,11 +256,13 @@ export default function EstadisticasPartidoPage() {
     
     // Auto-save effect
     useEffect(() => {
-        const interval = setInterval(() => {
+        const handler = setInterval(() => {
             saveStats(true);
-        }, 5000); // Save every 5 seconds
+        }, 5000);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(handler);
+        };
     }, [saveStats]);
     
     const handlePeriodChange = (newPeriod: string) => {
