@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollection, useCollectionData } from "react-firebase-hooks/firestore";
-import { collection, query, where, addDoc, deleteDoc, doc, updateDoc, writeBatch, getDocs } from "firebase/firestore";
+import { collection, query, where, addDoc, deleteDoc, doc, updateDoc, writeBatch, getDocs, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/firebase/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -139,9 +139,12 @@ export default function EquiposPage() {
     try {
       const batch = writeBatch(db);
       
+      const teamDoc = await getDocs(query(collection(db, "teams"), where("ownerId", "==", invitation.teamId)));
+      const teamData = teamDoc.docs.length > 0 ? teamDoc.docs[0].data() as Team : null;
+
       // Add user to team's memberIds
       batch.update(teamRef, {
-          memberIds: [...(memberTeams.find(t => t.id === invitation.teamId)?.memberIds || []), user.uid]
+          memberIds: [...(teamData?.memberIds || []), user.uid]
       });
       
       // Update invitation status
@@ -378,5 +381,3 @@ export default function EquiposPage() {
     </div>
   );
 }
-
-    
