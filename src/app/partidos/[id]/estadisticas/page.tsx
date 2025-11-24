@@ -212,34 +212,22 @@ export default function EstadisticasPartidoPage() {
     }, [match, period, activePlayers, matchDuration]);
 
 
-    const saveStats = useCallback(async (auto = false) => {
+     const saveStats = useCallback(async (auto = false) => {
         if (!match || isFinished) return;
 
         const currentIsSaving = auto ? setIsAutoSaving : setIsSaving;
         currentIsSaving(true);
         
-        const updateData = {
-            playerStats: {
-                ...match.playerStats,
-                [period]: playerStats,
-            },
-            opponentStats: {
-                ...match.opponentStats,
-                [period]: opponentStats,
-            },
-            timeouts: {
-                ...match.timeouts,
-                [period]: {
-                    local: localTimeoutTaken,
-                    visitor: opponentTimeoutTaken,
-                }
-            },
+        const updateData: any = {
             isFinished,
+            events,
             localScore,
             visitorScore,
-            events,
+            [`playerStats.${period}`]: playerStats,
+            [`opponentStats.${period}`]: opponentStats,
+            [`timeouts.${period}`]: { local: localTimeoutTaken, visitor: opponentTimeoutTaken },
         };
-
+        
         try {
             await updateDoc(doc(db, "matches", matchId), updateData);
             if (!auto) {
@@ -256,22 +244,18 @@ export default function EstadisticasPartidoPage() {
         } finally {
             currentIsSaving(false);
         }
-    }, [match, period, playerStats, opponentStats, localTimeoutTaken, opponentTimeoutTaken, isFinished, localScore, visitorScore, events, matchId, toast, isFinished]);
-    
-    // Auto-save effect using a timeout that resets on data change
+    }, [match, period, playerStats, opponentStats, localTimeoutTaken, opponentTimeoutTaken, isFinished, localScore, visitorScore, events, matchId, toast]);
+
+    // Auto-save effect
     useEffect(() => {
         if (isFinished) return;
 
-        const allData = JSON.stringify({playerStats, opponentStats, events, localScore, visitorScore, localTimeoutTaken, opponentTimeoutTaken});
-
-        const handler = setTimeout(() => {
+        const interval = setInterval(() => {
             saveStats(true);
-        }, 5000);
+        }, 5000); // Save every 5 seconds
 
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [playerStats, opponentStats, events, localScore, visitorScore, localTimeoutTaken, opponentTimeoutTaken, saveStats, isFinished]);
+        return () => clearInterval(interval);
+    }, [saveStats, isFinished]);
     
     const handlePeriodChange = (newPeriod: string) => {
         if (period === newPeriod) return;
