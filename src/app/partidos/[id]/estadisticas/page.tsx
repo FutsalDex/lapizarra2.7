@@ -157,6 +157,7 @@ export default function EstadisticasPartidoPage() {
     const [time, setTime] = useState(matchDuration * 60);
     const [isActive, setIsActive] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isAutoSaving, setIsAutoSaving] = useState(false);
     const [events, setEvents] = useState<MatchEvent[]>([]);
 
     const [localScore, setLocalScore] = useState(0);
@@ -213,7 +214,9 @@ export default function EstadisticasPartidoPage() {
 
     const saveStats = useCallback(async (auto = false) => {
         if (!match || isFinished) return;
-        if (!auto) setIsSaving(true);
+
+        const currentIsSaving = auto ? setIsAutoSaving : setIsSaving;
+        currentIsSaving(true);
         
         const updateData = {
             playerStats: {
@@ -249,25 +252,30 @@ export default function EstadisticasPartidoPage() {
             if (!auto) {
                 toast({ variant: 'destructive', title: 'Error al guardar', description: error.message });
             }
+            console.error("Save error:", error);
         } finally {
-            if (!auto) setIsSaving(false);
+            currentIsSaving(false);
         }
-    }, [match, period, playerStats, opponentStats, localTimeoutTaken, opponentTimeoutTaken, isFinished, localScore, visitorScore, events, matchId, toast]);
+    }, [match, period, playerStats, opponentStats, localTimeoutTaken, opponentTimeoutTaken, isFinished, localScore, visitorScore, events, matchId, toast, isFinished]);
     
-    // Auto-save effect
+    // Auto-save effect using a timeout that resets on data change
     useEffect(() => {
-        const handler = setInterval(() => {
+        if (isFinished) return;
+
+        const allData = JSON.stringify({playerStats, opponentStats, events, localScore, visitorScore, localTimeoutTaken, opponentTimeoutTaken});
+
+        const handler = setTimeout(() => {
             saveStats(true);
         }, 5000);
 
         return () => {
-            clearInterval(handler);
+            clearTimeout(handler);
         };
-    }, [saveStats]);
+    }, [playerStats, opponentStats, events, localScore, visitorScore, localTimeoutTaken, opponentTimeoutTaken, saveStats, isFinished]);
     
     const handlePeriodChange = (newPeriod: string) => {
         if (period === newPeriod) return;
-        saveStats(true); // Auto-save before switching
+        saveStats(false); // Manual save before switching period
         setPeriod(newPeriod as Period);
     };
 
@@ -438,8 +446,7 @@ export default function EstadisticasPartidoPage() {
     const finishGame = async () => {
         setIsFinished(true);
         setIsActive(false);
-        await saveStats(true); // Final auto-save
-        await updateDoc(doc(db, "matches", matchId), { isFinished: true });
+        saveStats(false); // Final manual-like save
         toast({ title: "Partido Finalizado" });
     }
 
@@ -473,9 +480,9 @@ export default function EstadisticasPartidoPage() {
                         Volver
                     </Link>
                 </Button>
-                <Button onClick={() => saveStats()} disabled={isSaving || isFinished}>
-                    {isSaving ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2"/>}
-                    Guardar
+                <Button onClick={() => saveStats()} disabled={isSaving || isFinished || isAutoSaving}>
+                    {isSaving ? <Loader2 className="mr-2 animate-spin"/> : (isAutoSaving ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2"/>)}
+                    {isAutoSaving ? 'Autoguardando...' : 'Guardar'}
                 </Button>
                 {isFinished ? (
                      <Button variant="outline" onClick={reopenGame}><Unlock className="mr-2"/>Reabrir</Button>
