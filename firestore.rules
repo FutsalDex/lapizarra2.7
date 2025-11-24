@@ -75,12 +75,9 @@ service cloud.firestore {
 
     match /teams/{teamId} {
       
-      // Permitir que cualquier usuario autenticado pueda listar los equipos para que la UI los filtre.
-      // La seguridad de lectura de datos sensibles se hace en el 'get'.
-      allow list: if isSignedIn();
-
-      // Leer info del equipo si eres miembro o admin
-      allow get: if isTeamMember(teamId) || isAdmin();
+      // Permitir que cualquier usuario autenticado pueda leer y listar los equipos.
+      // El filtrado de "mis equipos" vs "equipos en los que colaboro" se hace en el cliente.
+      allow read: if isSignedIn();
 
       // Crear equipo
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;

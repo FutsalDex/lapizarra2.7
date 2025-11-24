@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { useCollection, useCollectionData } from "react-firebase-hooks/firestore";
+import { useCollection } from "react-firebase-hooks/firestore";
 import { collection, query, where, addDoc, deleteDoc, doc, updateDoc, writeBatch, getDocs, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/firebase/config";
 import { Button } from "@/components/ui/button";
@@ -59,12 +59,7 @@ export default function EquiposPage() {
   const [user, loadingUser] = useAuthState(auth);
   const { toast } = useToast();
 
-  const teamsQuery = user ? query(collection(db, "teams"), where("ownerId", "==", user.uid)) : null;
-  const [teamsSnapshot, loadingTeams, errorTeams] = useCollection(teamsQuery);
-  const teams = teamsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team)) || [];
-  
-  const memberTeamsQuery = user ? query(collection(db, "teams"), where("memberIds", "array-contains", user.uid)) : null;
-  const [memberTeams, loadingMemberTeams, errorMemberTeams] = useCollectionData(memberTeamsQuery, { idField: 'id' });
+  const [teamsSnapshot, loadingTeams, errorTeams] = useCollection(collection(db, "teams"));
   
   const invitationsQuery = user ? query(collection(db, 'invitations'), where('inviteeEmail', '==', user.email), where('status', '==', 'pending')) : null;
   const [invitationsSnapshot, loadingInvitations] = useCollection(invitationsQuery);
@@ -73,6 +68,18 @@ export default function EquiposPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newTeam, setNewTeam] = useState({ name: '', club: '', season: '', competition: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { ownedTeams, memberTeams } = useMemo(() => {
+    if (!user || !teamsSnapshot) {
+      return { ownedTeams: [], memberTeams: [] };
+    }
+    const allTeams = teamsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+    
+    const ownedTeams = allTeams.filter(team => team.ownerId === user.uid);
+    const memberTeams = allTeams.filter(team => team.memberIds?.includes(user.uid));
+
+    return { ownedTeams, memberTeams };
+  }, [user, teamsSnapshot]);
 
 
   const handleAddTeam = async () => {
@@ -131,34 +138,34 @@ export default function EquiposPage() {
   };
   
   const handleAcceptInvitation = async (invitation: Invitation) => {
-    if (!user || !memberTeams) return;
+    if (!user) return;
 
     const teamRef = doc(db, 'teams', invitation.teamId);
     const invitationRef = doc(db, 'invitations', invitation.id);
 
     try {
-      const batch = writeBatch(db);
+        const teamDoc = teamsSnapshot?.docs.find(doc => doc.id === invitation.teamId);
+        if (!teamDoc) throw new Error("El equipo ya no existe.");
+
+        const teamData = teamDoc.data() as Team;
+
+        const batch = writeBatch(db);
       
-      const teamDoc = await getDocs(query(collection(db, "teams"), where("ownerId", "==", invitation.teamId)));
-      const teamData = teamDoc.docs.length > 0 ? teamDoc.docs[0].data() as Team : null;
-
-      // Add user to team's memberIds
-      batch.update(teamRef, {
-          memberIds: [...(teamData?.memberIds || []), user.uid]
-      });
+        batch.update(teamRef, {
+            memberIds: [...(teamData.memberIds || []), user.uid]
+        });
       
-      // Update invitation status
-      batch.update(invitationRef, {
-          status: 'completed',
-          completedAt: new Date()
-      });
+        batch.update(invitationRef, {
+            status: 'completed',
+            completedAt: new Date()
+        });
 
-      await batch.commit();
+        await batch.commit();
 
-      toast({
+        toast({
           title: "¡Te has unido al equipo!",
           description: `Ahora eres miembro del cuerpo técnico.`
-      });
+        });
     } catch (error: any) {
       toast({
           variant: "destructive",
@@ -319,15 +326,15 @@ export default function EquiposPage() {
                     </div>
                 )}
 
-                {!(loadingUser || loadingTeams) && teams.length > 0 ? (
+                {!(loadingUser || loadingTeams) && ownedTeams.length > 0 ? (
                     <div className="space-y-2">
-                        {teams.map(team => (
+                        {ownedTeams.map(team => (
                             <TeamCard key={team.id} team={team} isOwner={true} />
                         ))}
                     </div>
                 ) : null}
 
-                {!(loadingUser || loadingTeams) && teams.length === 0 && (
+                {!(loadingUser || loadingTeams) && ownedTeams.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
                         <p>No has creado ningún equipo todavía.</p>
                         <p>Haz clic en "Añadir Equipo" para empezar.</p>
@@ -351,28 +358,28 @@ export default function EquiposPage() {
               <CardDescription>Lista de equipos en los que eres miembro del cuerpo técnico.</CardDescription>
             </CardHeader>
             <CardContent>
-                 {(loadingUser || loadingMemberTeams) && (
+                 {(loadingUser || loadingTeams) && (
                     <div className="space-y-4">
                         <Skeleton className="h-16 w-full" />
                     </div>
                 )}
 
-                {!(loadingUser || loadingMemberTeams) && memberTeams && memberTeams.length > 0 ? (
+                {!(loadingUser || loadingTeams) && memberTeams && memberTeams.length > 0 ? (
                     <div className="space-y-2">
-                        {memberTeams.map((team: any, index: number) => (
+                        {memberTeams.map((team, index) => (
                            <TeamCard key={`${team.id}-${index}`} team={team} isOwner={false} />
                         ))}
                     </div>
                 ) : null}
 
-                 {!(loadingUser || loadingMemberTeams) && (!memberTeams || memberTeams.length === 0) && (
+                 {!(loadingUser || loadingTeams) && (!memberTeams || memberTeams.length === 0) && (
                     <div className="text-center py-8 text-muted-foreground">
                         <p>Aún no eres miembro de ningún equipo.</p>
                     </div>
                 )}
-                 {errorMemberTeams && (
+                 {errorTeams && (
                     <div className="text-center py-8 text-destructive">
-                        <p>Error al cargar los equipos: {errorMemberTeams.message}</p>
+                        <p>Error al cargar los equipos: {errorTeams.message}</p>
                     </div>
                 )}
             </CardContent>
@@ -381,3 +388,5 @@ export default function EquiposPage() {
     </div>
   );
 }
+
+    
