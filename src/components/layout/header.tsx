@@ -58,9 +58,9 @@ export function Header() {
 
   // Fetch pending invitations (completed but not approved)
   const [invitationsSnapshot, loadingInvitations] = useCollection(
-    isAdmin ? query(collection(db, 'invitations'), where('status', '==', 'completed')) : null
+    isAdmin ? query(collection(db, 'invitations'), where('status', '==', 'completed'), where('isApproved', '!=', true)) : null
   );
-  const pendingInvitations = invitationsSnapshot?.docs.filter(doc => !doc.data().isApproved).length || 0;
+  const pendingInvitations = invitationsSnapshot?.docs.length || 0;
 
   
   const visibleNavLinks = navLinks;

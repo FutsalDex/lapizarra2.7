@@ -169,6 +169,7 @@ export default function PlantillaPage() {
                         if (user) {
                            const invitationData = {
                                 teamId: teamId,
+                                teamName: team?.name || 'un equipo',
                                 inviterId: user.uid,
                                 inviterEmail: user.email,
                                 inviteeEmail: staffData.email,

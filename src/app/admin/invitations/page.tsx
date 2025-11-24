@@ -39,10 +39,11 @@ type Invitation = {
   completedAt?: Timestamp;
   status: InvitationStatus;
   isApproved?: boolean;
+  teamName?: string;
 };
 
 export default function InvitationsPage() {
-  const [activeTab, setActiveTab] = useState('Completada');
+  const [activeTab, setActiveTab] = useState('Pendiente');
   const { toast } = useToast();
 
   const [invitationsSnapshot, loading, error] = useCollection(collection(db, 'invitations'));
@@ -52,7 +53,7 @@ export default function InvitationsPage() {
   const filteredInvitations = invitations.filter(invitation => {
     if (activeTab === 'Todas') return true;
     if (activeTab === 'Pendiente') return invitation.status === 'pending';
-    if (activeTab === 'Completada') return invitation.status === 'completed';
+    if (activeTab === 'Completada') return invitation.status === 'completed' || invitation.isApproved;
     return false;
   });
 
@@ -123,12 +124,13 @@ export default function InvitationsPage() {
               <TabsTrigger value="Completada">Completadas y Aprobadas</TabsTrigger>
               <TabsTrigger value="Todas">Todas</TabsTrigger>
             </TabsList>
-            <div className="border rounded-lg mt-4">
+            <div className="border rounded-lg mt-4 overflow-x-auto">
                 <Table>
                 <TableHeader>
                     <TableRow>
-                    <TableHead>Email del Invitador</TableHead>
-                    <TableHead>Email del Invitado</TableHead>
+                    <TableHead>Email Invitador</TableHead>
+                    <TableHead>Email Invitado</TableHead>
+                    <TableHead>Equipo</TableHead>
                     <TableHead>Fecha Invitación</TableHead>
                     <TableHead>Fecha Completada</TableHead>
                     <TableHead>Estado</TableHead>
@@ -141,6 +143,7 @@ export default function InvitationsPage() {
                             <TableRow key={i}>
                                 <TableCell><Skeleton className="h-5 w-40" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                                 <TableCell><Skeleton className="h-6 w-20" /></TableCell>
@@ -153,7 +156,8 @@ export default function InvitationsPage() {
                             <TableRow key={invitation.id}>
                                 <TableCell>{invitation.inviterEmail}</TableCell>
                                 <TableCell>{invitation.inviteeEmail}</TableCell>
-                                <TableCell>{format(invitation.createdAt.toDate(), 'dd/MM/yyyy', { locale: es })}</TableCell>
+                                <TableCell>{invitation.teamName || '-'}</TableCell>
+                                <TableCell>{invitation.createdAt ? format(invitation.createdAt.toDate(), 'dd/MM/yyyy', { locale: es }) : '-'}</TableCell>
                                 <TableCell>{invitation.completedAt ? format(invitation.completedAt.toDate(), 'dd/MM/yyyy', { locale: es }) : '-'}</TableCell>
                                 <TableCell>
                                     <Badge variant={getBadgeVariant(invitation.status, invitation.isApproved)}
@@ -196,7 +200,7 @@ export default function InvitationsPage() {
                     ) : null}
                     {!loading && filteredInvitations.length === 0 && (
                          <TableRow>
-                            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                                 No hay invitaciones en esta categoría.
                             </TableCell>
                         </TableRow>
@@ -211,4 +215,3 @@ export default function InvitationsPage() {
     </div>
   );
 }
-

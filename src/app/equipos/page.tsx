@@ -3,8 +3,8 @@
 
 import { useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { useCollection } from "react-firebase-hooks/firestore";
-import { collection, query, where, addDoc, deleteDoc, doc, updateDoc, writeBatch } from "firebase/firestore";
+import { useCollection, useCollectionData } from "react-firebase-hooks/firestore";
+import { collection, query, where, addDoc, deleteDoc, doc, updateDoc, writeBatch, getDocs } from "firebase/firestore";
 import { auth, db } from "@/firebase/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,6 +49,7 @@ type Team = {
 type Invitation = {
     id: string;
     teamId: string;
+    teamName: string;
     inviterEmail: string;
     inviteeEmail: string;
     status: 'pending' | 'completed';
@@ -63,8 +64,7 @@ export default function EquiposPage() {
   const teams = teamsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team)) || [];
   
   const memberTeamsQuery = user ? query(collection(db, "teams"), where("memberIds", "array-contains", user.uid)) : null;
-  const [memberTeamsSnapshot, loadingMemberTeams] = useCollection(memberTeamsQuery);
-  const memberTeams = memberTeamsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team)) || [];
+  const [memberTeams, loadingMemberTeams, errorMemberTeams] = useCollectionData(memberTeamsQuery, { idField: 'id' });
   
   const invitationsQuery = user ? query(collection(db, 'invitations'), where('inviteeEmail', '==', user.email), where('status', '==', 'pending')) : null;
   const [invitationsSnapshot, loadingInvitations] = useCollection(invitationsQuery);
@@ -131,7 +131,7 @@ export default function EquiposPage() {
   };
   
   const handleAcceptInvitation = async (invitation: Invitation) => {
-    if (!user) return;
+    if (!user || !memberTeams) return;
 
     const teamRef = doc(db, 'teams', invitation.teamId);
     const invitationRef = doc(db, 'invitations', invitation.id);
@@ -284,21 +284,18 @@ export default function EquiposPage() {
                         <CardDescription>Has sido invitado a colaborar en estos equipos. Acéptalos para empezar.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                        {invitations.map(inv => {
-                            const teamData = teams.find(t => t.id === inv.teamId) || memberTeams.find(t => t.id === inv.teamId);
-                            return (
-                                <div key={inv.id} className="border rounded-lg p-4 flex items-center justify-between">
-                                    <div>
-                                        <p className="font-bold text-lg">{teamData?.name || "Equipo"}</p>
-                                        <p className="text-sm text-muted-foreground">Invitado por {inv.inviterEmail}</p>
-                                    </div>
-                                    <Button onClick={() => handleAcceptInvitation(inv)}>
-                                        <UserPlus className="mr-2" />
-                                        Unirse al equipo
-                                    </Button>
+                        {invitations.map(inv => (
+                            <div key={inv.id} className="border rounded-lg p-4 flex items-center justify-between">
+                                <div>
+                                    <p className="font-bold text-lg">{inv.teamName || "un equipo"}</p>
+                                    <p className="text-sm text-muted-foreground">Invitado por {inv.inviterEmail}</p>
                                 </div>
-                            )
-                        })}
+                                <Button onClick={() => handleAcceptInvitation(inv)}>
+                                    <UserPlus className="mr-2" />
+                                    Unirse al equipo
+                                </Button>
+                            </div>
+                        ))}
                     </CardContent>
                 </Card>
             )}
@@ -357,17 +354,22 @@ export default function EquiposPage() {
                     </div>
                 )}
 
-                {!(loadingUser || loadingMemberTeams) && memberTeams.length > 0 ? (
+                {!(loadingUser || loadingMemberTeams) && memberTeams && memberTeams.length > 0 ? (
                     <div className="space-y-2">
-                        {memberTeams.map(team => (
+                        {memberTeams.map((team: any) => (
                            <TeamCard key={team.id} team={team} isOwner={false} />
                         ))}
                     </div>
                 ) : null}
 
-                 {!(loadingUser || loadingMemberTeams) && memberTeams.length === 0 && (
+                 {!(loadingUser || loadingMemberTeams) && (!memberTeams || memberTeams.length === 0) && (
                     <div className="text-center py-8 text-muted-foreground">
                         <p>Aún no eres miembro de ningún equipo.</p>
+                    </div>
+                )}
+                 {errorMemberTeams && (
+                    <div className="text-center py-8 text-destructive">
+                        <p>Error al cargar los equipos: {errorMemberTeams.message}</p>
                     </div>
                 )}
             </CardContent>
