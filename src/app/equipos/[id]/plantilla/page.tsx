@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollection, useDocumentData } from "react-firebase-hooks/firestore";
-import { collection, doc, writeBatch, addDoc } from "firebase/firestore";
+import { collection, doc, writeBatch, addDoc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -30,7 +30,7 @@ type StaffMember = {
     name: string;
     role: string;
     email: string;
-    invitationId?: string; // To store the invitation ID
+    invitationId?: string;
 };
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -46,14 +46,11 @@ export default function PlantillaPage() {
     const { toast } = useToast();
     const [user, loadingAuth] = useAuthState(auth);
 
-    // Fetch team data
     const [team, loadingTeam, errorTeam] = useDocumentData(doc(db, "teams", teamId));
     const isOwner = !loadingAuth && !loadingTeam && user?.uid === team?.ownerId;
 
-    // Fetch players subcollection
     const [playersSnapshot, loadingPlayers, errorPlayers] = useCollection(collection(db, "teams", teamId, "players"));
     
-    // Fetch staff subcollection
     const [staffSnapshot, loadingStaff, errorStaff] = useCollection(collection(db, "teams", teamId, "staff"));
     
     const [players, setPlayers] = useState<Player[]>([]);
@@ -106,21 +103,17 @@ export default function PlantillaPage() {
             const playersCollectionRef = collection(db, "teams", teamId, "players");
             const initialPlayers = playersSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() })) || [];
 
-            // Delete players that are no longer in the local state but exist in Firestore
             initialPlayers.forEach(initialPlayer => {
                 if (initialPlayer.id && !players.find(p => p.id === initialPlayer.id)) {
                     batch.delete(doc(playersCollectionRef, initialPlayer.id));
                 }
             });
 
-            // Add or update players
             for (const player of players) {
                 const { id, ...playerData } = player;
                 if (id) {
-                    // Update existing player
                     batch.update(doc(playersCollectionRef, id), { ...playerData, number: Number(playerData.number) });
                 } else {
-                    // Add new player - let Firestore generate ID
                     if(playerData.name && playerData.number){
                         batch.set(doc(collection(db, "teams", teamId, "players")), { ...playerData, number: Number(playerData.number) });
                     }
@@ -152,7 +145,7 @@ export default function PlantillaPage() {
     };
 
     const handleSaveStaff = async () => {
-        if (!user || !user.email) {
+        if (!user) {
             toast({ variant: 'destructive', title: "Error", description: "Debes estar autenticado para guardar." });
             return;
         }
@@ -169,28 +162,15 @@ export default function PlantillaPage() {
                 const { id, ...staffData } = member;
                 
                 if (!id && staffData.name && staffData.email && staffData.role) {
-                     // This is a new member, create invitation and staff doc
-                    const invitationData = {
-                        teamId: teamId,
-                        teamName: team?.name || 'un equipo',
-                        inviterId: user.uid,
-                        inviterEmail: user.email,
-                        inviteeEmail: staffData.email,
-                        status: "pending",
-                        createdAt: new Date(),
-                    };
-                    const invitationRef = await addDoc(collection(db, "invitations"), invitationData);
-                    
-                    const staffWithInvitation = { ...staffData, invitationId: invitationRef.id };
+                     const staffWithInvitation = { ...staffData, invitationId: '' }; // Placeholder
                     const newStaffDocRef = doc(staffCollectionRef);
                     batch.set(newStaffDocRef, staffWithInvitation);
                     updatedStaffList.push({ id: newStaffDocRef.id, ...staffWithInvitation });
 
                 } else if (id) {
-                    // This is an existing member, update it if needed
                     const existingMember = initialStaff.find(s => s.id === id);
-                    if (existingMember && (existingMember.name !== staffData.name || existingMember.role !== staffData.role)) {
-                         batch.update(doc(staffCollectionRef, id), { name: staffData.name, role: staffData.role });
+                    if (existingMember && (existingMember.name !== staffData.name || existingMember.role !== staffData.role || existingMember.email !== staffData.email)) {
+                         batch.update(doc(staffCollectionRef, id), { name: staffData.name, role: staffData.role, email: staffData.email });
                     }
                     updatedStaffList.push(member);
                 }
@@ -212,15 +192,48 @@ export default function PlantillaPage() {
         }
     };
     
-    const handleInviteStaff = (staffMember: StaffMember) => {
-        if (!staffMember.invitationId) {
-            toast({ variant: 'destructive', title: 'Error', description: 'No se encontró ID de invitación. Guarda primero los cambios.' });
+    const handleInviteStaff = async (staffMember: StaffMember) => {
+        if (!user || !user.email) {
+            toast({ variant: 'destructive', title: 'No autenticado', description: 'Debes iniciar sesión para invitar.' });
             return;
         }
+        if (!staffMember.id) {
+            toast({ variant: 'destructive', title: 'Guardar primero', description: 'Guarda los cambios del staff antes de invitar.' });
+            return;
+        }
+
+        let invitationId = staffMember.invitationId;
+
+        // If no invitationId exists, create one
+        if (!invitationId) {
+            try {
+                const invitationData = {
+                    teamId: teamId,
+                    teamName: team?.name || 'un equipo',
+                    inviterId: user.uid,
+                    inviterEmail: user.email,
+                    inviteeEmail: staffMember.email,
+                    status: "pending",
+                    createdAt: new Date(),
+                };
+                const invitationRef = await addDoc(collection(db, "invitations"), invitationData);
+                invitationId = invitationRef.id;
+
+                // Update the staff member with the new invitation ID
+                await updateDoc(doc(db, "teams", teamId, "staff", staffMember.id), { invitationId });
+                
+                // Update local state
+                setStaff(prev => prev.map(s => s.id === staffMember.id ? { ...s, invitationId } : s));
+
+            } catch (error: any) {
+                toast({ variant: 'destructive', title: 'Error al crear invitación', description: error.message });
+                return;
+            }
+        }
+        
         const teamName = team?.name || 'tu equipo';
-        // Use a production-ready URL
         const baseUrl = "https://lapizarra27--lapizarra-95eqd.us-east5.hosted.app";
-        const invitationUrl = `${baseUrl}/invitacion/${staffMember.invitationId}`;
+        const invitationUrl = `${baseUrl}/invitacion/${invitationId}`;
         const message = `¡Hola ${staffMember.name}! Te invito a unirte al cuerpo técnico del equipo "${teamName}" en LaPizarra. Con este acceso, podrás gestionar la plantilla, partidos y estadísticas. Haz clic aquí para empezar: ${invitationUrl}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
@@ -331,11 +344,11 @@ export default function PlantillaPage() {
                                             value={member.email}
                                             onChange={(e) => handleStaffChange(index, 'email', e.target.value)}
                                             placeholder="Email"
-                                            disabled={!isOwner || !!member.id}
+                                            disabled={!isOwner}
                                         />
                                     </TableCell>
                                     <TableCell className="text-right space-x-1">
-                                        {isOwner && member.id && member.invitationId && (
+                                        {isOwner && member.id && (
                                             <Button variant="ghost" size="icon" onClick={() => handleInviteStaff(member)}>
                                                  <WhatsAppIcon className="w-5 h-5 text-green-500" />
                                             </Button>
@@ -449,5 +462,3 @@ export default function PlantillaPage() {
     </div>
   );
 }
-
-    
