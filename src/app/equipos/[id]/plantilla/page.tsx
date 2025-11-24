@@ -187,8 +187,8 @@ export default function PlantillaPage() {
     
     const handleInviteStaff = (staffMember: StaffMember) => {
         const teamName = team?.name || 'tu equipo';
-        const teamUrl = window.location.href; // URL of the current team page
-        const message = `¡Hola ${staffMember.name}! Te invito a unirte al cuerpo técnico del equipo "${teamName}" en LaPizarra. Con este acceso, podrás gestionar la plantilla, partidos y estadísticas. Haz clic aquí para empezar: ${teamUrl}`;
+        const publicUrl = "https://lapizarra27--lapizarra-95eqd.us-east5.hosted.app/";
+        const message = `¡Hola ${staffMember.name}! Te invito a unirte al cuerpo técnico del equipo "${teamName}" en LaPizarra. Con este acceso, podrás gestionar la plantilla, partidos y estadísticas. Haz clic aquí para empezar: ${publicUrl}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     };
