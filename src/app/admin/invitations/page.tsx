@@ -21,56 +21,74 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-type InvitationStatus = 'Pendiente' | 'Completada' | 'Aprobada';
+type InvitationStatus = 'pending' | 'completed';
 
 type Invitation = {
-  id: number;
+  id: string;
   inviterEmail: string;
-  invitedEmail: string;
-  invitationDate: string;
-  invitedPlan: string;
+  inviteeEmail: string;
+  createdAt: Timestamp;
+  completedAt?: Timestamp;
   status: InvitationStatus;
+  isApproved?: boolean;
 };
-
-const allInvitationsData: Invitation[] = [
-    { id: 1, inviterEmail: 'futsaldex@gmail.com', invitedEmail: 'mixel_75@hotmail.com', invitationDate: '04/11/2025', invitedPlan: 'Pro', status: 'Completada' },
-    { id: 2, inviterEmail: 'futsaldex@gmail.com', invitedEmail: 'ruperto@gmail.com', invitationDate: '04/11/2025', invitedPlan: 'No Registrado', status: 'Completada' },
-    { id: 3, inviterEmail: 'futsaldex@gmail.com', invitedEmail: 'hgdf@gjj.com', invitationDate: '03/11/2025', invitedPlan: 'No Registrado', status: 'Completada' },
-];
-
 
 export default function InvitationsPage() {
   const [activeTab, setActiveTab] = useState('Completada');
-  const [invitations, setInvitations] = useState<Invitation[]>(allInvitationsData);
+  const { toast } = useToast();
+
+  const [invitationsSnapshot, loading, error] = useCollection(collection(db, 'invitations'));
   
+  const invitations = invitationsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invitation)) || [];
+
   const filteredInvitations = invitations.filter(invitation => {
     if (activeTab === 'Todas') return true;
-    if (activeTab === 'Pendiente') return invitation.status === 'Pendiente';
-    if (activeTab === 'Completada') return invitation.status === 'Completada' || invitation.status === 'Aprobada';
-    if (activeTab === 'Aprobada') return invitation.status === 'Aprobada';
+    if (activeTab === 'Pendiente') return invitation.status === 'pending';
+    if (activeTab === 'Completada') return invitation.status === 'completed';
     return false;
   });
 
-  const handleApprove = (id: number) => {
-    setInvitations(invitations.map(inv => inv.id === id ? { ...inv, status: 'Aprobada' } : inv));
+  const handleApprove = async (id: string) => {
+    try {
+        await updateDoc(doc(db, 'invitations', id), { isApproved: true });
+        toast({ title: 'Invitación aprobada', description: 'Se han asignado los puntos al invitador.' });
+    } catch(e: any) {
+        toast({ variant: 'destructive', title: 'Error', description: e.message });
+    }
   };
 
-  const handleDelete = (id: number) => {
-    setInvitations(invitations.filter(inv => inv.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+        await deleteDoc(doc(db, 'invitations', id));
+        toast({ variant: 'destructive', title: 'Invitación eliminada' });
+    } catch(e: any) {
+        toast({ variant: 'destructive', title: 'Error', description: e.message });
+    }
   };
   
-  const getBadgeVariant = (status: InvitationStatus) => {
+  const getBadgeVariant = (status: InvitationStatus, isApproved?: boolean) => {
+    if (isApproved) return 'default';
     switch (status) {
-      case 'Completada':
+      case 'completed':
         return 'secondary';
-      case 'Aprobada':
-        return 'default';
-      case 'Pendiente':
+      case 'pending':
         return 'destructive';
       default:
         return 'outline';
     }
+  }
+
+  const getStatusText = (status: InvitationStatus, isApproved?: boolean) => {
+    if (isApproved) return 'Aprobada';
+    return status === 'completed' ? 'Completada' : 'Pendiente';
   }
 
   return (
@@ -112,38 +130,44 @@ export default function InvitationsPage() {
                     <TableHead>Email del Invitador</TableHead>
                     <TableHead>Email del Invitado</TableHead>
                     <TableHead>Fecha Invitación</TableHead>
-                    <TableHead>Plan del invitado</TableHead>
+                    <TableHead>Fecha Completada</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {filteredInvitations.length > 0 ? (
+                    {loading && (
+                        Array.from({length: 5}).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                                <TableCell><Skeleton className="h-8 w-32" /></TableCell>
+                            </TableRow>
+                        ))
+                    )}
+                    {!loading && filteredInvitations.length > 0 ? (
                         filteredInvitations.map((invitation) => (
                             <TableRow key={invitation.id}>
                                 <TableCell>{invitation.inviterEmail}</TableCell>
-                                <TableCell>{invitation.invitedEmail}</TableCell>
-                                <TableCell>{invitation.invitationDate}</TableCell>
+                                <TableCell>{invitation.inviteeEmail}</TableCell>
+                                <TableCell>{format(invitation.createdAt.toDate(), 'dd/MM/yyyy', { locale: es })}</TableCell>
+                                <TableCell>{invitation.completedAt ? format(invitation.completedAt.toDate(), 'dd/MM/yyyy', { locale: es }) : '-'}</TableCell>
                                 <TableCell>
-                                    {invitation.invitedPlan === 'No Registrado' ? (
-                                        <span className="text-muted-foreground">{invitation.invitedPlan}</span>
-                                    ) : (
-                                        <Badge>{invitation.invitedPlan}</Badge>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant={getBadgeVariant(invitation.status)}
+                                    <Badge variant={getBadgeVariant(invitation.status, invitation.isApproved)}
                                            className={cn({
-                                               'bg-green-100 text-green-800': invitation.status === 'Completada',
-                                               'bg-blue-100 text-blue-800': invitation.status === 'Aprobada',
+                                               'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': invitation.status === 'completed' && !invitation.isApproved,
+                                               'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300': invitation.isApproved,
                                            })}>
-                                        {invitation.status}
+                                        {getStatusText(invitation.status, invitation.isApproved)}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="flex items-center gap-2">
-                                     <Button variant="outline" size="sm" onClick={() => handleApprove(invitation.id)} disabled={invitation.status === 'Aprobada'}>
-                                        <ThumbsUp className="mr-2" /> 
-                                        {invitation.status === 'Aprobada' ? 'Aprobada' : 'Aprobar'}
+                                     <Button variant="outline" size="sm" onClick={() => handleApprove(invitation.id)} disabled={invitation.isApproved || invitation.status !== 'completed'}>
+                                        <ThumbsUp className="mr-2 h-4 w-4" /> 
+                                        {invitation.isApproved ? 'Aprobada' : 'Aprobar'}
                                     </Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
@@ -155,7 +179,7 @@ export default function InvitationsPage() {
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    Esta acción eliminará permanentemente la invitación de {invitation.invitedEmail}. No se puede deshacer.
+                                                    Esta acción eliminará permanentemente la invitación de {invitation.inviteeEmail}. No se puede deshacer.
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
@@ -169,7 +193,8 @@ export default function InvitationsPage() {
                                 </TableCell>
                             </TableRow>
                         ))
-                    ) : (
+                    ) : null}
+                    {!loading && filteredInvitations.length === 0 && (
                          <TableRow>
                             <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                                 No hay invitaciones en esta categoría.
@@ -179,9 +204,11 @@ export default function InvitationsPage() {
                 </TableBody>
                 </Table>
             </div>
+             {error && <p className="text-destructive mt-4">Error al cargar invitaciones: {error.message}</p>}
           </Tabs>
         </CardContent>
       </Card>
     </div>
   );
 }
+

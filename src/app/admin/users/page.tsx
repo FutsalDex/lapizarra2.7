@@ -32,38 +32,62 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection, doc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
 
 type User = {
-  name: string;
+  uid: string;
+  displayName: string;
   email: string;
-  plan: string;
-  endDate: string;
+  subscription?: 'Básico' | 'Pro';
+  subscriptionEndDate?: Timestamp;
 };
-
-const usersData: User[] = [
-  { name: 'Michel', email: 'mixel_75@hotmail.com', plan: 'Pro', endDate: '04/11/2026' },
-  { name: '-', email: 'rauldrup10@hotmail.com', plan: 'Pro', endDate: '01/10/2026' },
-  { name: '-', email: 'dani.ruiz46@gmail.com', plan: 'Pro', endDate: '01/10/2026' },
-  { name: '-', email: 'vroldan0@iesnumancia.cat', plan: 'Pro', endDate: '03/11/2026' },
-  { name: '-', email: 'chocoanton1964@gmail.com', plan: 'Pro', endDate: '01/10/2026' },
-  { name: '-', email: 'josemr_63@hotmail.com', plan: 'Pro', endDate: '01/10/2026' },
-  { name: '-', email: 'ibautista2005@gmail.com', plan: 'Pro', endDate: '01/10/2026' },
-  { name: '-', email: 'isaac.tarrason@gmail.com', plan: 'Pro', endDate: '01/10/2026' },
-  { name: '-', email: 'juanfranro70@gmail.com', plan: 'Pro', endDate: '01/10/2026' },
-];
 
 export default function GestionUsuariosPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [users, setUsers] = useState<User[]>(usersData);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<'Básico' | 'Pro'>('Pro');
+
+  const { toast } = useToast();
+  
+  const [usersSnapshot, loading, error] = useCollection(collection(db, 'users'));
+
+  const users: User[] = usersSnapshot?.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User)) || [];
 
   const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (user.displayName && user.displayName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleDeleteUser = (email: string) => {
-    setUsers(users.filter(user => user.email !== email));
+  const handleDeleteUser = async (uid: string) => {
+    try {
+        await deleteDoc(doc(db, "users", uid));
+        toast({ variant: "destructive", title: "Usuario eliminado" });
+    } catch (error: any) {
+        toast({ variant: "destructive", title: "Error al eliminar", description: error.message });
+    }
+  };
+
+  const handleActivateSubscription = async () => {
+    if (!selectedUser) return;
+
+    const endDate = new Date();
+    endDate.setFullYear(endDate.getFullYear() + 1);
+
+    try {
+      await updateDoc(doc(db, 'users', selectedUser.uid), {
+        subscription: selectedPlan,
+        subscriptionEndDate: Timestamp.fromDate(endDate),
+      });
+      toast({ title: 'Suscripción actualizada', description: `Plan ${selectedPlan} activado para ${selectedUser.email}.` });
+      setSelectedUser(null);
+    } catch(e: any) {
+        toast({ variant: 'destructive', title: 'Error', description: e.message });
+    }
   };
 
   return (
@@ -87,7 +111,7 @@ export default function GestionUsuariosPage() {
       <Card>
         <CardHeader>
           <CardTitle>Todos los Usuarios</CardTitle>
-          <CardDescription>{users.length} usuarios en total.</CardDescription>
+          <CardDescription>{loading ? 'Cargando...' : `${users.length} usuarios en total.`}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
@@ -110,14 +134,25 @@ export default function GestionUsuariosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user, index) => (
-                  <TableRow key={`${user.email}-${index}`}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
+                {loading && (
+                    Array.from({length: 5}).map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                            <TableCell><div className="flex gap-2"><Skeleton className="h-8 w-8" /><Skeleton className="h-8 w-8" /></div></TableCell>
+                        </TableRow>
+                    ))
+                )}
+                {!loading && filteredUsers.map((user, index) => (
+                  <TableRow key={user.uid}>
+                    <TableCell className="font-medium">{user.displayName || '-'}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Badge>{user.plan}</Badge>
+                      {user.subscription ? <Badge>{user.subscription}</Badge> : <Badge variant="outline">N/A</Badge>}
                     </TableCell>
-                    <TableCell>{user.endDate}</TableCell>
+                    <TableCell>{user.subscriptionEndDate ? format(user.subscriptionEndDate.toDate(), 'dd/MM/yyyy') : '-'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Dialog onOpenChange={(open) => !open && setSelectedUser(null)}>
@@ -137,13 +172,13 @@ export default function GestionUsuariosPage() {
                                    <div className="py-4 space-y-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="plan">Plan</Label>
-                                            <Select>
+                                            <Select value={selectedPlan} onValueChange={(value) => setSelectedPlan(value as 'Básico' | 'Pro')}>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecciona un plan..." />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="basico">Básico (19.95€/año)</SelectItem>
-                                                    <SelectItem value="pro">Pro (39.95€/año)</SelectItem>
+                                                    <SelectItem value="Básico">Básico (19.95€/año)</SelectItem>
+                                                    <SelectItem value="Pro">Pro (39.95€/año)</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -152,7 +187,7 @@ export default function GestionUsuariosPage() {
                                         <DialogClose asChild>
                                             <Button variant="outline">Cancelar</Button>
                                         </DialogClose>
-                                       <Button>Activar Suscripción por 1 Año</Button>
+                                       <Button onClick={handleActivateSubscription}>Activar Suscripción por 1 Año</Button>
                                    </DialogFooter>
                                </DialogContent>
                            )}
@@ -173,7 +208,7 @@ export default function GestionUsuariosPage() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteUser(user.email)}>
+                              <AlertDialogAction onClick={() => handleDeleteUser(user.uid)}>
                                 Sí, eliminar
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -184,9 +219,15 @@ export default function GestionUsuariosPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                 {!loading && filteredUsers.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">No se encontraron usuarios.</TableCell>
+                    </TableRow>
+                 )}
               </TableBody>
             </Table>
           </div>
+           {error && <p className="text-destructive mt-4">Error al cargar usuarios: {error.message}</p>}
         </CardContent>
       </Card>
     </div>
