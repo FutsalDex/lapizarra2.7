@@ -196,19 +196,6 @@ export default function EstadisticasPartidoPage() {
             
             localScoreRef.current = (match.events || []).filter((e: MatchEvent) => e.type === 'goal' && e.team === 'local').length;
             visitorScoreRef.current = (match.events || []).filter((e: MatchEvent) => e.type === 'goal' && e.team === 'visitor').length;
-<<<<<<< HEAD
-            
-            // Only reset these on period change, not on every match data refresh
-            if (!isActive) {
-                setTime(matchDuration * 60);
-                setSelectedPlayerIds(new Set());
-            }
-            
-            forceUpdate({}); // Force a re-render to show loaded data
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [period, match, activePlayers.length]);
-=======
 
             setIsActive(false);
             setTime(matchDuration * 60);
@@ -216,7 +203,6 @@ export default function EstadisticasPartidoPage() {
             forceUpdate();
         }
     }, [match, period, activePlayers, matchDuration, forceUpdate]);
->>>>>>> 7e9a89d4a2d43b56038d16d698c3ba91ed5d7be5
 
 
      const saveStats = useCallback(async (auto = false) => {
