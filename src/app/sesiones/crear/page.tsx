@@ -156,7 +156,7 @@ export default function CrearSesionPage() {
             <CardDescription>{subtitle}</CardDescription>
             </CardHeader>
             <CardContent>
-             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {exercisesForPhase.map((ex, index) => (
                      <Card key={ex.id} className="overflow-hidden group relative">
                         <div className="relative aspect-video w-full bg-primary/80">
@@ -190,8 +190,8 @@ export default function CrearSesionPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center">
-            <h1 className="text-4xl font-bold font-headline">Crear Sesión de Entrenamiento</h1>
-            <p className="text-lg text-muted-foreground mt-2">Planifica tu próximo entrenamiento paso a paso.</p>
+            <h1 className="text-3xl md:text-4xl font-bold font-headline">Crear Sesión</h1>
+            <p className="text-base md:text-lg text-muted-foreground mt-2">Planifica tu próximo entrenamiento paso a paso.</p>
         </div>
 
         <Card>

@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollection } from "react-firebase-hooks/firestore";
-import { collection, query, where, addDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, where, addDoc, deleteDoc, doc, updateDoc, writeBatch, getDocs, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/firebase/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Edit, PlusCircle, Settings, Shield, Trash2, Users, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Edit, PlusCircle, Settings, Shield, Trash2, Users, Save, Loader2, UserPlus } from "lucide-react";
 import Link from "next/link";
 import {
   Dialog,
@@ -43,20 +43,43 @@ type Team = {
   competition?: string;
   season?: string;
   ownerId: string;
+  memberIds: string[];
 };
+
+type Invitation = {
+    id: string;
+    teamId: string;
+    teamName: string;
+    inviterEmail: string;
+    inviteeEmail: string;
+    status: 'pending' | 'completed';
+}
 
 export default function EquiposPage() {
   const [user, loadingUser] = useAuthState(auth);
   const { toast } = useToast();
 
-  const teamsQuery = user ? query(collection(db, "teams"), where("ownerId", "==", user.uid)) : null;
-  const [teamsSnapshot, loadingTeams, errorTeams] = useCollection(teamsQuery);
-
-  const teams = teamsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team)) || [];
+  const [teamsSnapshot, loadingTeams, errorTeams] = useCollection(collection(db, "teams"));
   
+  const invitationsQuery = user ? query(collection(db, 'invitations'), where('inviteeEmail', '==', user.email), where('status', '==', 'pending')) : null;
+  const [invitationsSnapshot, loadingInvitations] = useCollection(invitationsQuery);
+  const invitations = invitationsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() as Invitation })) || [];
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newTeam, setNewTeam] = useState({ name: '', club: '', season: '', competition: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { ownedTeams, memberTeams } = useMemo(() => {
+    if (!user || !teamsSnapshot) {
+      return { ownedTeams: [], memberTeams: [] };
+    }
+    const allTeams = teamsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+    
+    const ownedTeams = allTeams.filter(team => team.ownerId === user.uid);
+    const memberTeams = allTeams.filter(team => team.memberIds?.includes(user.uid));
+
+    return { ownedTeams, memberTeams };
+  }, [user, teamsSnapshot]);
 
 
   const handleAddTeam = async () => {
@@ -77,6 +100,7 @@ export default function EquiposPage() {
             competition: newTeam.competition,
             season: newTeam.season,
             ownerId: user.uid,
+            memberIds: [],
             createdAt: new Date(),
         });
         toast({
@@ -112,6 +136,87 @@ export default function EquiposPage() {
         });
     }
   };
+  
+  const handleAcceptInvitation = async (invitation: Invitation) => {
+    if (!user) return;
+
+    const teamRef = doc(db, 'teams', invitation.teamId);
+    const invitationRef = doc(db, 'invitations', invitation.id);
+
+    try {
+        const teamDoc = teamsSnapshot?.docs.find(doc => doc.id === invitation.teamId);
+        if (!teamDoc) throw new Error("El equipo ya no existe.");
+
+        const teamData = teamDoc.data() as Team;
+
+        const batch = writeBatch(db);
+      
+        batch.update(teamRef, {
+            memberIds: [...(teamData.memberIds || []), user.uid]
+        });
+      
+        batch.update(invitationRef, {
+            status: 'completed',
+            completedAt: new Date()
+        });
+
+        await batch.commit();
+
+        toast({
+          title: "¡Te has unido al equipo!",
+          description: `Ahora eres miembro del cuerpo técnico.`
+        });
+    } catch (error: any) {
+      toast({
+          variant: "destructive",
+          title: "Error al unirse al equipo",
+          description: error.message,
+      });
+    }
+  };
+
+  const TeamCard = ({ team, isOwner }: { team: Team, isOwner: boolean }) => (
+     <div className="border rounded-lg p-4 flex items-center justify-between">
+        <div>
+            <p className="font-bold text-lg">{team.name}</p>
+            <p className="text-sm text-muted-foreground">{team.club} - {team.season}</p>
+        </div>
+        <div className="flex items-center gap-2">
+            <Button size="sm" asChild>
+                <Link href={`/equipos/${team.id}`}>
+                    <Settings className="mr-2" />
+                    Gestionar
+                </Link>
+            </Button>
+            {isOwner && (
+                <>
+                    <Button variant="ghost" size="icon">
+                        <Edit className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Estás seguro de que quieres eliminar este equipo?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción es permanente y no se puede deshacer. Se borrarán todos los datos asociados al equipo.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteTeam(team.id)}>Sí, eliminar</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </>
+            )}
+        </div>
+    </div>
+  );
 
 
   return (
@@ -178,11 +283,38 @@ export default function EquiposPage() {
       
 
       <div className="space-y-8">
+          { (loadingUser || loadingInvitations) && <Skeleton className="h-24 w-full" />}
+          { !loadingUser && !loadingInvitations && invitations.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <UserPlus className="w-5 h-5 text-primary" />
+                            <CardTitle>Invitaciones Pendientes</CardTitle>
+                        </div>
+                        <CardDescription>Has sido invitado a colaborar en estos equipos. Acéptalos para empezar.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {invitations.map(inv => (
+                            <div key={inv.id} className="border rounded-lg p-4 flex items-center justify-between">
+                                <div>
+                                    <p className="font-bold text-lg">{inv.teamName || "un equipo"}</p>
+                                    <p className="text-sm text-muted-foreground">Invitado por {inv.inviterEmail}</p>
+                                </div>
+                                <Button onClick={() => handleAcceptInvitation(inv)}>
+                                    <UserPlus className="mr-2" />
+                                    Unirse al equipo
+                                </Button>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            )}
+
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <Users className="w-5 h-5 text-primary" />
-                <CardTitle>Mis Equipos</CardTitle>
+                <CardTitle>Mis Equipos (Propietario)</CardTitle>
               </div>
               <CardDescription>Lista de equipos que administras como propietario.</CardDescription>
             </CardHeader>
@@ -194,50 +326,15 @@ export default function EquiposPage() {
                     </div>
                 )}
 
-                {!(loadingUser || loadingTeams) && teams.length > 0 ? (
+                {!(loadingUser || loadingTeams) && ownedTeams.length > 0 ? (
                     <div className="space-y-2">
-                        {teams.map(team => (
-                             <div key={team.id} className="border rounded-lg p-4 flex items-center justify-between">
-                                <div>
-                                <p className="font-bold text-lg">{team.name}</p>
-                                <p className="text-sm text-muted-foreground">{team.club} - {team.season}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                <Button size="sm" asChild>
-                                    <Link href={`/equipos/${team.id}`}>
-                                    <Settings className="mr-2" />
-                                    Gestionar
-                                    </Link>
-                                </Button>
-                                <Button variant="ghost" size="icon">
-                                    <Edit className="w-4 h-4 text-muted-foreground" />
-                                </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Estás seguro de que quieres eliminar este equipo?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Esta acción es permanente y no se puede deshacer. Se borrarán todos los datos asociados al equipo.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteTeam(team.id)}>Sí, eliminar</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                                </div>
-                            </div>
+                        {ownedTeams.map(team => (
+                            <TeamCard key={team.id} team={team} isOwner={true} />
                         ))}
                     </div>
                 ) : null}
 
-                {!(loadingUser || loadingTeams) && teams.length === 0 && (
+                {!(loadingUser || loadingTeams) && ownedTeams.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
                         <p>No has creado ningún equipo todavía.</p>
                         <p>Haz clic en "Añadir Equipo" para empezar.</p>
@@ -251,7 +348,45 @@ export default function EquiposPage() {
                 )}
             </CardContent>
           </Card>
+          
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Users className="w-5 h-5 text-muted-foreground" />
+                <CardTitle>Equipos en los que colaboro</CardTitle>
+              </div>
+              <CardDescription>Lista de equipos en los que eres miembro del cuerpo técnico.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 {(loadingUser || loadingTeams) && (
+                    <div className="space-y-4">
+                        <Skeleton className="h-16 w-full" />
+                    </div>
+                )}
+
+                {!(loadingUser || loadingTeams) && memberTeams && memberTeams.length > 0 ? (
+                    <div className="space-y-2">
+                        {memberTeams.map((team, index) => (
+                           <TeamCard key={`${team.id}-${index}`} team={team} isOwner={false} />
+                        ))}
+                    </div>
+                ) : null}
+
+                 {!(loadingUser || loadingTeams) && (!memberTeams || memberTeams.length === 0) && (
+                    <div className="text-center py-8 text-muted-foreground">
+                        <p>Aún no eres miembro de ningún equipo.</p>
+                    </div>
+                )}
+                 {errorTeams && (
+                    <div className="text-center py-8 text-destructive">
+                        <p>Error al cargar los equipos: {errorTeams.message}</p>
+                    </div>
+                )}
+            </CardContent>
+          </Card>
         </div>
     </div>
   );
 }
+
+    

@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,6 +27,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -34,7 +36,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/panel");
+      router.push(redirectUrl || "/panel");
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -104,7 +106,7 @@ export default function LoginPage() {
           </form>
           <div className="mt-4 text-center text-sm">
             ¿No tienes una cuenta?{" "}
-            <Link href="/registro" className="underline">
+            <Link href={redirectUrl ? `/registro?redirect=${encodeURIComponent(redirectUrl)}` : "/registro"} className="underline">
               Regístrate
             </Link>
           </div>

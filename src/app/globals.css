@@ -69,5 +69,6 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-text-size-adjust: 100%;
   }
 }

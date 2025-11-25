@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,6 +33,8 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
   const { toast } = useToast();
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -59,7 +61,7 @@ export default function RegisterPage() {
         photoURL: user.photoURL,
       });
 
-      router.push("/panel");
+      router.push(redirectUrl || "/panel");
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -84,7 +86,7 @@ export default function RegisterPage() {
         photoURL: user.photoURL,
       }, { merge: true }); // Use merge to avoid overwriting existing data if user logs in again
       
-      router.push("/panel");
+      router.push(redirectUrl || "/panel");
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -172,7 +174,7 @@ export default function RegisterPage() {
           </Button>
           <div className="mt-4 text-center text-sm">
             ¿Ya tienes una cuenta?{" "}
-            <Link href="/login" className="underline">
+            <Link href={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : "/login"} className="underline">
               Inicia sesión
             </Link>
           </div>

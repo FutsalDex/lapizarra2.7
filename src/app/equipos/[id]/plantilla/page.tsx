@@ -2,9 +2,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollection, useDocumentData } from "react-firebase-hooks/firestore";
-import { collection, doc, writeBatch } from "firebase/firestore";
-import { db } from "@/firebase/config";
+import { collection, doc, writeBatch, addDoc, getDoc, updateDoc } from "firebase/firestore";
+import { auth, db } from "@/firebase/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,21 +30,27 @@ type StaffMember = {
     name: string;
     role: string;
     email: string;
+    invitationId?: string;
 };
+
+const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg aria-hidden="true" fill="currentColor" viewBox="0 0 448 512" {...props}>
+        <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.8 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
+    </svg>
+);
 
 
 export default function PlantillaPage() {
     const params = useParams();
     const teamId = params.id as string;
     const { toast } = useToast();
+    const [user, loadingAuth] = useAuthState(auth);
 
-    // Fetch team data
     const [team, loadingTeam, errorTeam] = useDocumentData(doc(db, "teams", teamId));
+    const isOwner = !loadingAuth && !loadingTeam && user?.uid === team?.ownerId;
 
-    // Fetch players subcollection
     const [playersSnapshot, loadingPlayers, errorPlayers] = useCollection(collection(db, "teams", teamId, "players"));
     
-    // Fetch staff subcollection
     const [staffSnapshot, loadingStaff, errorStaff] = useCollection(collection(db, "teams", teamId, "staff"));
     
     const [players, setPlayers] = useState<Player[]>([]);
@@ -96,21 +103,17 @@ export default function PlantillaPage() {
             const playersCollectionRef = collection(db, "teams", teamId, "players");
             const initialPlayers = playersSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() })) || [];
 
-            // Delete players that are no longer in the local state but exist in Firestore
             initialPlayers.forEach(initialPlayer => {
                 if (initialPlayer.id && !players.find(p => p.id === initialPlayer.id)) {
                     batch.delete(doc(playersCollectionRef, initialPlayer.id));
                 }
             });
 
-            // Add or update players
             for (const player of players) {
                 const { id, ...playerData } = player;
                 if (id) {
-                    // Update existing player
                     batch.update(doc(playersCollectionRef, id), { ...playerData, number: Number(playerData.number) });
                 } else {
-                    // Add new player - let Firestore generate ID
                     if(playerData.name && playerData.number){
                         batch.set(doc(collection(db, "teams", teamId, "players")), { ...playerData, number: Number(playerData.number) });
                     }
@@ -142,38 +145,98 @@ export default function PlantillaPage() {
     };
 
     const handleSaveStaff = async () => {
+        if (!user) {
+            toast({ variant: 'destructive', title: "Error", description: "Debes estar autenticado para guardar." });
+            return;
+        }
+
         setIsSavingStaff(true);
         try {
             const batch = writeBatch(db);
             const staffCollectionRef = collection(db, "teams", teamId, "staff");
-            const initialStaff = staffSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() })) || [];
+            const initialStaff = staffSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() as StaffMember })) || [];
+            
+            const updatedStaffList: StaffMember[] = [];
 
-            // Delete staff that are no longer in local state
+            for (const member of staff) {
+                const { id, ...staffData } = member;
+                
+                if (!id && staffData.name && staffData.email && staffData.role) {
+                     const staffWithInvitation = { ...staffData, invitationId: '' }; // Placeholder
+                    const newStaffDocRef = doc(staffCollectionRef);
+                    batch.set(newStaffDocRef, staffWithInvitation);
+                    updatedStaffList.push({ id: newStaffDocRef.id, ...staffWithInvitation });
+
+                } else if (id) {
+                    const existingMember = initialStaff.find(s => s.id === id);
+                    if (existingMember && (existingMember.name !== staffData.name || existingMember.role !== staffData.role || existingMember.email !== staffData.email)) {
+                         batch.update(doc(staffCollectionRef, id), { name: staffData.name, role: staffData.role, email: staffData.email });
+                    }
+                    updatedStaffList.push(member);
+                }
+            }
+            
             initialStaff.forEach(initialMember => {
                 if (initialMember.id && !staff.find(s => s.id === initialMember.id)) {
                     batch.delete(doc(staffCollectionRef, initialMember.id));
                 }
             });
             
-            // Add or update staff
-            for (const member of staff) {
-                const { id, ...staffData } = member;
-                if (id) {
-                    batch.update(doc(staffCollectionRef, id), staffData);
-                } else {
-                     if(staffData.name && staffData.email && staffData.role){
-                        batch.set(doc(collection(db, "teams", teamId, "staff")), staffData);
-                    }
-                }
-            }
-
             await batch.commit();
-            toast({ title: "Staff guardado", description: "Los cambios en el cuerpo técnico han sido guardados." });
+            setStaff(updatedStaffList);
+            toast({ title: "Staff guardado", description: "Los cambios se han guardado. Ahora puedes enviar las invitaciones." });
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Error", description: error.message });
         } finally {
             setIsSavingStaff(false);
         }
+    };
+    
+    const handleInviteStaff = async (staffMember: StaffMember) => {
+        if (!user || !user.email) {
+            toast({ variant: 'destructive', title: 'No autenticado', description: 'Debes iniciar sesión para invitar.' });
+            return;
+        }
+        if (!staffMember.id) {
+            toast({ variant: 'destructive', title: 'Guardar primero', description: 'Guarda los cambios del staff antes de invitar.' });
+            return;
+        }
+
+        let invitationId = staffMember.invitationId;
+
+        // If no invitationId exists, create one
+        if (!invitationId) {
+            try {
+                const invitationData = {
+                    teamId: teamId,
+                    teamName: team?.name || 'un equipo',
+                    inviterId: user.uid,
+                    inviterEmail: user.email,
+                    inviteeEmail: staffMember.email,
+                    status: "pending",
+                    createdAt: new Date(),
+                };
+                const invitationRef = await addDoc(collection(db, "invitations"), invitationData);
+                invitationId = invitationRef.id;
+
+                // Update the staff member with the new invitation ID
+                await updateDoc(doc(db, "teams", teamId, "staff", staffMember.id), { invitationId });
+                
+                // Update local state
+                setStaff(prev => prev.map(s => s.id === staffMember.id ? { ...s, invitationId } : s));
+
+            } catch (error: any) {
+                toast({ variant: 'destructive', title: 'Error al crear invitación', description: error.message });
+                return;
+            }
+        }
+        
+        const teamName = team?.name || 'tu equipo';
+        const baseUrl = "https://lapizarra27--lapizarra-95eqd.us-east5.hosted.app";
+        const invitationUrl = `${baseUrl}/invitacion/${invitationId}`;
+        const message = `¡Hola ${staffMember.name}! Te invito a unirte al cuerpo técnico del equipo "${teamName}" en LaPizarra. Con este acceso, podrás gestionar la plantilla, partidos y estadísticas. Haz clic aquí para empezar: ${invitationUrl}`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
     };
 
   return (
@@ -232,7 +295,7 @@ export default function PlantillaPage() {
          <Card>
             <CardHeader>
                 <CardTitle>Staff Técnico</CardTitle>
-                <CardDescription>Gestiona a los miembros del cuerpo técnico.</CardDescription>
+                <CardDescription>Gestiona a los miembros del cuerpo técnico. Guarda los cambios para poder enviar la invitación por WhatsApp.</CardDescription>
             </CardHeader>
             <CardContent>
                 {loadingStaff ? <Skeleton className="h-24 w-full" /> : (
@@ -243,7 +306,7 @@ export default function PlantillaPage() {
                                 <TableHead>Nombre</TableHead>
                                 <TableHead className="w-[180px]">Rol</TableHead>
                                 <TableHead>Email</TableHead>
-                                <TableHead className="w-[80px] text-right">Acciones</TableHead>
+                                <TableHead className="w-[120px] text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -254,12 +317,14 @@ export default function PlantillaPage() {
                                             value={member.name}
                                             onChange={(e) => handleStaffChange(index, 'name', e.target.value)}
                                             placeholder="Nombre"
+                                            disabled={!isOwner}
                                         />
                                     </TableCell>
                                     <TableCell>
                                         <Select
                                             value={member.role}
                                             onValueChange={(value) => handleStaffChange(index, 'role', value)}
+                                            disabled={!isOwner}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Rol"/>
@@ -279,12 +344,20 @@ export default function PlantillaPage() {
                                             value={member.email}
                                             onChange={(e) => handleStaffChange(index, 'email', e.target.value)}
                                             placeholder="Email"
+                                            disabled={!isOwner}
                                         />
                                     </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveStaffMember(index)}>
-                                            <Trash2 className="w-5 h-5 text-destructive" />
-                                        </Button>
+                                    <TableCell className="text-right space-x-1">
+                                        {isOwner && member.id && (
+                                            <Button variant="ghost" size="icon" onClick={() => handleInviteStaff(member)}>
+                                                 <WhatsAppIcon className="w-5 h-5 text-green-500" />
+                                            </Button>
+                                        )}
+                                        {isOwner && (
+                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveStaffMember(index)}>
+                                                <Trash2 className="w-5 h-5 text-destructive" />
+                                            </Button>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -294,16 +367,18 @@ export default function PlantillaPage() {
                 )}
                  {errorStaff && <p className="text-destructive mt-4">{errorStaff.message}</p>}
             </CardContent>
-            <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={handleAddStaffMember}>
-                    <PlusCircle className="mr-2" />
-                    Añadir Miembro
-                </Button>
-                <Button onClick={handleSaveStaff} disabled={isSavingStaff}>
-                   {isSavingStaff ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2" />}
-                    Guardar Staff
-                </Button>
-            </CardFooter>
+            {isOwner && (
+                <CardFooter className="flex justify-between">
+                    <Button variant="outline" onClick={handleAddStaffMember}>
+                        <PlusCircle className="mr-2" />
+                        Añadir Miembro
+                    </Button>
+                    <Button onClick={handleSaveStaff} disabled={isSavingStaff}>
+                    {isSavingStaff ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2" />}
+                        Guardar Staff
+                    </Button>
+                </CardFooter>
+            )}
         </Card>
 
         <Card>
@@ -387,5 +462,3 @@ export default function PlantillaPage() {
     </div>
   );
 }
-
-    

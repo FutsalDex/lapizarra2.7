@@ -322,7 +322,7 @@ export default function PartidosPage() {
              <Button variant="outline" asChild>
                 <Link href={`/equipos/${teamId}`}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Volver al Panel del Equipo
+                    <span className="hidden sm:inline">Volver al Panel</span>
                 </Link>
             </Button>
         </div>
@@ -352,7 +352,7 @@ export default function PartidosPage() {
                             <Button variant="outline" onClick={() => handleNewMatchChange('visitorTeam', teamName)}>Mi Equipo</Button>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Fecha del partido</Label>
                             <Popover open={isAddCalendarOpen} onOpenChange={setIsAddCalendarOpen}>
@@ -442,9 +442,9 @@ export default function PartidosPage() {
        <div className='mb-8'>
           <div className="flex items-center gap-3 mb-2">
             <Trophy className="w-8 h-8 text-primary" />
-            <h1 className="text-4xl font-bold font-headline">Partidos de {teamName}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold font-headline">Partidos de {teamName}</h1>
           </div>
-          <p className="text-lg text-muted-foreground">Gestiona los partidos, añade nuevos encuentros, edita los existentes o consulta sus estadísticas.</p>
+          <p className="text-base md:text-lg text-muted-foreground">Gestiona los partidos, añade nuevos encuentros, edita los existentes o consulta sus estadísticas.</p>
         </div>
 
         {isLoading ? (
@@ -569,7 +569,7 @@ export default function PartidosPage() {
                             <Button variant="outline" onClick={() => handleEditFormChange('visitorTeam', teamName)}>Mi Equipo</Button>
                         </div>
                     </div>
-                     <div className="grid grid-cols-2 gap-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Fecha del partido</Label>
                             <Popover open={isEditCalendarOpen} onOpenChange={setIsEditCalendarOpen}>

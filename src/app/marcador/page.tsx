@@ -68,13 +68,13 @@ const StatCounter = ({ title, value, onIncrement, onDecrement, icon }: { title: 
     <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
             {icon}
-            <span className="font-medium">{title}</span>
+            <span className="font-medium text-sm">{title}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
             <Button variant="outline" size="icon" className="h-7 w-7" onClick={onDecrement} disabled={value <= 0}>
                 <Minus className="h-4 w-4" />
             </Button>
-            <span className="w-6 text-center text-lg font-bold">{value}</span>
+            <span className="w-6 text-center text-base font-bold">{value}</span>
             <Button variant="outline" size="icon" className="h-7 w-7" onClick={onIncrement}>
                 <Plus className="h-4 w-4" />
             </Button>
@@ -226,27 +226,27 @@ export default function MarcadorRapidoPage() {
                     <BarChart3 className="w-8 h-8 text-primary" />
                 </div>
             </div>
-            <h1 className="text-4xl font-bold font-headline">Marcador Rápido</h1>
-            <p className="text-lg text-muted-foreground mt-2">
+            <h1 className="text-3xl md:text-4xl font-bold font-headline">Marcador Rápido</h1>
+            <p className="text-base md:text-lg text-muted-foreground mt-2">
                 Usa el marcador para un partido rápido o un entrenamiento.
             </p>
         </div>
 
-        <div className="max-w-2xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-8">
             <Card>
-                <CardContent className="p-6">
-                    <div className="grid grid-cols-3 items-center text-center">
+                <CardContent className="p-4 md:p-6">
+                    <div className="grid grid-cols-3 items-center text-center gap-2">
                         {/* Equipo Local */}
-                        <div className="flex flex-col items-center gap-4">
-                            <h2 className="text-xl font-bold">{localTeamName}</h2>
+                        <div className="flex flex-col items-center gap-3">
+                            <h2 className="text-base md:text-xl font-bold truncate">{localTeamName}</h2>
                             <div className="flex items-center gap-2">
                                 {[...Array(5)].map((_, i) => (
-                                    <div key={i} className={cn("w-4 h-4 rounded-full border-2 border-destructive", i < currentStats.local.faltas ? 'bg-destructive' : '')}></div>
+                                    <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < currentStats.local.faltas ? 'bg-destructive' : '')}></div>
                                 ))}
                             </div>
                             <Button 
                                 variant={currentStats.localTimeout ? "default" : "outline"}
-                                className={cn({"bg-primary hover:bg-primary/90 text-primary-foreground": currentStats.localTimeout})}
+                                className={cn("h-8 px-2 text-xs", {"bg-primary hover:bg-primary/90 text-primary-foreground": currentStats.localTimeout})}
                                 size="sm" 
                                 onClick={() => handleTimeout('local')}
                                 disabled={currentStats.localTimeout}
@@ -256,24 +256,24 @@ export default function MarcadorRapidoPage() {
                         </div>
 
                         {/* Score y Timer */}
-                        <div className="flex flex-col items-center gap-4">
-                            <div className="text-6xl font-bold text-primary">{totalGolesLocal} - {totalGolesVisitante}</div>
-                            <div className="text-6xl font-bold bg-gray-900 text-white p-4 rounded-lg w-full">
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="text-5xl md:text-6xl font-bold text-primary">{totalGolesLocal} - {totalGolesVisitante}</div>
+                            <div className="text-4xl md:text-6xl font-bold bg-gray-900 text-white p-2 md:p-4 rounded-lg w-full">
                                {formatTime(time)}
                             </div>
                         </div>
 
                         {/* Equipo Visitante */}
-                        <div className="flex flex-col items-center gap-4">
-                            <h2 className="text-xl font-bold">{visitorTeamName}</h2>
+                        <div className="flex flex-col items-center gap-3">
+                            <h2 className="text-base md:text-xl font-bold truncate">{visitorTeamName}</h2>
                             <div className="flex items-center gap-2">
                                 {[...Array(5)].map((_, i) => (
-                                    <div key={i} className={cn("w-4 h-4 rounded-full border-2 border-destructive", i < currentStats.visitante.faltas ? 'bg-destructive' : '')}></div>
+                                    <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < currentStats.visitante.faltas ? 'bg-destructive' : '')}></div>
                                 ))}
                             </div>
                              <Button 
                                 variant={currentStats.visitanteTimeout ? "default" : "outline"} 
-                                className={cn({"bg-primary hover:bg-primary/90 text-primary-foreground": currentStats.visitanteTimeout})}
+                                className={cn("h-8 px-2 text-xs", {"bg-primary hover:bg-primary/90 text-primary-foreground": currentStats.visitanteTimeout})}
                                 size="sm" 
                                 onClick={() => handleTimeout('visitante')}
                                 disabled={currentStats.visitanteTimeout}
@@ -282,11 +282,11 @@ export default function MarcadorRapidoPage() {
                             </Button>
                         </div>
                     </div>
-                     <div className="flex justify-center gap-4 mt-6">
-                        <Button onClick={toggleTimer}>
+                     <div className="flex flex-wrap justify-center gap-2 mt-4">
+                        <Button onClick={toggleTimer} size="sm">
                             {isActive ? <><Pause className="mr-2"/>Pausar</> : <><Play className="mr-2"/>Iniciar</>}
                         </Button>
-                        <Button variant="outline" onClick={resetTimer}><RotateCcw className="mr-2"/>Reiniciar</Button>
+                        <Button variant="outline" onClick={resetTimer} size="sm"><RotateCcw className="mr-2"/>Reiniciar</Button>
                         <Dialog>
                             <DialogTrigger asChild>
                                  <Button variant="ghost" size="icon">
@@ -338,10 +338,10 @@ export default function MarcadorRapidoPage() {
 
             <Card>
                 <CardHeader className="flex-row items-center justify-between bg-primary text-primary-foreground p-4 rounded-t-lg">
-                    <CardTitle className="text-lg">Estadísticas del Periodo: {periodo}</CardTitle>
+                    <CardTitle className="text-base md:text-lg">Estadísticas del Periodo: {periodo}</CardTitle>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive"><RotateCcw className="mr-2"/>Reiniciar Todo</Button>
+                            <Button variant="destructive" size="sm"><RotateCcw className="mr-2"/>Reiniciar Todo</Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
@@ -357,8 +357,8 @@ export default function MarcadorRapidoPage() {
                         </AlertDialogContent>
                     </AlertDialog>
                 </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-8">
+                <CardContent className="p-4 md:p-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                         <div className="space-y-4">
                             <h3 className="font-bold text-center">{localTeamName}</h3>
                              <StatCounter 

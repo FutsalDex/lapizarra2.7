@@ -92,7 +92,7 @@ const OpponentStatCounter = ({ title, value, onIncrement, onDecrement, icon, dis
     <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
         <div className="flex items-center gap-2">
             {icon}
-            <span className="font-medium">{title}</span>
+            <span className="font-medium text-sm">{title}</span>
         </div>
         <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" className="h-7 w-7" onClick={onDecrement} disabled={value <= 0 || disabled}>
@@ -147,7 +147,6 @@ export default function EstadisticasPartidoPage() {
     const [period, setPeriod] = useState<Period>('1H');
     const [isFinished, setIsFinished] = useState(match?.isFinished || false);
 
-    // Use refs to hold the current state of stats to avoid stale state in intervals
     const playerStatsRef = useRef<Record<string, PlayerStat>>({});
     const opponentStatsRef = useRef<OpponentStats>(getInitialOpponentStats());
     const localTimeoutTakenRef = useRef(false);
@@ -162,11 +161,11 @@ export default function EstadisticasPartidoPage() {
     const [isActive, setIsActive] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isAutoSaving, setIsAutoSaving] = useState(false);
+    
+    const [renderTrigger, setRenderTrigger] = useState(0);
+    const forceUpdate = useCallback(() => setRenderTrigger(v => v + 1), []);
 
-    // This state is just to trigger re-renders when data in refs changes
-    const [, forceUpdate] = useState({});
 
-    // Populate squad players
     useEffect(() => {
         if(match && playersSnapshot) {
             const squadPlayerIds = new Set(match.squad || []);
@@ -178,7 +177,6 @@ export default function EstadisticasPartidoPage() {
         }
     }, [match, playersSnapshot]);
     
-    // Load data from match document into refs when it loads or period changes
     useEffect(() => {
         if (match && activePlayers.length > 0) {
             setIsFinished(match.isFinished);
@@ -198,6 +196,7 @@ export default function EstadisticasPartidoPage() {
             
             localScoreRef.current = (match.events || []).filter((e: MatchEvent) => e.type === 'goal' && e.team === 'local').length;
             visitorScoreRef.current = (match.events || []).filter((e: MatchEvent) => e.type === 'goal' && e.team === 'visitor').length;
+<<<<<<< HEAD
             
             // Only reset these on period change, not on every match data refresh
             if (!isActive) {
@@ -209,6 +208,15 @@ export default function EstadisticasPartidoPage() {
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [period, match, activePlayers.length]);
+=======
+
+            setIsActive(false);
+            setTime(matchDuration * 60);
+            setSelectedPlayerIds(new Set());
+            forceUpdate();
+        }
+    }, [match, period, activePlayers, matchDuration, forceUpdate]);
+>>>>>>> 7e9a89d4a2d43b56038d16d698c3ba91ed5d7be5
 
 
      const saveStats = useCallback(async (auto = false) => {
@@ -245,7 +253,6 @@ export default function EstadisticasPartidoPage() {
         }
     }, [match, period, isFinished, matchId, toast]);
 
-    // Auto-save effect
     useEffect(() => {
         if (isFinished) return;
         const intervalId = setInterval(() => {
@@ -256,7 +263,7 @@ export default function EstadisticasPartidoPage() {
     
     const handlePeriodChange = (newPeriod: string) => {
         if (period === newPeriod) return;
-        saveStats(false); // Manual save before switching period
+        saveStats(false);
         setPeriod(newPeriod as Period);
     };
 
@@ -284,7 +291,7 @@ export default function EstadisticasPartidoPage() {
                 localScoreRef.current += delta;
             }
         }
-        forceUpdate({});
+        forceUpdate();
     };
 
     const handleOpponentOwnGoal = () => {
@@ -311,7 +318,7 @@ export default function EstadisticasPartidoPage() {
             title: "¡Gol en propia puerta!",
             description: `Se ha añadido un gol a favor de ${myTeamName}.`,
         });
-        forceUpdate({});
+        forceUpdate();
     };
     
     const teamFouls = Object.values(playerStatsRef.current).reduce((acc, player) => acc + player.fouls, 0);
@@ -324,7 +331,7 @@ export default function EstadisticasPartidoPage() {
         } else {
             opponentTimeoutTakenRef.current = true;
         }
-        forceUpdate({});
+        forceUpdate();
     };
 
     const totals = Object.values(playerStatsRef.current).reduce((acc, player) => {
@@ -403,7 +410,7 @@ export default function EstadisticasPartidoPage() {
                 visitorScoreRef.current += delta;
              }
         }
-        forceUpdate({});
+        forceUpdate();
     };
     
     const handlePlayerSelection = (playerId: string) => {
@@ -450,21 +457,21 @@ export default function EstadisticasPartidoPage() {
     
   return (
     <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
-                <h1 className="text-2xl font-bold font-headline">Marcador y Estadísticas en Vivo</h1>
-                <p className="text-muted-foreground">Gestiona el partido en tiempo real y pulsa Guardar para registrar los cambios.</p>
+                <h1 className="text-2xl md:text-3xl font-bold font-headline">Marcador y Estadísticas en Vivo</h1>
+                <p className="text-sm md:text-base text-muted-foreground">Gestiona el partido en tiempo real y pulsa Guardar para registrar los cambios.</p>
             </div>
-            <div className="flex gap-2">
-                 <Button variant="outline" asChild>
+            <div className="flex gap-2 w-full md:w-auto">
+                 <Button variant="outline" asChild className="flex-grow md:flex-grow-0">
                     <Link href="/partidos">
                         <ArrowLeft className="mr-2" />
                         Volver
                     </Link>
                 </Button>
-                <Button onClick={() => saveStats()} disabled={isSaving || isFinished || isAutoSaving}>
+                <Button onClick={() => saveStats()} disabled={isSaving || isFinished || isAutoSaving} className="flex-grow md:flex-grow-0">
                     {isSaving ? <Loader2 className="mr-2 animate-spin"/> : (isAutoSaving ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2"/>)}
-                    {isAutoSaving ? 'Autoguardando...' : 'Guardar'}
+                    {isAutoSaving ? 'Autoguardando...' : (isSaving ? 'Guardando...' : 'Guardar')}
                 </Button>
                 {isFinished ? (
                      <Button variant="outline" onClick={reopenGame}><Unlock className="mr-2"/>Reabrir</Button>
@@ -491,41 +498,43 @@ export default function EstadisticasPartidoPage() {
         </div>
 
         <Card className="mb-8">
-            <CardContent className="p-6">
-                <div className="grid grid-cols-3 items-center text-center">
-                    <div className="flex flex-col items-center gap-4">
-                        <h2 className="text-2xl font-bold truncate">{match?.localTeam}</h2>
-                        <div className="flex items-center gap-2">
+            <CardContent className="p-4 md:p-6">
+                <div className="grid grid-cols-3 items-center text-center gap-2">
+                    <div className="flex flex-col items-center gap-3">
+                        <h2 className="text-base md:text-2xl font-bold truncate">{match?.localTeam}</h2>
+                        <div className="flex items-center gap-1 md:gap-2">
                             {[...Array(5)].map((_, i) => (
-                                <div key={i} className={cn("w-4 h-4 rounded-full border-2 border-destructive", i < (match?.localTeam === myTeamName ? teamFouls : opponentTeamFouls) ? 'bg-destructive' : '')}></div>
+                                <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < (match?.localTeam === myTeamName ? teamFouls : opponentTeamFouls) ? 'bg-destructive' : '')}></div>
                             ))}
                         </div>
-                         <Button variant={localTimeoutTakenRef.current ? "default" : "outline"} className={cn({"bg-primary hover:bg-primary/90 text-primary-foreground": localTimeoutTakenRef.current})} size="sm" onClick={() => handleTimeout('local')} disabled={isFinished || localTimeoutTakenRef.current}>TM</Button>
+                         <Button variant={localTimeoutTakenRef.current ? "default" : "outline"} className={cn("h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm", {"bg-primary hover:bg-primary/90 text-primary-foreground": localTimeoutTakenRef.current})} size="sm" onClick={() => handleTimeout('local')} disabled={isFinished || localTimeoutTakenRef.current}>TM</Button>
                     </div>
 
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="text-6xl font-bold text-primary">{localScoreRef.current} - {visitorScoreRef.current}</div>
-                        <div className="text-6xl font-bold bg-gray-900 text-white p-4 rounded-lg">
+                    <div className="flex flex-col items-center gap-2 md:gap-4">
+                        <div className="text-4xl md:text-6xl font-bold text-primary">{localScoreRef.current} - {visitorScoreRef.current}</div>
+                        <div className="text-4xl md:text-6xl font-bold bg-gray-900 text-white p-2 md:p-4 rounded-lg w-full">
                            {formatTime(time)}
                         </div>
-                        <div className="flex gap-2">
-                            <Button onClick={toggleTimer} disabled={isFinished}>
+                        <div className="flex flex-wrap justify-center gap-2">
+                            <Button size="sm" onClick={toggleTimer} disabled={isFinished}>
                                 {isActive ? <><Pause className="mr-2"/>Pausar</> : <><Play className="mr-2"/>Iniciar</>}
                             </Button>
-                            <Button variant="outline" onClick={resetTimer} disabled={isFinished}><RefreshCw className="mr-2"/>Reiniciar</Button>
-                            <Button variant={period === '1H' ? 'secondary' : 'ghost'} onClick={() => handlePeriodChange('1H')}>1ª Parte</Button>
-                            <Button variant={period === '2H' ? 'secondary' : 'ghost'} onClick={() => handlePeriodChange('2H')}>2ª Parte</Button>
+                            <Button size="sm" variant="outline" onClick={resetTimer} disabled={isFinished}><RefreshCw className="mr-2"/>Reiniciar</Button>
+                        </div>
+                         <div className="flex justify-center gap-2 mt-2">
+                            <Button variant={period === '1H' ? 'secondary' : 'ghost'} size="sm" onClick={() => handlePeriodChange('1H')}>1ª Parte</Button>
+                            <Button variant={period === '2H' ? 'secondary' : 'ghost'} size="sm" onClick={() => handlePeriodChange('2H')}>2ª Parte</Button>
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-center gap-4">
-                        <h2 className="text-2xl font-bold truncate">{match?.visitorTeam}</h2>
-                         <div className="flex items-center gap-2">
+                    <div className="flex flex-col items-center gap-3">
+                        <h2 className="text-base md:text-2xl font-bold truncate">{match?.visitorTeam}</h2>
+                         <div className="flex items-center gap-1 md:gap-2">
                             {[...Array(5)].map((_, i) => (
-                                <div key={i} className={cn("w-4 h-4 rounded-full border-2 border-destructive", i < (match?.visitorTeam === myTeamName ? teamFouls : opponentTeamFouls) ? 'bg-destructive' : '')}></div>
+                                <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < (match?.visitorTeam === myTeamName ? teamFouls : opponentTeamFouls) ? 'bg-destructive' : '')}></div>
                             ))}
                         </div>
-                        <Button variant={opponentTimeoutTakenRef.current ? "default" : "outline"} className={cn({"bg-primary hover:bg-primary/90 text-primary-foreground": opponentTimeoutTakenRef.current})} size="sm" onClick={() => handleTimeout('opponent')} disabled={isFinished || opponentTimeoutTakenRef.current}>TM</Button>
+                        <Button variant={opponentTimeoutTakenRef.current ? "default" : "outline"} className={cn("h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm", {"bg-primary hover:bg-primary/90 text-primary-foreground": opponentTimeoutTakenRef.current})} size="sm" onClick={() => handleTimeout('opponent')} disabled={isFinished || opponentTimeoutTakenRef.current}>TM</Button>
                     </div>
                 </div>
             </CardContent>
@@ -604,7 +613,7 @@ export default function EstadisticasPartidoPage() {
                         )}
                     </CardContent>
                      <CardFooter className="pt-4">
-                        <div className="text-xs text-muted-foreground grid grid-cols-4 md:grid-cols-6 gap-x-4 gap-y-1">
+                        <div className="text-xs text-muted-foreground grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-1">
                             {legendItems.map(item => (
                                 <div key={item.abbr}>
                                     <span className="font-semibold">{item.abbr}:</span> {item.full}
@@ -682,7 +691,7 @@ export default function EstadisticasPartidoPage() {
                         )}
                     </CardContent>
                      <CardFooter className="pt-4">
-                        <div className="text-xs text-muted-foreground grid grid-cols-4 md:grid-cols-6 gap-x-4 gap-y-1">
+                        <div className="text-xs text-muted-foreground grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-1">
                             {legendItems.map(item => (
                                 <div key={item.abbr}>
                                     <span className="font-semibold">{item.abbr}:</span> {item.full}
@@ -699,7 +708,7 @@ export default function EstadisticasPartidoPage() {
 
 const OpponentStatCounters = ({ opponentStats, handleOpponentStatChange, handleOpponentOwnGoal, disabled }: { opponentStats: OpponentStats, handleOpponentStatChange: (stat: keyof OpponentStats, delta: number) => void, handleOpponentOwnGoal: () => void, disabled: boolean }) => (
     <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <OpponentStatCounter title="Goles" value={opponentStats.goals} onIncrement={() => handleOpponentStatChange('goals', 1)} onDecrement={() => handleOpponentStatChange('goals', -1)} icon={<Goal className="text-muted-foreground" />} disabled={disabled}/>
             <OpponentStatCounter title="Tiros a Puerta" value={opponentStats.shotsOnTarget} onIncrement={() => handleOpponentStatChange('shotsOnTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOnTarget', -1)} icon={<Target className="text-muted-foreground" />} disabled={disabled}/>
             <OpponentStatCounter title="Tiros Fuera" value={opponentStats.shotsOffTarget} onIncrement={() => handleOpponentStatChange('shotsOffTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOffTarget', -1)} icon={<XCircle className="text-muted-foreground" />} disabled={disabled}/>
@@ -708,12 +717,10 @@ const OpponentStatCounters = ({ opponentStats, handleOpponentStatChange, handleO
             <OpponentStatCounter title="Pérdidas" value={opponentStats.turnovers} onIncrement={() => handleOpponentStatChange('turnovers', 1)} onDecrement={() => handleOpponentStatChange('turnovers', -1)} icon={<ArrowRightLeft className="text-muted-foreground" />} disabled={disabled}/>
         </div>
         <div className="pt-4">
-            <Button onClick={handleOpponentOwnGoal} disabled={disabled} className="w-full">
+            <Button onClick={handleOpponentOwnGoal} disabled={disabled} className="w-full md:w-auto">
                 <Plus className="mr-2" />
                 Añadir Gol en Propia
             </Button>
         </div>
     </div>
 );
-
-    
