@@ -180,7 +180,7 @@ export default function EstadisticasPartidoPage() {
     
     // Load data from match document into refs when it loads or period changes
     useEffect(() => {
-        if (match) {
+        if (match && activePlayers.length > 0) {
             setIsFinished(match.isFinished);
             eventsRef.current = match.events || [];
 
@@ -198,13 +198,17 @@ export default function EstadisticasPartidoPage() {
             
             localScoreRef.current = (match.events || []).filter((e: MatchEvent) => e.type === 'goal' && e.team === 'local').length;
             visitorScoreRef.current = (match.events || []).filter((e: MatchEvent) => e.type === 'goal' && e.team === 'visitor').length;
-
-            setIsActive(false);
-            setTime(matchDuration * 60);
-            setSelectedPlayerIds(new Set());
+            
+            // Only reset these on period change, not on every match data refresh
+            if (!isActive) {
+                setTime(matchDuration * 60);
+                setSelectedPlayerIds(new Set());
+            }
+            
             forceUpdate({}); // Force a re-render to show loaded data
         }
-    }, [match, period, activePlayers, matchDuration]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [period, match, activePlayers.length]);
 
 
      const saveStats = useCallback(async (auto = false) => {
