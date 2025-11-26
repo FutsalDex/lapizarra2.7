@@ -41,9 +41,9 @@ export default function Home() {
                </div>
               <p className="text-muted-foreground pt-2">Regístrate para una prueba de 30 días</p>
             </CardHeader>
-            <CardContent className="flex-grow">
+            <CardContent className="flex-grow justify-center">
               <p className="font-semibold mb-2 text-foreground">Con tu cuenta gratuita, podrás:</p>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground inline-block mx-auto text-left">
+              <ul className="list-disc list-inside space-y-2 text-muted-foreground mx-auto text-center inline-block">
                 <li>Explorar el catálogo completo de ejercicios.</li>
                 <li>Guardar tus ejercicios favoritos.</li>
                 <li>Crear y gestionar sesiones de entrenamiento.</li>

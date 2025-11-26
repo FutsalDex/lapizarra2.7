@@ -1,38 +1,42 @@
-
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Requerido para Firebase Hosting (Next >= 13, 14, 15)
+  output: 'standalone',
+
+  // NUEVO: Turbopack estable en Next 15
+  turbopack: {
+    // Puedes agregar reglas si luego las necesitas
+  },
+
   typescript: {
     ignoreBuildErrors: true,
   },
+
   eslint: {
     ignoreDuringBuilds: true,
   },
+
   images: {
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'placehold.co',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'picsum.photos',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'i.ibb.co',
-        port: '',
         pathname: '/**',
       },
     ],
@@ -40,5 +44,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
-    
