@@ -90,7 +90,7 @@ const StatButton = ({ value, onIncrement, onDecrement, disabled }: { value: numb
     </div>
 );
 
-const OpponentStatCounter = ({ title, value, onIncrement, onDecrement, icon, disabled }: { title: string; value: number; onIncrement: () => void; onDecrement: () => void; icon: React.ReactNode, disabled: boolean }) => (
+const OpponentStatCounters = ({ title, value, onIncrement, onDecrement, icon, disabled }: { title: string; value: number; onIncrement: () => void; onDecrement: () => void; icon: React.ReactNode, disabled: boolean }) => (
     <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
         <div className="flex items-center gap-2">
             {icon}
@@ -176,12 +176,12 @@ export default function EstadisticasPartidoPage() {
                 .filter(p => squadPlayerIds.has(p.id))
                 .sort((a, b) => Number(a.number) - Number(b.number));
             setActivePlayers(squadPlayers);
+            setIsFinished(match.isFinished);
         }
     }, [match, playersSnapshot]);
     
     useEffect(() => {
         if (match && activePlayers.length > 0) {
-            setIsFinished(match.isFinished);
             eventsRef.current = match.events || [];
 
             const currentPeriodPlayerStats = match.playerStats?.[period] || {};
@@ -201,7 +201,7 @@ export default function EstadisticasPartidoPage() {
 
             forceUpdate();
         }
-    }, [match, period, activePlayers.length, forceUpdate]);
+    }, [match, period, activePlayers, forceUpdate]);
 
      const saveStats = useCallback(async (auto = false) => {
         if (!match || isFinished) return;
@@ -214,9 +214,18 @@ export default function EstadisticasPartidoPage() {
             events: eventsRef.current,
             localScore: localScoreRef.current,
             visitorScore: visitorScoreRef.current,
-            [`playerStats.${period}`]: playerStatsRef.current,
-            [`opponentStats.${period}`]: opponentStatsRef.current,
-            [`timeouts.${period}`]: { local: localTimeoutTakenRef.current, visitor: opponentTimeoutTakenRef.current },
+            playerStats: {
+                ...match.playerStats,
+                [period]: playerStatsRef.current
+            },
+            opponentStats: {
+                ...match.opponentStats,
+                [period]: opponentStatsRef.current
+            },
+            timeouts: {
+                ...match.timeouts,
+                [period]: { local: localTimeoutTakenRef.current, visitor: opponentTimeoutTakenRef.current }
+            }
         };
         
         try {
@@ -308,9 +317,6 @@ export default function EstadisticasPartidoPage() {
         forceUpdate();
     };
     
-    const teamFouls = Object.values(playerStatsRef.current).reduce((acc, player) => acc + player.fouls, 0);
-    const opponentTeamFouls = opponentStatsRef.current.fouls;
-
     const handleTimeout = (team: 'local' | 'opponent') => {
         if (isFinished) return;
         if (team === 'local') {
@@ -420,15 +426,16 @@ export default function EstadisticasPartidoPage() {
     };
     
     const finishGame = async () => {
-        setIsFinished(true);
         setIsActive(false);
-        saveStats(false);
+        await saveStats(false);
+        await updateDoc(doc(db, "matches", matchId), { isFinished: true });
+        setIsFinished(true);
         toast({ title: "Partido Finalizado" });
     }
 
     const reopenGame = async () => {
-        setIsFinished(false);
         await updateDoc(doc(db, "matches", matchId), { isFinished: false });
+        setIsFinished(false);
         toast({ title: "Partido Reabierto" });
     }
 
@@ -491,7 +498,7 @@ export default function EstadisticasPartidoPage() {
                         <h2 className="text-base md:text-2xl font-bold truncate">{match?.localTeam}</h2>
                         <div className="flex items-center gap-1 md:gap-2">
                             {[...Array(5)].map((_, i) => (
-                                <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < (match?.localTeam === myTeamName ? teamFouls : opponentTeamFouls) ? 'bg-destructive' : '')}></div>
+                                <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < (match?.localTeam === myTeamName ? totals.fouls || 0 : opponentStatsRef.current.fouls) ? 'bg-destructive' : '')}></div>
                             ))}
                         </div>
                          <Button variant={localTimeoutTakenRef.current ? "default" : "outline"} className={cn("h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm", {"bg-primary hover:bg-primary/90 text-primary-foreground": localTimeoutTakenRef.current})} size="sm" onClick={() => handleTimeout('local')} disabled={isFinished || localTimeoutTakenRef.current}>TM</Button>
@@ -518,7 +525,7 @@ export default function EstadisticasPartidoPage() {
                         <h2 className="text-base md:text-2xl font-bold truncate">{match?.visitorTeam}</h2>
                          <div className="flex items-center gap-1 md:gap-2">
                             {[...Array(5)].map((_, i) => (
-                                <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < (match?.visitorTeam === myTeamName ? teamFouls : opponentTeamFouls) ? 'bg-destructive' : '')}></div>
+                                <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < (match?.visitorTeam === myTeamName ? totals.fouls || 0 : opponentStatsRef.current.fouls) ? 'bg-destructive' : '')}></div>
                             ))}
                         </div>
                         <Button variant={opponentTimeoutTakenRef.current ? "default" : "outline"} className={cn("h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm", {"bg-primary hover:bg-primary/90 text-primary-foreground": opponentTimeoutTakenRef.current})} size="sm" onClick={() => handleTimeout('opponent')} disabled={isFinished || opponentTimeoutTakenRef.current}>TM</Button>
@@ -596,7 +603,22 @@ export default function EstadisticasPartidoPage() {
                             </Table>
                         </div>
                         ) : (
-                             <OpponentStatCounters disabled={isFinished} opponentStats={opponentStatsRef.current} handleOpponentStatChange={handleOpponentStatChange} handleOpponentOwnGoal={handleOpponentOwnGoal} />
+                             <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <OpponentStatCounters title="Goles" value={opponentStatsRef.current.goals} onIncrement={() => handleOpponentStatChange('goals', 1)} onDecrement={() => handleOpponentStatChange('goals', -1)} icon={<Goal className="text-muted-foreground" />} disabled={isFinished}/>
+                                    <OpponentStatCounters title="Tiros a Puerta" value={opponentStatsRef.current.shotsOnTarget} onIncrement={() => handleOpponentStatChange('shotsOnTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOnTarget', -1)} icon={<Target className="text-muted-foreground" />} disabled={isFinished}/>
+                                    <OpponentStatCounters title="Tiros Fuera" value={opponentStatsRef.current.shotsOffTarget} onIncrement={() => handleOpponentStatChange('shotsOffTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOffTarget', -1)} icon={<XCircle className="text-muted-foreground" />} disabled={isFinished}/>
+                                    <OpponentStatCounters title="Faltas" value={opponentStatsRef.current.fouls} onIncrement={() => handleOpponentStatChange('fouls', 1)} onDecrement={() => handleOpponentStatChange('fouls', -1)} icon={<ShieldAlert className="text-muted-foreground" />} disabled={isFinished}/>
+                                    <OpponentStatCounters title="Recuperaciones" value={opponentStatsRef.current.recoveries} onIncrement={() => handleOpponentStatChange('recoveries', 1)} onDecrement={() => handleOpponentStatChange('recoveries', -1)} icon={<RefreshCw className="text-muted-foreground" />} disabled={isFinished}/>
+                                    <OpponentStatCounters title="Pérdidas" value={opponentStatsRef.current.turnovers} onIncrement={() => handleOpponentStatChange('turnovers', 1)} onDecrement={() => handleOpponentStatChange('turnovers', -1)} icon={<ArrowRightLeft className="text-muted-foreground" />} disabled={isFinished}/>
+                                </div>
+                                <div className="pt-4">
+                                    <Button onClick={handleOpponentOwnGoal} disabled={isFinished} className="w-full md:w-auto">
+                                        <Plus className="mr-2" />
+                                        Añadir Gol en Propia
+                                    </Button>
+                                </div>
+                            </div>
                         )}
                     </CardContent>
                      <CardFooter className="pt-4">
@@ -674,7 +696,22 @@ export default function EstadisticasPartidoPage() {
                                 </Table>
                             </div>
                         ) : (
-                            <OpponentStatCounters disabled={isFinished} opponentStats={opponentStatsRef.current} handleOpponentStatChange={handleOpponentStatChange} handleOpponentOwnGoal={handleOpponentOwnGoal} />
+                             <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <OpponentStatCounters title="Goles" value={opponentStatsRef.current.goals} onIncrement={() => handleOpponentStatChange('goals', 1)} onDecrement={() => handleOpponentStatChange('goals', -1)} icon={<Goal className="text-muted-foreground" />} disabled={isFinished}/>
+                                    <OpponentStatCounters title="Tiros a Puerta" value={opponentStatsRef.current.shotsOnTarget} onIncrement={() => handleOpponentStatChange('shotsOnTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOnTarget', -1)} icon={<Target className="text-muted-foreground" />} disabled={isFinished}/>
+                                    <OpponentStatCounters title="Tiros Fuera" value={opponentStatsRef.current.shotsOffTarget} onIncrement={() => handleOpponentStatChange('shotsOffTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOffTarget', -1)} icon={<XCircle className="text-muted-foreground" />} disabled={isFinished}/>
+                                    <OpponentStatCounters title="Faltas" value={opponentStatsRef.current.fouls} onIncrement={() => handleOpponentStatChange('fouls', 1)} onDecrement={() => handleOpponentStatChange('fouls', -1)} icon={<ShieldAlert className="text-muted-foreground" />} disabled={isFinished}/>
+                                    <OpponentStatCounters title="Recuperaciones" value={opponentStatsRef.current.recoveries} onIncrement={() => handleOpponentStatChange('recoveries', 1)} onDecrement={() => handleOpponentStatChange('recoveries', -1)} icon={<RefreshCw className="text-muted-foreground" />} disabled={isFinished}/>
+                                    <OpponentStatCounters title="Pérdidas" value={opponentStatsRef.current.turnovers} onIncrement={() => handleOpponentStatChange('turnovers', 1)} onDecrement={() => handleOpponentStatChange('turnovers', -1)} icon={<ArrowRightLeft className="text-muted-foreground" />} disabled={isFinished}/>
+                                </div>
+                                <div className="pt-4">
+                                    <Button onClick={handleOpponentOwnGoal} disabled={isFinished} className="w-full md:w-auto">
+                                        <Plus className="mr-2" />
+                                        Añadir Gol en Propia
+                                    </Button>
+                                </div>
+                            </div>
                         )}
                     </CardContent>
                      <CardFooter className="pt-4">
@@ -693,21 +730,3 @@ export default function EstadisticasPartidoPage() {
   );
 }
 
-const OpponentStatCounters = ({ opponentStats, handleOpponentStatChange, handleOpponentOwnGoal, disabled }: { opponentStats: OpponentStats, handleOpponentStatChange: (stat: keyof OpponentStats, delta: number) => void, handleOpponentOwnGoal: () => void, disabled: boolean }) => (
-    <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <OpponentStatCounter title="Goles" value={opponentStats.goals} onIncrement={() => handleOpponentStatChange('goals', 1)} onDecrement={() => handleOpponentStatChange('goals', -1)} icon={<Goal className="text-muted-foreground" />} disabled={disabled}/>
-            <OpponentStatCounter title="Tiros a Puerta" value={opponentStats.shotsOnTarget} onIncrement={() => handleOpponentStatChange('shotsOnTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOnTarget', -1)} icon={<Target className="text-muted-foreground" />} disabled={disabled}/>
-            <OpponentStatCounter title="Tiros Fuera" value={opponentStats.shotsOffTarget} onIncrement={() => handleOpponentStatChange('shotsOffTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOffTarget', -1)} icon={<XCircle className="text-muted-foreground" />} disabled={disabled}/>
-            <OpponentStatCounter title="Faltas" value={opponentStats.fouls} onIncrement={() => handleOpponentStatChange('fouls', 1)} onDecrement={() => handleOpponentStatChange('fouls', -1)} icon={<ShieldAlert className="text-muted-foreground" />} disabled={disabled}/>
-            <OpponentStatCounter title="Recuperaciones" value={opponentStats.recoveries} onIncrement={() => handleOpponentStatChange('recoveries', 1)} onDecrement={() => handleOpponentStatChange('recoveries', -1)} icon={<RefreshCw className="text-muted-foreground" />} disabled={disabled}/>
-            <OpponentStatCounter title="Pérdidas" value={opponentStats.turnovers} onIncrement={() => handleOpponentStatChange('turnovers', 1)} onDecrement={() => handleOpponentStatChange('turnovers', -1)} icon={<ArrowRightLeft className="text-muted-foreground" />} disabled={disabled}/>
-        </div>
-        <div className="pt-4">
-            <Button onClick={handleOpponentOwnGoal} disabled={disabled} className="w-full md:w-auto">
-                <Plus className="mr-2" />
-                Añadir Gol en Propia
-            </Button>
-        </div>
-    </div>
-);
