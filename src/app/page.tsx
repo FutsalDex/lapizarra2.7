@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, User } from 'lucide-react';
@@ -37,7 +38,7 @@ export default function Home() {
              <CardHeader>
                <div className="flex items-center justify-center gap-3">
                 <User className="w-6 h-6 text-muted-foreground" />
-                <CardTitle className="font-headline text-2xl text-foreground">Acceso de Usuario</CardTitle>
+                <CardTitle className="font-headline text-2xl text-primary">Acceso de Usuario</CardTitle>
                </div>
               <p className="text-muted-foreground pt-2">Regístrate para una prueba de 30 días</p>
             </CardHeader>
