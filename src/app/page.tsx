@@ -33,9 +33,9 @@ export default function Home() {
             </div>
           </Card>
           
-          <Card className="flex flex-col">
+          <Card className="flex flex-col text-center">
              <CardHeader>
-               <div className="flex items-center gap-3">
+               <div className="flex items-center justify-center gap-3">
                 <User className="w-6 h-6 text-muted-foreground" />
                 <CardTitle className="font-headline text-2xl text-foreground">Acceso de Usuario</CardTitle>
                </div>
@@ -43,7 +43,7 @@ export default function Home() {
             </CardHeader>
             <CardContent className="flex-grow">
               <p className="font-semibold mb-2 text-foreground">Con tu cuenta gratuita, podrás:</p>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+              <ul className="list-disc list-inside space-y-2 text-muted-foreground inline-block mx-auto text-left">
                 <li>Explorar el catálogo completo de ejercicios.</li>
                 <li>Guardar tus ejercicios favoritos.</li>
                 <li>Crear y gestionar sesiones de entrenamiento.</li>
