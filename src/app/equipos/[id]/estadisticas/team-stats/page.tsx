@@ -120,14 +120,17 @@ export default function TeamStatsPage() {
                 ...data,
                 date: date,
             } as Match;
-        }).sort((a, b) => (a.date?.getTime() || 0) - (b.date?.getTime() || 0));
+        }).sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0));
     }, [matchesSnapshot, loadingMatches]);
 
     const filteredMatches = useMemo(() => {
         if (filter === 'Todos') {
             return matches;
         }
-        return matches.filter(match => match.matchType === filter);
+        if (filter === 'Liga') {
+            return matches.filter(match => match.matchType === 'Liga');
+        }
+        return matches.filter(match => match.competition === filter);
     }, [matches, filter]);
 
     const { teamPerformanceStats, matchSummary } = useMemo(() => {
@@ -166,12 +169,26 @@ export default function TeamStatsPage() {
                 acc.foulsReceived += opponentPeriodStats.fouls || 0;
                 acc.goalsAgainst[period as '1H' | '2H'] += opponentPeriodStats.goals || 0;
             });
+
+             // Contabilizar goles en propia puerta del rival
+            if (match.events) {
+                const myTeamSide = match.localTeam === teamName ? 'local' : 'visitor';
+                const opponentOwnGoals = match.events.filter(e => 
+                    e.type === 'goal' && 
+                    e.team === myTeamSide && // El gol es para mi equipo
+                    e.playerName === 'Gol en Propia Puerta'
+                );
+                
+                // Asumimos que los goles en propia puerta se distribuyen, pero no sabemos en qué parte.
+                // Para una aproximación, los añadimos al total. Si se quiere más precisión, el evento debería guardar el periodo.
+                acc.goalsFor.total += opponentOwnGoals.length;
+            }
             
             return acc;
         }, initialPerformanceStats);
 
         calculatedPerformanceStats.totalShots = calculatedPerformanceStats.shotsOnTarget + calculatedPerformanceStats.shotsOffTarget;
-        calculatedPerformanceStats.goalsFor.total = calculatedPerformanceStats.goalsFor['1H'] + calculatedPerformanceStats.goalsFor['2H'];
+        calculatedPerformanceStats.goalsFor.total = (calculatedPerformanceStats.goalsFor.total || 0) + calculatedPerformanceStats.goalsFor['1H'] + calculatedPerformanceStats.goalsFor['2H'];
         calculatedPerformanceStats.goalsAgainst.total = calculatedPerformanceStats.goalsAgainst['1H'] + calculatedPerformanceStats.goalsAgainst['2H'];
         
         const calculatedMatchSummary = filteredMatches.reduce((acc, match) => {
@@ -378,5 +395,6 @@ export default function TeamStatsPage() {
         </div>
     );
 }
+
 
 
