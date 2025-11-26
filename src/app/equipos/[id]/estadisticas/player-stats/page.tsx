@@ -222,22 +222,29 @@ export default function PlayerStatsPage() {
         return leader;
     };
 
-    const leaders = {
-        topScorer: getTopPlayer('goals'),
-        topAssistant: getTopPlayer('assists'),
-        mostShotsOn: getTopPlayer('shotsOnTarget'),
-        mostShotsOff: getTopPlayer('shotsOffTarget'),
-        mostRecoveries: getTopPlayer('recoveries'),
-        mostTurnovers: getTopPlayer('turnovers'),
-        mostFouls: getTopPlayer('fouls'),
-        mostYellows: getTopPlayer('yellowCards'),
-        mostSaves: getTopPlayer('saves', 'max', 'Portero'),
-        bestUnoVsUno: getTopPlayer('unoVsUno', 'max', 'Portero'),
-        leastConceded: getTopPlayer('goalsConceded', 'min', 'Portero'),
-        mostConceded: getTopPlayer('goalsConceded', 'max', 'Portero'),
-        mostMinutes: getTopPlayer('minutesPlayed', 'max', undefined, 'Portero'),
-        leastMinutes: getTopPlayer('minutesPlayed', 'min', undefined, 'Portero'),
-    };
+    const leaders = useMemo(() => {
+        if (loadingTeam || loadingMatches) {
+            return {}; // Return empty object while loading
+        }
+        return {
+            topScorer: getTopPlayer('goals'),
+            topAssistant: getTopPlayer('assists'),
+            mostShotsOn: getTopPlayer('shotsOnTarget'),
+            mostShotsOff: getTopPlayer('shotsOffTarget'),
+            mostRecoveries: getTopPlayer('recoveries'),
+            mostTurnovers: getTopPlayer('turnovers'),
+            mostFouls: getTopPlayer('fouls'),
+            mostYellows: getTopPlayer('yellowCards'),
+            mostSaves: getTopPlayer('saves', 'max', 'Portero'),
+            bestUnoVsUno: getTopPlayer('unoVsUno', 'max', 'Portero'),
+            leastConceded: getTopPlayer('goalsConceded', 'min', 'Portero'),
+            mostConceded: getTopPlayer('goalsConceded', 'max', 'Portero'),
+            mostMinutes: getTopPlayer('minutesPlayed', 'max', undefined, 'Portero'),
+            leastMinutes: getTopPlayer('minutesPlayed', 'min', undefined, 'Portero'),
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loadingTeam, loadingMatches, playerStats, searchFilteredPlayerIds, playersMap]);
+
     
     const tablePlayers = useMemo(() => {
         return Array.from(playersMap.values())
@@ -333,7 +340,7 @@ export default function PlayerStatsPage() {
                 </CardContent>
             </Card>
 
-            {isLoading ? (
+            {isLoading || !leaders.topScorer ? (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {Array.from({ length: 14 }).map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
                 </div>
@@ -446,14 +453,3 @@ export default function PlayerStatsPage() {
         </div>
     );
 }
-
-
-    
-
-    
-
-    
-
-
-
-    
