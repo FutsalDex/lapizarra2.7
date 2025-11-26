@@ -120,7 +120,7 @@ export default function TeamStatsPage() {
                 ...data,
                 date: date,
             } as Match;
-        }).sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0));
+        }).sort((a, b) => (a.date?.getTime() || 0) - (b.date?.getTime() || 0));
     }, [matchesSnapshot, loadingMatches]);
 
     const filteredMatches = useMemo(() => {
@@ -378,4 +378,5 @@ export default function TeamStatsPage() {
         </div>
     );
 }
+
 
