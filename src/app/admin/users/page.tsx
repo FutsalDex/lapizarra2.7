@@ -33,8 +33,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, doc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { collection, doc, deleteDoc, updateDoc, Timestamp, getFirestore } from 'firebase/firestore';
+import app from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -46,6 +46,8 @@ type User = {
   subscription?: 'Básico' | 'Pro';
   subscriptionEndDate?: Timestamp;
 };
+
+const db = getFirestore(app);
 
 export default function GestionUsuariosPage() {
   const [searchTerm, setSearchTerm] = useState('');

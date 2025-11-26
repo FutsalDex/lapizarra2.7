@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -13,11 +14,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { auth, db } from "@/firebase/config";
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import app from "@/firebase/config";
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, getAuth } from "firebase/auth";
+import { doc, setDoc, serverTimestamp, getFirestore } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>

@@ -1,12 +1,9 @@
-
 // src/firebase/config.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
 
 // 🔹 Configuración del proyecto "lapizarra-95eqd"
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyA2XHO-VnkYuAwx3-cQ8xrWb3gzdzvTSow",
   authDomain: "lapizarra-95eqd.firebaseapp.com",
   projectId: "lapizarra-95eqd",
@@ -17,10 +14,7 @@ const firebaseConfig = {
 
 // Inicializa Firebase solo una vez
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// Exporta los servicios que usará tu app
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-
+export { app, db };
 export default app;

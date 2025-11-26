@@ -4,8 +4,8 @@
 import { useState, useEffect } from "react";
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollection, useDocumentData } from "react-firebase-hooks/firestore";
-import { collection, doc, writeBatch, addDoc, getDoc, updateDoc } from "firebase/firestore";
-import { auth, db } from "@/firebase/config";
+import { collection, doc, writeBatch, addDoc, getDoc, updateDoc, getFirestore, getAuth } from "firebase/firestore";
+import app from "@/firebase/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,9 @@ import Link from "next/link";
 import { useParams } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 type Player = {
     id?: string;

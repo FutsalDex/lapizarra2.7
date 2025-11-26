@@ -20,8 +20,8 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
-import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { collection, doc, setDoc, deleteDoc, getFirestore } from 'firebase/firestore';
+import app from '@/firebase/config';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type AttendanceStatus = 'presente' | 'ausente' | 'justificado' | 'lesionado' | undefined;
@@ -35,6 +35,8 @@ type Player = {
 type PlayerAttendance = Player & {
   status: AttendanceStatus;
 };
+
+const db = getFirestore(app);
 
 export default function AsistenciaPage() {
   const params = useParams();
@@ -423,5 +425,3 @@ export default function AsistenciaPage() {
     </div>
   );
 }
-
-    

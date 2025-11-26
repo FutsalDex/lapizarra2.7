@@ -11,9 +11,11 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { collection, getFirestore } from 'firebase/firestore';
+import app from '@/firebase/config';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const db = getFirestore(app);
 
 export default function FavoritosPage() {
   const [favoriteIds, setFavoriteIds] = useState(new Set(favoriteExerciseIdsStore));

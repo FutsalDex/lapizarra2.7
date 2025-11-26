@@ -22,13 +22,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useState } from "react";
-import { auth, db } from "@/firebase/config";
+import app from "@/firebase/config";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { signOut } from "firebase/auth";
+import { signOut, getAuth } from "firebase/auth";
 import { FirebaseLogo } from "./logo";
 import { useCollection } from "react-firebase-hooks/firestore";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, getFirestore } from "firebase/firestore";
 
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 const navLinks = [
   { href: "/ejercicios", label: "Ver ejercicios", icon: <BookOpen className="w-5 h-5"/>, auth: false },

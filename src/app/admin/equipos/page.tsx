@@ -2,14 +2,16 @@
 "use client";
 
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { collection, getFirestore } from 'firebase/firestore';
+import { app } from '@/firebase/config';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const db = getFirestore(app);
 
 type Team = {
   id: string;

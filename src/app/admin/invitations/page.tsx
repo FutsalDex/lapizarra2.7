@@ -22,8 +22,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { collection, doc, updateDoc, deleteDoc, Timestamp, getFirestore } from 'firebase/firestore';
+import app from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -41,6 +41,8 @@ type Invitation = {
   isApproved?: boolean;
   teamName?: string;
 };
+
+const db = getFirestore(app);
 
 export default function InvitationsPage() {
   const [activeTab, setActiveTab] = useState('Pendiente');

@@ -9,10 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users, Clock, ClipboardList, Target, Info, Lightbulb, GitBranch, Layers, Package, Tag, Workflow } from 'lucide-react';
 import Link from 'next/link';
 import { useDocument } from 'react-firebase-hooks/firestore';
-import { doc } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { doc, getFirestore } from 'firebase/firestore';
+import app from '@/firebase/config';
 import { Exercise } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const db = getFirestore(app);
 
 export default function EjercicioDetallePage() {
   const params = useParams();

@@ -4,8 +4,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
-import { collection, query, where, doc, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
-import { auth, db } from '@/firebase/config';
+import { collection, query, where, doc, addDoc, updateDoc, deleteDoc, Timestamp, getFirestore, getAuth } from 'firebase/firestore';
+import app from '@/firebase/config';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -25,6 +25,9 @@ import { es } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 type Match = {
     id: string;
@@ -201,8 +204,8 @@ const MatchFormDialog = ({ isOpen, onOpenChange, match: initialMatch, onSave, is
             if (initialMatch) {
                 setMatchData({
                     ...initialMatch,
-                    date: initialMatch.date ? (initialMatch.date as Timestamp).toDate() : new Date(),
-                    time: initialMatch.date ? format((initialMatch.date as Timestamp).toDate(), "HH:mm") : '',
+                    date: initialMatch.date ? (initialMatch.date instanceof Date ? initialMatch.date : (initialMatch.date as Timestamp).toDate()) : new Date(),
+                    time: initialMatch.date ? format((initialMatch.date instanceof Date ? initialMatch.date : (initialMatch.date as Timestamp).toDate()), "HH:mm") : '',
                     matchType: ['Liga', 'Copa', 'Torneo', 'Amistoso'].includes(initialMatch.matchType) ? initialMatch.matchType : 'Amistoso',
                 });
             } else {
@@ -557,5 +560,3 @@ export default function PartidosPage() {
     </div>
   );
 }
-
-    

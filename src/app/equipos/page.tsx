@@ -4,8 +4,8 @@
 import React, { useState, useMemo } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollection } from "react-firebase-hooks/firestore";
-import { collection, query, where, addDoc, deleteDoc, doc, updateDoc, writeBatch, getDocs, Timestamp } from "firebase/firestore";
-import { auth, db } from "@/firebase/config";
+import { collection, query, where, addDoc, deleteDoc, doc, writeBatch, getDocs, Timestamp, getFirestore, getAuth } from "firebase/firestore";
+import app from "@/firebase/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Edit, PlusCircle, Settings, Shield, Trash2, Users, Save, Loader2, UserPlus } from "lucide-react";
@@ -35,6 +35,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 type Team = {
   id: string;
@@ -388,5 +391,3 @@ export default function EquiposPage() {
     </div>
   );
 }
-
-    

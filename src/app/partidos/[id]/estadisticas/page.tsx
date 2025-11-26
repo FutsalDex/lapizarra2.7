@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDocumentData, useCollection } from 'react-firebase-hooks/firestore';
-import { doc, updateDoc, collection, query } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { doc, updateDoc, collection, query, getFirestore } from 'firebase/firestore';
+import app from '@/firebase/config';
 import { useParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -26,6 +26,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const db = getFirestore(app);
 
 type Player = {
   id: string;
@@ -197,13 +199,9 @@ export default function EstadisticasPartidoPage() {
             localScoreRef.current = (match.events || []).filter((e: MatchEvent) => e.type === 'goal' && e.team === 'local').length;
             visitorScoreRef.current = (match.events || []).filter((e: MatchEvent) => e.type === 'goal' && e.team === 'visitor').length;
 
-            setIsActive(false);
-            setTime(matchDuration * 60);
-            setSelectedPlayerIds(new Set());
             forceUpdate();
         }
-    }, [match, period, activePlayers, matchDuration, forceUpdate]);
-
+    }, [match, period, activePlayers.length, forceUpdate]);
 
      const saveStats = useCallback(async (auto = false) => {
         if (!match || isFinished) return;
@@ -251,6 +249,9 @@ export default function EstadisticasPartidoPage() {
         if (period === newPeriod) return;
         saveStats(false);
         setPeriod(newPeriod as Period);
+        setIsActive(false);
+        setTime(matchDuration * 60);
+        setSelectedPlayerIds(new Set());
     };
 
     const handleOpponentStatChange = (stat: keyof OpponentStats, delta: number) => {

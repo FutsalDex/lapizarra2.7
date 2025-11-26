@@ -3,8 +3,8 @@
 
 import { useParams } from 'next/navigation';
 import { useDocumentData } from 'react-firebase-hooks/firestore';
-import { doc, Timestamp } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { doc, Timestamp, getFirestore } from 'firebase/firestore';
+import app from '@/firebase/config';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,13 +16,9 @@ import { es } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo } from 'react';
 
-type StatRowProps = {
-    label: string;
-    localValue: number;
-    visitorValue: number;
-};
+const db = getFirestore(app);
 
-const StatRow = ({ label, localValue, visitorValue }: StatRowProps) => (
+const StatRow = ({ label, localValue, visitorValue }: { label: string; localValue: number; visitorValue: number; }) => (
     <div className="flex justify-between items-center py-2 border-b last:border-none">
         <span className="font-bold text-lg">{localValue}</span>
         <span className="text-sm text-muted-foreground text-center">{label}</span>
@@ -50,94 +46,84 @@ export default function PartidoDetallePage() {
     }
 
     const isMyTeamLocal = match.localTeam === myTeamName;
-    const myTeamStats: any = { tirosPuerta: 0, tirosFuera: 0, faltas: 0, recuperaciones: 0, perdidas: 0, amarillas: 0, rojas: 0 };
-    const opponentTeamStats: any = { tirosPuerta: 0, tirosFuera: 0, faltas: 0, recuperaciones: 0, perdidas: 0, amarillas: 0, rojas: 0 };
-    const combined: Record<string, Partial<PlayerStat>> = {};
-
-    // New stat structure
-    if (match.playerStats) {
-        ['1H', '2H'].forEach(period => {
-            if (match.playerStats[period]) {
-                Object.entries(match.playerStats[period]).forEach(([playerId, stats]: [string, any]) => {
-                    if (!combined[playerId]) {
-                        combined[playerId] = { id: playerId, name: 'Desconocido', minutesPlayed: 0, g: 0, a: 0, ta: 0, tr: 0, fouls: 0, paradas: 0, gc: 0, vs1: 0 };
-                    }
-                    myTeamStats.tirosPuerta += stats.shotsOnTarget || 0;
-                    myTeamStats.tirosFuera += stats.shotsOffTarget || 0;
-                    myTeamStats.faltas += stats.fouls || 0;
-                    myTeamStats.recuperaciones += stats.recoveries || 0;
-                    myTeamStats.perdidas += stats.turnovers || 0;
-                    myTeamStats.amarillas += stats.yellowCards || 0;
-                    myTeamStats.rojas += stats.redCards || 0;
-                    
-                    combined[playerId].minutesPlayed! += stats.minutesPlayed || 0;
-                    combined[playerId].g! += stats.goals || 0;
-                    combined[playerId].a! += stats.assists || 0;
-                    combined[playerId].ta! += stats.yellowCards || 0;
-                    combined[playerId].tr! += stats.redCards || 0;
-                    combined[playerId].fouls! += stats.fouls || 0;
-                    combined[playerId].paradas! += stats.saves || 0;
-                    combined[playerId].gc! += stats.goalsConceded || 0;
-                    combined[playerId].vs1! += stats.unoVsUno || 0;
-                });
-            }
-             if (match.opponentStats && match.opponentStats[period]) {
-                const oppStats = match.opponentStats[period];
-                opponentTeamStats.tirosPuerta += oppStats.shotsOnTarget || 0;
-                opponentTeamStats.tirosFuera += oppStats.shotsOffTarget || 0;
-                opponentTeamStats.faltas += oppStats.fouls || 0;
-                opponentTeamStats.recuperaciones += oppStats.recoveries || 0;
-                opponentTeamStats.perdidas += oppStats.turnovers || 0;
-            }
-        });
-
-        // Try to get player names from squad/events
-        if(match.squad && match.events) {
-            match.events.forEach((event: any) => {
-                if(event.playerId && combined[event.playerId]) {
-                    combined[event.playerId].name = event.playerName;
-                }
+    
+    const calculateTotalTeamStats = (periodStats: any) => {
+        let stats: any = { tirosPuerta: 0, tirosFuera: 0, faltas: 0, recuperaciones: 0, perdidas: 0, amarillas: 0, rojas: 0 };
+        if (periodStats) {
+            Object.values(periodStats).forEach((player: any) => {
+                stats.tirosPuerta += player.shotsOnTarget || 0;
+                stats.tirosFuera += player.shotsOffTarget || 0;
+                stats.faltas += player.fouls || 0;
+                stats.recuperaciones += player.recoveries || 0;
+                stats.perdidas += player.turnovers || 0;
+                stats.amarillas += player.yellowCards || 0;
+                stats.rojas += player.redCards || 0;
             });
         }
-    } 
-    // Old stat structure from visitorPlayers
-    else if (match.visitorPlayers) {
-        match.visitorPlayers.forEach((p: any) => {
-            myTeamStats.tirosPuerta += p.tirosPuerta || 0;
-            myTeamStats.tirosFuera += p.tirosFuera || 0;
-            myTeamStats.faltas += p.faltas || 0;
-            myTeamStats.recuperaciones += p.recuperaciones || 0;
-            myTeamStats.perdidas += p.perdidas || 0;
-            myTeamStats.amarillas += p.amarillas || 0;
-            myTeamStats.rojas += p.rojas || 0;
-
-            combined[p.id] = {
-                id: p.id, name: p.name, minutesPlayed: p.timeOnCourt || 0,
-                g: p.goals || 0, a: p.assists || 0, ta: p.amarillas || 0,
-                tr: p.rojas || 0, fouls: p.faltas || 0, paradas: p.paradas || 0,
-                gc: p.gRec || 0, vs1: p.vs1 || 0,
-            };
-        });
-        
-         ['opponentStats1', 'opponentStats2'].forEach(key => {
-            if (match[key]) {
-                const oppStats = match[key];
-                opponentTeamStats.tirosPuerta += oppStats.shotsOnTarget || 0;
-                opponentTeamStats.tirosFuera += oppStats.shotsOffTarget || 0;
-                opponentTeamStats.faltas += oppStats.fouls || 0;
-                opponentTeamStats.recuperaciones += oppStats.recoveries || 0;
-                opponentTeamStats.perdidas += oppStats.turnovers || 0;
-            }
-        });
-    }
-
-    const finalTeamStats = { 
-        local: isMyTeamLocal ? myTeamStats : opponentTeamStats,
-        visitor: isMyTeamLocal ? opponentTeamStats : myTeamStats
+        return stats;
+    };
+    
+    const myTeam1H = calculateTotalTeamStats(match.playerStats?.['1H']);
+    const myTeam2H = calculateTotalTeamStats(match.playerStats?.['2H']);
+    const opp1H = match.opponentStats?.['1H'] || {};
+    const opp2H = match.opponentStats?.['2H'] || {};
+    
+    const myTeamStats = {
+        tirosPuerta: myTeam1H.tirosPuerta + myTeam2H.tirosPuerta,
+        tirosFuera: myTeam1H.tirosFuera + myTeam2H.tirosFuera,
+        faltas: myTeam1H.faltas + myTeam2H.faltas,
+        recuperaciones: myTeam1H.recuperaciones + myTeam2H.recuperaciones,
+        perdidas: myTeam1H.perdidas + myTeam2H.perdidas,
+    };
+    const opponentTeamStats = {
+        tirosPuerta: (opp1H.shotsOnTarget || 0) + (opp2H.shotsOnTarget || 0),
+        tirosFuera: (opp1H.shotsOffTarget || 0) + (opp2H.shotsOffTarget || 0),
+        faltas: (opp1H.fouls || 0) + (opp2H.fouls || 0),
+        recuperaciones: (opp1H.recoveries || 0) + (opp2H.recoveries || 0),
+        perdidas: (opp1H.turnovers || 0) + (opp2H.turnovers || 0),
     };
 
-    return { teamStats: finalTeamStats, finalPlayerStats: Object.values(combined) };
-}, [match, myTeamName]);
+    const combinedPlayerStats = () => {
+        const combined: Record<string, Partial<PlayerStat>> = {};
+        if (match.playerStats) {
+            ['1H', '2H'].forEach(period => {
+                if (match.playerStats[period]) {
+                     Object.entries(match.playerStats[period]).forEach(([playerId, stats]: [string, any]) => {
+                        if (!combined[playerId]) {
+                            combined[playerId] = { id: playerId, name: 'Desconocido', minutesPlayed: 0, g: 0, a: 0, ta: 0, tr: 0, fouls: 0, paradas: 0, gc: 0, vs1: 0 };
+                        }
+                        combined[playerId].minutesPlayed! += stats.minutesPlayed || 0;
+                        combined[playerId].g! += stats.goals || 0;
+                        combined[playerId].a! += stats.assists || 0;
+                        combined[playerId].ta! += stats.yellowCards || 0;
+                        combined[playerId].tr! += stats.redCards || 0;
+                        combined[playerId].fouls! += stats.fouls || 0;
+                        combined[playerId].paradas! += stats.saves || 0;
+                        combined[playerId].gc! += stats.goalsConceded || 0;
+                        combined[playerId].vs1! += stats.unoVsUno || 0;
+                    });
+                }
+            });
+
+             if(match.events) {
+                match.events.forEach((event: any) => {
+                    if(event.playerId && combined[event.playerId]) {
+                        combined[event.playerId].name = event.playerName;
+                    }
+                });
+             }
+        }
+        return Object.values(combined);
+    };
+
+    return { 
+        teamStats: {
+            local: isMyTeamLocal ? myTeamStats : opponentTeamStats,
+            visitor: isMyTeamLocal ? opponentTeamStats : myTeamStats
+        },
+        finalPlayerStats: combinedPlayerStats()
+    };
+  }, [match, myTeamName]);
   
   if (loading || loadingTeam) {
     return (
@@ -350,5 +336,3 @@ export default function PartidoDetallePage() {
     </div>
   );
 }
-
-    

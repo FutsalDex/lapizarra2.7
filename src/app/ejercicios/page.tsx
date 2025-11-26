@@ -3,8 +3,8 @@
 
 import { useState } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, query } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { collection, query, getFirestore } from 'firebase/firestore';
+import app from '@/firebase/config';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Exercise, favoriteExerciseIdsStore } from '@/lib/data';
 import Image from 'next/image';
@@ -12,13 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Search, Eye, Heart } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const ITEMS_PER_PAGE = 12;
+const db = getFirestore(app);
 
 export default function EjerciciosPage() {
   const [searchTerm, setSearchTerm] = useState('');

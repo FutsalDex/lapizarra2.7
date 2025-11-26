@@ -8,13 +8,14 @@ import { ArrowLeft, Users, Search, Trophy, Hand, Target, ChevronsRightLeft, Refr
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
-import { collection, query, where, doc, Timestamp } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { collection, query, where, doc, Timestamp, getFirestore } from 'firebase/firestore';
+import { app } from '@/firebase/config';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 
+const db = getFirestore(app);
 
 type Player = {
   id: string;

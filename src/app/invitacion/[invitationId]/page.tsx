@@ -5,13 +5,16 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useDocumentData } from 'react-firebase-hooks/firestore';
-import { doc, updateDoc, writeBatch, getDoc, arrayUnion } from 'firebase/firestore';
-import { auth, db } from '@/firebase/config';
+import { doc, updateDoc, writeBatch, getDoc, arrayUnion, getFirestore, getAuth } from 'firebase/firestore';
+import app from '@/firebase/config';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShieldCheck, TriangleAlert, UserPlus } from 'lucide-react';
+import { Loader2, ShieldCheck, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 export default function AcceptInvitationPage() {
   const params = useParams();
