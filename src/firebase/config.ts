@@ -1,6 +1,7 @@
 // src/firebase/config.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 // 🔹 Configuración del proyecto "lapizarra-95eqd"
 export const firebaseConfig = {
@@ -15,6 +16,7 @@ export const firebaseConfig = {
 // Inicializa Firebase solo una vez
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-export { app, db };
+export { app, db, auth };
 export default app;

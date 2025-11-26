@@ -4,7 +4,8 @@
 import React, { useState, useMemo } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollection } from "react-firebase-hooks/firestore";
-import { collection, query, where, addDoc, deleteDoc, doc, writeBatch, getDocs, Timestamp, getFirestore, getAuth } from "firebase/firestore";
+import { collection, query, where, addDoc, deleteDoc, doc, writeBatch, getDocs, Timestamp, getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import app from "@/firebase/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
