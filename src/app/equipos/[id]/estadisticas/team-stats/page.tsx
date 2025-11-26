@@ -8,7 +8,7 @@ import { ArrowLeft, Trophy, TrendingUp, Shield, TrendingDown, Target, XCircle, S
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
-import { collection, query, where, doc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, doc, Timestamp, getFirestore } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ type Match = {
     visitorTeam: string;
     date: Timestamp | Date;
     matchType: string;
+    competition: string;
     localScore: number;
     visitorScore: number;
     isFinished: boolean;
@@ -377,3 +378,4 @@ export default function TeamStatsPage() {
         </div>
     );
 }
+
