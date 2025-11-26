@@ -103,15 +103,14 @@ export default function TeamStatsPage() {
 
 
     const [team, loadingTeam] = useDocumentData(doc(db, `teams/${teamId}`));
-    const teamName = team?.name || '';
-
+    
     const matchesQuery = teamId ? query(collection(db, "matches"), where("teamId", "==", teamId), where("isFinished", "==", true)) : null;
     const [matchesSnapshot, loadingMatches, errorMatches] = useCollection(matchesQuery);
 
-    const matches = useMemo(() => 
-        matchesSnapshot?.docs.map(doc => {
+    const matches = useMemo(() => {
+        if (loadingMatches || !matchesSnapshot) return [];
+        return matchesSnapshot.docs.map(doc => {
             const data = doc.data();
-            // Handle both Timestamp and JS Date objects
             const date = data.date && typeof data.date.toDate === 'function' 
                 ? (data.date as Timestamp).toDate() 
                 : data.date;
@@ -120,8 +119,8 @@ export default function TeamStatsPage() {
                 ...data,
                 date: date,
             } as Match;
-        }).sort((a, b) => a.date.getTime() - b.date.getTime()) || [],
-    [matchesSnapshot]);
+        }).sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0));
+    }, [matchesSnapshot, loadingMatches]);
 
     const filteredMatches = useMemo(() => {
         if (filter === 'Todos') {
@@ -130,8 +129,16 @@ export default function TeamStatsPage() {
         return matches.filter(match => match.matchType === filter);
     }, [matches, filter]);
 
-    const teamPerformanceStats: PerformanceStats = useMemo(() => {
-        const initialStats: PerformanceStats = {
+    const { teamPerformanceStats, matchSummary } = useMemo(() => {
+        const teamName = team?.name;
+        if (loadingTeam || !teamName || loadingMatches) {
+            return {
+                teamPerformanceStats: null,
+                matchSummary: null
+            };
+        }
+
+        const initialPerformanceStats: PerformanceStats = {
             shotsOnTarget: 0, shotsOffTarget: 0, totalShots: 0,
             foulsCommitted: 0, foulsReceived: 0, turnovers: 0, recoveries: 0,
             yellowCards: 0, redCards: 0,
@@ -139,14 +146,11 @@ export default function TeamStatsPage() {
             goalsAgainst: { total: 0, '1H': 0, '2H': 0 }
         };
 
-        return filteredMatches.reduce((acc, match) => {
-            const isMyTeamLocal = match.localTeam.trim() === teamName.trim();
-
+        const calculatedPerformanceStats = filteredMatches.reduce((acc, match) => {
             ['1H', '2H'].forEach(period => {
                 const myTeamPeriodStats = match.playerStats?.[period] || {};
                 const opponentPeriodStats = match.opponentStats?.[period] || {};
 
-                // My Team Stats
                 Object.values(myTeamPeriodStats).forEach((player: any) => {
                     acc.shotsOnTarget += player.shotsOnTarget || 0;
                     acc.shotsOffTarget += player.shotsOffTarget || 0;
@@ -158,38 +162,33 @@ export default function TeamStatsPage() {
                     acc.goalsFor[period as '1H' | '2H'] += player.goals || 0;
                 });
                 
-                // Opponent Stats
                 acc.foulsReceived += opponentPeriodStats.fouls || 0;
                 acc.goalsAgainst[period as '1H' | '2H'] += opponentPeriodStats.goals || 0;
             });
             
             return acc;
-        }, initialStats);
-    }, [filteredMatches, teamName]);
+        }, initialPerformanceStats);
 
-    teamPerformanceStats.totalShots = teamPerformanceStats.shotsOnTarget + teamPerformanceStats.shotsOffTarget;
-    teamPerformanceStats.goalsFor.total = teamPerformanceStats.goalsFor['1H'] + teamPerformanceStats.goalsFor['2H'];
-    teamPerformanceStats.goalsAgainst.total = teamPerformanceStats.goalsAgainst['1H'] + teamPerformanceStats.goalsAgainst['2H'];
-
-    const matchSummary: MatchStats = useMemo(() => {
-        return filteredMatches.reduce((acc, match) => {
+        calculatedPerformanceStats.totalShots = calculatedPerformanceStats.shotsOnTarget + calculatedPerformanceStats.shotsOffTarget;
+        calculatedPerformanceStats.goalsFor.total = calculatedPerformanceStats.goalsFor['1H'] + calculatedPerformanceStats.goalsFor['2H'];
+        calculatedPerformanceStats.goalsAgainst.total = calculatedPerformanceStats.goalsAgainst['1H'] + calculatedPerformanceStats.goalsAgainst['2H'];
+        
+        const calculatedMatchSummary = filteredMatches.reduce((acc, match) => {
             acc.played++;
             const myTeamIsLocal = match.localTeam.trim() === teamName.trim();
             const myTeamWon = myTeamIsLocal ? match.localScore > match.visitorScore : match.visitorScore > match.localScore;
             const isDraw = match.localScore === match.visitorScore;
 
-            if (isDraw) {
-                acc.drawn++;
-            } else if (myTeamWon) {
-                acc.won++;
-            } else {
-                acc.lost++;
-            }
+            if (isDraw) acc.drawn++;
+            else if (myTeamWon) acc.won++;
+            else acc.lost++;
             return acc;
         }, { played: 0, won: 0, drawn: 0, lost: 0 });
-    }, [filteredMatches, teamName]);
 
-    const isLoading = loadingTeam || loadingMatches;
+        return { teamPerformanceStats: calculatedPerformanceStats, matchSummary: calculatedMatchSummary };
+    }, [filteredMatches, team, loadingTeam, loadingMatches]);
+    
+    const isLoading = loadingTeam || loadingMatches || !teamPerformanceStats || !matchSummary;
     
     const SquareIcon = ({ className }: { className?: string }) => (
         <div className={cn("w-4 h-5 rounded-sm", className)} />
@@ -198,17 +197,17 @@ export default function TeamStatsPage() {
     const filterOptions = ['Todos', 'Liga', 'Copa', 'Torneo', 'Amistoso'];
 
     const goalscorers = useMemo(() => {
-        if (!selectedMatch) return [];
-        const myTeamSide = selectedMatch.localTeam.trim() === teamName.trim() ? 'local' : 'visitor';
+        if (!selectedMatch || !team) return [];
+        const myTeamSide = selectedMatch.localTeam.trim() === team.name.trim() ? 'local' : 'visitor';
         return selectedMatch.events?.filter(e => e.type === 'goal' && e.team === myTeamSide) || [];
-    }, [selectedMatch, teamName]);
+    }, [selectedMatch, team]);
 
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
                     <Trophy className="h-8 w-8 text-primary" />
-                    <h1 className="text-3xl font-bold font-headline">Estadísticas del Equipo: {teamName}</h1>
+                    <h1 className="text-3xl font-bold font-headline">Estadísticas del Equipo: {team?.name || '...'}</h1>
                 </div>
                 <Button variant="outline" asChild>
                 <Link href={`/equipos/${teamId}/estadisticas`}>
@@ -253,14 +252,14 @@ export default function TeamStatsPage() {
                             </div>
                         ) : errorMatches ? (
                             <p className="text-destructive">Error: {errorMatches.message}</p>
-                        ) : (
+                        ) : matchSummary ? (
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                                 <StatCard title="Partidos Jugados" value={matchSummary.played} icon={<GanttChartSquare className="h-6 w-6 text-primary" />} />
                                 <StatCard title="Ganados" value={matchSummary.won} icon={<TrendingUp className="h-6 w-6 text-green-600" />} className="border-green-500/50" />
                                 <StatCard title="Empatados" value={matchSummary.drawn} icon={<Shield className="h-6 w-6 text-yellow-600" />} className="border-yellow-500/50" />
                                 <StatCard title="Perdidos" value={matchSummary.lost} icon={<TrendingDown className="h-6 w-6 text-red-600" />} className="border-red-500/50" />
                             </div>
-                        )}
+                        ) : null}
                     </CardContent>
                 </Card>
 
@@ -273,7 +272,7 @@ export default function TeamStatsPage() {
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
                             </div>
-                         ) : (
+                         ) : teamPerformanceStats ? (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 <StatCard title="Tiros Totales" value={teamPerformanceStats.totalShots} icon={<Target className="h-6 w-6 text-primary" />} />
                                 <StatCard title="Tiros a Puerta" value={teamPerformanceStats.shotsOnTarget} icon={<Target className="h-6 w-6 text-green-600" />} />
@@ -284,7 +283,7 @@ export default function TeamStatsPage() {
                                 <StatCard title="Robos de Balón" value={teamPerformanceStats.recoveries} icon={<RefreshCw className="h-6 w-6 text-teal-500" />} />
                                 <StatCard title="Tarjetas Amarillas" value={teamPerformanceStats.yellowCards} icon={<SquareIcon className="bg-yellow-400" />} />
                             </div>
-                         )}
+                         ) : null}
                     </CardContent>
                 </Card>
                 
@@ -294,12 +293,12 @@ export default function TeamStatsPage() {
                             <Skeleton className="h-64 w-full" />
                             <Skeleton className="h-64 w-full" />
                         </>
-                    ) : (
+                    ) : teamPerformanceStats ? (
                         <>
                             <GoalCard title="Goles a Favor" total={teamPerformanceStats.goalsFor.total} part1={teamPerformanceStats.goalsFor['1H']} part2={teamPerformanceStats.goalsFor['2H']} type="for"/>
                             <GoalCard title="Goles en Contra" total={teamPerformanceStats.goalsAgainst.total} part1={teamPerformanceStats.goalsAgainst['1H']} part2={teamPerformanceStats.goalsAgainst['2H']} type="against"/>
                         </>
-                    )}
+                    ) : null}
                 </div>
 
                 <Card>
@@ -326,7 +325,7 @@ export default function TeamStatsPage() {
                                         {filteredMatches.length > 0 ? filteredMatches.map((match) => (
                                             <TableRow key={match.id}>
                                                 <TableCell>
-                                                    {format(match.date, 'dd/MM/yyyy', { locale: es })}
+                                                    {match.date ? format(match.date, 'dd/MM/yyyy', { locale: es }) : '-'}
                                                 </TableCell>
                                                 <TableCell>{match.localTeam}</TableCell>
                                                 <TableCell>{match.visitorTeam}</TableCell>
@@ -378,5 +377,3 @@ export default function TeamStatsPage() {
         </div>
     );
 }
-
-    
