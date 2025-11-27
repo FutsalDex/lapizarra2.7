@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDocumentData, useCollection } from 'react-firebase-hooks/firestore';
 import { doc, updateDoc, collection, query, getFirestore } from 'firebase/firestore';
-import app from '@/firebase/config';
+import { app } from '@/firebase/config';
 import { useParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -427,16 +427,28 @@ export default function EstadisticasPartidoPage() {
     
     const finishGame = async () => {
         setIsActive(false);
-        await saveStats(false);
-        await updateDoc(doc(db, "matches", matchId), { isFinished: true });
-        setIsFinished(true);
-        toast({ title: "Partido Finalizado" });
+        setIsFinished(true); // Optimistically update UI
+        try {
+            await saveStats(false);
+            await updateDoc(doc(db, "matches", matchId), { isFinished: true });
+            toast({ title: "Partido Finalizado" });
+        } catch (e) {
+            console.error("Error finalizing game:", e);
+            setIsFinished(false); // Revert on error
+            toast({ variant: 'destructive', title: "Error", description: "No se pudo finalizar el partido."});
+        }
     }
 
     const reopenGame = async () => {
-        await updateDoc(doc(db, "matches", matchId), { isFinished: false });
         setIsFinished(false);
-        toast({ title: "Partido Reabierto" });
+        try {
+            await updateDoc(doc(db, "matches", matchId), { isFinished: false });
+            toast({ title: "Partido Reabierto" });
+        } catch (e) {
+            console.error("Error reopening game:", e);
+            setIsFinished(true);
+            toast({ variant: 'destructive', title: "Error", description: "No se pudo reabrir el partido."});
+        }
     }
 
     const isLoading = loadingMatch || loadingPlayers || loadingTeam;
@@ -506,7 +518,7 @@ export default function EstadisticasPartidoPage() {
 
                     <div className="flex flex-col items-center gap-2 md:gap-4">
                         <div className="text-4xl md:text-6xl font-bold text-primary">{localScoreRef.current} - {visitorScoreRef.current}</div>
-                        <div className="text-4xl md:text-6xl font-bold bg-gray-900 text-white p-2 md:p-4 rounded-lg w-full">
+                        <div className="text-3xl sm:text-4xl md:text-6xl font-bold bg-gray-900 text-white p-2 md:p-4 rounded-lg w-full">
                            {formatTime(time)}
                         </div>
                         <div className="flex flex-wrap justify-center gap-2">
@@ -550,7 +562,7 @@ export default function EstadisticasPartidoPage() {
                             <Table className="text-xs">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="sticky left-0 bg-card min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
+                                        <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
                                         <TableHead className="px-1 py-2 text-center">Min</TableHead>
                                         {statHeaders.map(header => <TableHead key={header.key} className="px-1 py-2 text-center">{header.label}</TableHead>)}
                                     </TableRow>
@@ -565,7 +577,7 @@ export default function EstadisticasPartidoPage() {
                                             })}
                                         >
                                             <TableCell className={cn(
-                                                "sticky left-0 px-1 py-2 min-w-[150px]", 
+                                                "sticky left-0 px-1 py-2 min-w-[150px] z-10", 
                                                 selectedPlayerIds.has(player.id) 
                                                     ? "bg-teal-100/50 dark:bg-teal-900/30 font-bold" 
                                                     : "bg-card font-medium"
@@ -586,12 +598,12 @@ export default function EstadisticasPartidoPage() {
                                 </TableBody>
                                 <TableFooter>
                                      <TableRow>
-                                        <TableHead className="sticky left-0 bg-card min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
+                                        <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
                                         <TableHead className="px-1 py-2 text-center">Min</TableHead>
                                         {statHeaders.map(header => <TableHead key={header.key} className="px-1 py-2 text-center">{header.label}</TableHead>)}
                                     </TableRow>
                                     <TableRow className="font-bold bg-muted/50 hover:bg-muted/50">
-                                        <TableCell className="sticky left-0 bg-muted/50 px-1 py-2 min-w-[150px] text-center">Total</TableCell>
+                                        <TableCell className="sticky left-0 bg-muted/50 px-1 py-2 min-w-[150px] text-center z-10">Total</TableCell>
                                         <TableCell className="px-1 py-2 text-center">-</TableCell>
                                         {statHeaders.map(header => (
                                             <TableCell key={header.key} className="px-1 py-2 text-center">
@@ -643,7 +655,7 @@ export default function EstadisticasPartidoPage() {
                                 <Table className="text-xs">
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="sticky left-0 bg-card min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
+                                            <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
                                             <TableHead className="px-1 py-2 text-center">Min</TableHead>
                                             {statHeaders.map(header => <TableHead key={header.key} className="px-1 py-2 text-center">{header.label}</TableHead>)}
                                         </TableRow>
@@ -658,7 +670,7 @@ export default function EstadisticasPartidoPage() {
                                                 })}
                                             >
                                                 <TableCell className={cn(
-                                                    "sticky left-0 px-1 py-2 min-w-[150px]", 
+                                                    "sticky left-0 px-1 py-2 min-w-[150px] z-10", 
                                                     selectedPlayerIds.has(player.id) 
                                                         ? "bg-teal-100/50 dark:bg-teal-900/30 font-bold" 
                                                         : "bg-card font-medium"
@@ -679,12 +691,12 @@ export default function EstadisticasPartidoPage() {
                                     </TableBody>
                                     <TableFooter>
                                         <TableRow>
-                                            <TableHead className="sticky left-0 bg-card min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
+                                            <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
                                             <TableHead className="px-1 py-2 text-center">Min</TableHead>
                                             {statHeaders.map(header => <TableHead key={header.key} className="px-1 py-2 text-center">{header.label}</TableHead>)}
                                         </TableRow>
                                         <TableRow className="font-bold bg-muted/50 hover:bg-muted/50">
-                                            <TableCell className="sticky left-0 bg-muted/50 px-1 py-2 min-w-[150px] text-center">Total</TableCell>
+                                            <TableCell className="sticky left-0 bg-muted/50 px-1 py-2 min-w-[150px] text-center z-10">Total</TableCell>
                                             <TableCell className="px-1 py-2 text-center">-</TableCell>
                                             {statHeaders.map(header => (
                                                 <TableCell key={header.key} className="px-1 py-2 text-center">
