@@ -167,14 +167,14 @@ export function TacticsBoard() {
             src="https://i.ibb.co/tTZ4wBFS/pista.jpg"
             alt="Pista de futsal"
             fill
-            className="object-cover"
+            className="object-contain p-4"
             priority
         />
         <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 400 200">
           {lines.map((line, i) => (
             <polyline
               key={i}
-              points={line.points.map(p => `${'p.x'},${'p.y'}`).join(' ')}
+              points={line.points.map(p => `${p.x},${p.y}`).join(' ')}
               fill="none"
               stroke="hsl(var(--card-foreground))"
               strokeWidth="2"
