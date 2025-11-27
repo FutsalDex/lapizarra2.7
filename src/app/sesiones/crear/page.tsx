@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -143,11 +143,11 @@ export default function CrearSesionPage() {
   const selectedObjectives = watch('objectives');
   
   const [exercisesSnapshot, loadingExercises] = useCollection(collection(db, 'exercises'));
-  const allExercises = exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [];
+  const allExercises = useMemo(() => exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [], [exercisesSnapshot]);
 
   const teamsQuery = user ? query(collection(db, 'teams'), or(where('ownerId', '==', user.uid), where('memberIds', 'array-contains', user.uid))) : null;
   const [teamsSnapshot, loadingTeams] = useCollection(teamsQuery);
-  const userTeams = teamsSnapshot?.docs.map(doc => ({ id: doc.id, name: doc.data().name })) || [];
+  const userTeams = useMemo(() => teamsSnapshot?.docs.map(doc => ({ id: doc.id, name: doc.data().name })) || [], [teamsSnapshot]);
 
 
   const addExercise = (phase: SessionPhase, exercise: Exercise) => {
@@ -224,19 +224,20 @@ export default function CrearSesionPage() {
     }
   };
   
+    const allCategories = useMemo(() => [...new Set(allExercises.map(e => e['Categoría']))], [allExercises]);
+  
   const ExercisePicker = ({ phase }: { phase: SessionPhase }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('Todos');
     const [edadFilter, setEdadFilter] = useState('Todos');
 
-    const filteredExercises = allExercises.filter(exercise => {
+    const filteredExercises = useMemo(() => allExercises.filter(exercise => {
       const matchesSearch = exercise['Ejercicio'].toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = categoryFilter === 'Todos' || exercise['Categoría'] === categoryFilter;
       const matchesEdad = edadFilter === 'Todos' || (Array.isArray(exercise['Edad']) && exercise['Edad'].includes(edadFilter));
       return matchesSearch && matchesCategory && matchesEdad;
-    });
+    }), [searchTerm, categoryFilter, edadFilter]);
     
-    const allCategories = [...new Set(allExercises.map(e => e['Categoría']))];
     const allEdades = ["Benjamín", "Alevín", "Infantil", "Cadete", "Juvenil", "Senior"];
 
 
