@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft, Download, Users, Clock, Target, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useDocument, useCollection } from 'react-firebase-hooks/firestore';
+import { useDocumentData, useCollection } from 'react-firebase-hooks/firestore';
 import { doc, collection, getFirestore } from 'firebase/firestore';
 import { app } from '@/firebase/config';
 import { Exercise } from '@/lib/data';
