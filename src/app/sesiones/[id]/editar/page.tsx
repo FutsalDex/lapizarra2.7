@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Image from 'next/image';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
@@ -83,23 +83,28 @@ const SessionPreview = ({ sessionData, exercises }: { sessionData: any, exercise
     );
 
     return (
-        <div className="space-y-6">
-            <PhaseSectionPreview title="Fase Inicial" exercises={getExercisesByIds(sessionData.initialExercises)} />
-            <PhaseSectionPreview title="Fase Principal" exercises={getExercisesByIds(sessionData.mainExercises)} />
-            <PhaseSectionPreview title="Fase Final" exercises={getExercisesByIds(sessionData.finalExercises)} />
-        </div>
+        <DialogContent className="max-w-3xl">
+            <DialogHeader>
+                <DialogTitle>Previsualización de la Sesión</DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[70vh] p-4">
+                <div className="space-y-6">
+                    <PhaseSectionPreview title="Fase Inicial" exercises={getExercisesByIds(sessionData.initialExercises)} />
+                    <PhaseSectionPreview title="Fase Principal" exercises={getExercisesByIds(sessionData.mainExercises)} />
+                    <PhaseSectionPreview title="Fase Final" exercises={getExercisesByIds(sessionData.finalExercises)} />
+                </div>
+            </ScrollArea>
+        </DialogContent>
     );
 };
 
-type ExercisePickerProps = {
+const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, onAddExercise }: {
   phase: SessionPhase;
   allExercises: Exercise[];
   allCategories: string[];
   loadingExercises: boolean;
   onAddExercise: (phase: SessionPhase, exercise: Exercise) => void;
-};
-
-const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, onAddExercise }: ExercisePickerProps) => {
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('Todos');
   const [edadFilter, setEdadFilter] = useState('Todos');
@@ -190,6 +195,8 @@ export default function EditarSesionPage() {
   
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewType, setPreviewType] = useState<'Básica' | 'Pro' | null>(null);
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch, reset } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
@@ -484,19 +491,15 @@ export default function EditarSesionPage() {
         <PhaseSection phase="finalExercises" title="Fase Final (Vuelta a la Calma)" subtitle="Ejercicios de baja intensidad para la recuperación." />
 
         <div className="flex justify-end items-center gap-4">
-            <Dialog>
+            <Dialog open={showPreview} onOpenChange={setShowPreview}>
                 <DialogTrigger asChild>
                     <Button variant="outline">
                         <Eye className="mr-2" />
                         Ver Ficha de Sesión
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                        <DialogTitle>Previsualización de la Sesión</DialogTitle>
-                    </DialogHeader>
-                    <ScrollArea className="max-h-[70vh] p-4">
-                        <SessionPreview 
+                {previewType ? (
+                     <SessionPreview 
                            sessionData={{
                                 ...watchedValues,
                                 initialExercises: selectedExercises.initialExercises.map(e => e.id),
@@ -505,8 +508,20 @@ export default function EditarSesionPage() {
                             }}
                             exercises={allExercises}
                         />
-                    </ScrollArea>
-                </DialogContent>
+                ) : (
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Elige el tipo de ficha</DialogTitle>
+                            <DialogDescription>
+                                Selecciona qué versión de la ficha de sesión quieres generar.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="grid grid-cols-2 gap-4">
+                           <Button onClick={() => setPreviewType('Básica')}>Generar Ficha Básica</Button>
+                           <Button onClick={() => setPreviewType('Pro')}>Generar Ficha Pro</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                )}
             </Dialog>
 
             <Button type="submit" size="lg" disabled={isSaving}>
