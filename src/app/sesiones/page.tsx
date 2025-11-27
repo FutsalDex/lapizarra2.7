@@ -63,19 +63,19 @@ const SessionCard = ({ session, exercises, onDelete }: { session: Session, exerc
                 <div>
                     <h4 className="font-semibold">Fase Inicial</h4>
                     <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                        {(session.initialExercises && session.initialExercises.length > 0) ? session.initialExercises.map(id => <li key={id}>{getExerciseName(id)}</li>) : <li>N/A</li>}
+                        {(session.initialExercises && session.initialExercises.length > 0) ? session.initialExercises.map((id, index) => <li key={`${id}-${index}`}>{getExerciseName(id)}</li>) : <li>N/A</li>}
                     </ul>
                 </div>
                  <div>
                     <h4 className="font-semibold">Fase Principal</h4>
                     <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                        {(session.mainExercises && session.mainExercises.length > 0) ? session.mainExercises.map(id => <li key={id}>{getExerciseName(id)}</li>) : <li>N/A</li>}
+                        {(session.mainExercises && session.mainExercises.length > 0) ? session.mainExercises.map((id, index) => <li key={`${id}-${index}`}>{getExerciseName(id)}</li>) : <li>N/A</li>}
                     </ul>
                 </div>
                  <div>
                     <h4 className="font-semibold">Fase Final</h4>
                     <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                        {(session.finalExercises && session.finalExercises.length > 0) ? session.finalExercises.map(id => <li key={id}>{getExerciseName(id)}</li>) : <li>N/A</li>}
+                        {(session.finalExercises && session.finalExercises.length > 0) ? session.finalExercises.map((id, index) => <li key={`${id}-${index}`}>{getExerciseName(id)}</li>) : <li>N/A</li>}
                     </ul>
                 </div>
             </CardContent>
