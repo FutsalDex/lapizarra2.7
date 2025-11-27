@@ -72,8 +72,11 @@ export default function SesionDetallePage() {
   
   const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
+  
+  const teamId = sessionSnapshot?.teamId;
+  const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
 
-  if (loadingSession || loadingExercises) {
+  if (loadingSession || loadingExercises || loadingTeam) {
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <div className="flex justify-between items-center mb-6">
@@ -117,6 +120,7 @@ export default function SesionDetallePage() {
   const finalExercises = getExercisesByIds(session.finalExercises || []);
   
   const sessionDate = (session.date as Timestamp)?.toDate();
+  const teamName = teamSnapshot?.name || session.teamId || 'No especificado';
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -150,7 +154,7 @@ export default function SesionDetallePage() {
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                         <p className="font-semibold">Equipo</p>
-                        <p className="text-muted-foreground">{session.teamId || 'No especificado'}</p>
+                        <p className="text-muted-foreground">{teamName}</p>
                     </div>
                     <div>
                         <p className="font-semibold">Instalación</p>
