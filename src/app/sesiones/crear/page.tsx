@@ -49,6 +49,11 @@ const objectivesByCategory = {
     "Desarrollar regates y fintas para superar rivales en uno contra uno.",
     "Potenciar la finalización variada (tiros, vaselinas, colocados) en situaciones de gol.",
     "Reforzar el dominio aéreo y el cabezazo ofensivo/defensivo en corners.",
+    "Mejorar la recepción orientada para iniciar contraataques rápidos.",
+    "Entrenar el toque de primera en pases y centros para velocidad de juego.",
+    "Desarrollar el uso del cuerpo para proteger el balón bajo presión.",
+    "Potenciar disparos a portería desde ángulos cerrados.",
+    "Reforzar la técnica de volea y media volea en finalizaciones aéreas.",
   ],
   Tácticos: [
     "Desarrollar patrones de juego posicional para superioridad numérica.",
@@ -56,6 +61,11 @@ const objectivesByCategory = {
     "Optimizar transiciones rápidas de ataque a defensa y viceversa.",
     "Entrenar sistemas defensivos como el 2-2 o pressing zonal.",
     "Fomentar el uso de paredes y triangulaciones para desequilibrar defensas.",
+    "Mejorar la construcción desde atrás con el portero como iniciador.",
+    "Entrenar la amplitud en ataque para estirar la defensa rival.",
+    "Desarrollar bloqueos y pantallas para crear espacios en el área.",
+    "Implementar rotaciones posicionales para confundir al pressing.",
+    "Optimizar el contraataque en inferioridad numérica temporal.",
   ],
   Físicos: [
     "Aumentar la resistencia aeróbica para mantener intensidad durante todo el partido.",
@@ -63,6 +73,11 @@ const objectivesByCategory = {
     "Desarrollar agilidad y coordinación motora en pista limitada.",
     "Fortalecer el core y las piernas para mayor potencia en disparos y saltos.",
     "Trabajar la recuperación activa para minimizar fatiga entre acciones.",
+    "Potenciar la fuerza explosiva en saltos y duelos aéreos.",
+    "Mejorar la flexibilidad dinámica para movimientos fluidos.",
+    "Entrenar la capacidad anaeróbica para ráfagas de alta intensidad.",
+    "Desarrollar el equilibrio en situaciones de contacto.",
+    "Fomentar la resistencia a la fatiga muscular en fases finales de partido.",
   ],
   Colectivos: [
     "Fomentar la comunicación verbal y no verbal entre líneas.",
@@ -70,6 +85,11 @@ const objectivesByCategory = {
     "Desarrollar toma de decisiones colectivas bajo presión temporal.",
     "Promover el apoyo mutuo en ataque y cobertura en defensa.",
     "Cultivar el espíritu de equipo mediante rotaciones y roles intercambiables.",
+    "Entrenar la sincronía en el pressing colectivo.",
+    "Mejorar la lectura mutua de espacios y apoyos.",
+    "Fomentar el liderazgo distribuido en momentos clave.",
+    "Desarrollar la empatía en la cobertura de compañeros.",
+    "Promover la celebración colectiva para reforzar la cohesión.",
   ],
   Mentales: [
     "Aumentar la concentración sostenida en fases de alta intensidad.",
@@ -77,6 +97,11 @@ const objectivesByCategory = {
     "Potenciar la motivación intrínseca para superar errores en juego.",
     "Entrenar la gestión emocional para mantener la calma en momentos clave.",
     "Fomentar la visualización y preparación mental pre-partido.",
+    "Mejorar la resiliencia ante derrotas parciales o fallos.",
+    "Entrenar la confianza en la toma de riesgos calculados.",
+    "Desarrollar la percepción de fatiga para autocontrol.",
+    "Potenciar la gratitud y el disfrute en el proceso de entrenamiento.",
+    "Fomentar la reflexión post-sesión para aprendizaje continuo",
   ],
 };
 
@@ -86,7 +111,7 @@ const sessionSchema = z.object({
   facility: z.string().min(1, "La instalación es obligatoria."),
   date: z.date({ required_error: "La fecha es obligatoria." }),
   time: z.string().min(1, "La hora es obligatoria."),
-  objectives: z.array(z.string()).min(1, "Debes seleccionar al menos un objetivo.").max(4, "Puedes seleccionar un máximo de 4 objetivos."),
+  objectives: z.array(z.string()).min(1, "Debes seleccionar al menos un objetivo.").max(5, "Puedes seleccionar un máximo de 5 objetivos."),
   teamId: z.string().optional(),
 });
 
@@ -152,11 +177,11 @@ export default function CrearSesionPage() {
       ? currentObjectives.filter(o => o !== objective)
       : [...currentObjectives, objective];
 
-    if (newObjectives.length > 4) {
+    if (newObjectives.length > 5) {
       toast({
         variant: "destructive",
         title: "Límite alcanzado",
-        description: "Solo puedes seleccionar un máximo de 4 objetivos.",
+        description: "Solo puedes seleccionar un máximo de 5 objetivos.",
       });
       return;
     }
@@ -360,7 +385,7 @@ export default function CrearSesionPage() {
                 {errors.time && <p className="text-sm text-destructive">{errors.time.message}</p>}
               </div>
             <div className="space-y-2">
-              <Label>Objetivos Principales ({selectedObjectives.length}/4)</Label>
+              <Label>Objetivos Principales ({selectedObjectives.length}/5)</Label>
                <div className="p-4 border rounded-lg space-y-4">
                   {Object.entries(objectivesByCategory).map(([category, objectives]) => (
                     <Collapsible key={category}>
@@ -415,5 +440,3 @@ export default function CrearSesionPage() {
     </div>
   );
 }
-
-    
