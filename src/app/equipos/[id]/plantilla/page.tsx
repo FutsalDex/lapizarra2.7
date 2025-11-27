@@ -307,24 +307,25 @@ export default function PlantillaPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Nombre</TableHead>
-                                <TableHead className="w-[180px]">Rol</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead className="w-[120px] text-right">Acciones</TableHead>
+                                <TableHead className="px-2 sm:px-4">Nombre</TableHead>
+                                <TableHead className="w-[150px] sm:w-[180px] px-2 sm:px-4">Rol</TableHead>
+                                <TableHead className="px-2 sm:px-4">Email</TableHead>
+                                <TableHead className="w-[100px] sm:w-[120px] text-right px-2 sm:px-4">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {staff.map((member, index) => (
                                 <TableRow key={member.id || index}>
-                                    <TableCell>
+                                    <TableCell className="px-2 sm:px-4">
                                         <Input 
                                             value={member.name}
                                             onChange={(e) => handleStaffChange(index, 'name', e.target.value)}
                                             placeholder="Nombre"
                                             disabled={!isOwner}
+                                            className="min-w-[120px]"
                                         />
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="px-2 sm:px-4">
                                         <Select
                                             value={member.role}
                                             onValueChange={(value) => handleStaffChange(index, 'role', value)}
@@ -342,16 +343,17 @@ export default function PlantillaPage() {
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="px-2 sm:px-4">
                                         <Input 
                                             type="email"
                                             value={member.email}
                                             onChange={(e) => handleStaffChange(index, 'email', e.target.value)}
                                             placeholder="Email"
                                             disabled={!isOwner}
+                                            className="min-w-[150px]"
                                         />
                                     </TableCell>
-                                    <TableCell className="text-right space-x-1">
+                                    <TableCell className="text-right space-x-1 px-2 sm:px-4">
                                         {isOwner && member.id && (
                                             <Button variant="ghost" size="icon" onClick={() => handleInviteStaff(member)}>
                                                  <WhatsAppIcon className="w-5 h-5 text-green-500" />
@@ -396,16 +398,16 @@ export default function PlantillaPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[100px]">Dorsal</TableHead>
-                                <TableHead>Nombre</TableHead>
-                                <TableHead className="w-[200px]">Posición</TableHead>
-                                <TableHead className="w-[100px] text-right">Acciones</TableHead>
+                                <TableHead className="w-[80px] px-2 sm:px-4">Dorsal</TableHead>
+                                <TableHead className="px-2 sm:px-4">Nombre</TableHead>
+                                <TableHead className="w-[150px] sm:w-[200px] px-2 sm:px-4">Posición</TableHead>
+                                <TableHead className="w-[80px] text-right px-2 sm:px-4">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {players.map((player, index) => (
                                 <TableRow key={player.id || index}>
-                                    <TableCell>
+                                    <TableCell className="px-2 sm:px-4">
                                         <Input 
                                             value={player.number} 
                                             onChange={(e) => handlePlayerChange(index, 'number', e.target.value)}
@@ -414,14 +416,15 @@ export default function PlantillaPage() {
                                             type="number"
                                         />
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="px-2 sm:px-4">
                                         <Input 
                                             value={player.name} 
                                             onChange={(e) => handlePlayerChange(index, 'name', e.target.value)}
                                             placeholder="Nombre del jugador"
+                                            className="min-w-[150px]"
                                         />
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="px-2 sm:px-4">
                                         <Select 
                                             value={player.position}
                                             onValueChange={(value) => handlePlayerChange(index, 'position', value)}
@@ -438,7 +441,7 @@ export default function PlantillaPage() {
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-right px-2 sm:px-4">
                                         <Button variant="ghost" size="icon" onClick={() => handleRemovePlayer(index)}>
                                             <Trash2 className="w-5 h-5 text-destructive" />
                                         </Button>
