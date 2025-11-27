@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown, ArrowLeft, Eye, ListChecks } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown, ArrowLeft, Eye, ListChecks, Shield } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -64,7 +64,7 @@ const sessionSchema = z.object({
 
 type SessionFormData = z.infer<typeof sessionSchema>;
 
-const SessionPreview = ({ sessionData, exercises }: { sessionData: any, exercises: Exercise[] }) => {
+const SessionBasicPreview = ({ sessionData, exercises }: { sessionData: any, exercises: Exercise[] }) => {
     const getExercisesByIds = (ids: string[]) => {
         if (!ids || ids.length === 0) return [];
         return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
@@ -85,7 +85,7 @@ const SessionPreview = ({ sessionData, exercises }: { sessionData: any, exercise
     return (
         <DialogContent className="max-w-3xl">
             <DialogHeader>
-                <DialogTitle>Previsualización de la Sesión</DialogTitle>
+                <DialogTitle>Previsualización de la Ficha (Básica)</DialogTitle>
             </DialogHeader>
             <ScrollArea className="max-h-[70vh] p-4">
                 <div className="space-y-6">
@@ -94,6 +94,100 @@ const SessionPreview = ({ sessionData, exercises }: { sessionData: any, exercise
                     <PhaseSectionPreview title="Fase Final" exercises={getExercisesByIds(sessionData.finalExercises)} />
                 </div>
             </ScrollArea>
+        </DialogContent>
+    );
+};
+
+const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exercises: Exercise[] }) => {
+    const getExercisesByIds = (ids: string[]) => {
+        if (!ids || ids.length === 0) return [];
+        return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+    };
+    
+    const totalPlayers = exercises.map(ex => ex['Número de jugadores']).reduce((a, b) => Math.max(a, b), 0);
+    const sessionDateFormatted = sessionData.date ? format(sessionData.date, 'dd/MM/yyyy', { locale: es }) : 'N/A';
+
+    const PhaseSectionPro = ({ title, exercises }: { title: string; exercises: Exercise[] }) => (
+        <div className="space-y-4">
+            <div className="bg-gray-800 text-white text-center py-1">
+                <h3 className="font-bold tracking-widest">{title}</h3>
+            </div>
+            {exercises.length > 0 ? exercises.map(ex => (
+                <Card key={ex.id} className="overflow-hidden">
+                    <CardHeader className="bg-gray-200 dark:bg-gray-700 p-2">
+                         <CardTitle className="text-sm text-center font-bold">{ex['Ejercicio']}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-2 grid grid-cols-2 gap-2">
+                        <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
+                            <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
+                        </div>
+                        <div className="text-xs space-y-2">
+                            <div>
+                                <p className="font-bold">Descripción</p>
+                                <p className="text-gray-600 dark:text-gray-400">{ex['Descripción de la tarea']}</p>
+                            </div>
+                            <div>
+                                <p className="font-bold">Objetivos</p>
+                                <p className="text-gray-600 dark:text-gray-400">{ex['Objetivos']}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                     <CardFooter className="bg-gray-200 dark:bg-gray-700 p-1 grid grid-cols-4 gap-1 text-xs text-center">
+                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
+                            <p className="font-bold">Tiempo</p>
+                            <p>{ex['Duración (min)']} min</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
+                            <p className="font-bold">Descanso</p><p>N/A</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
+                            <p className="font-bold">Jugadores</p>
+                            <p>{ex['Número de jugadores']}</p>
+                        </div>
+                         <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
+                            <p className="font-bold">Espacio</p><p>N/A</p>
+                        </div>
+                    </CardFooter>
+                </Card>
+            )) : <p className="text-sm text-muted-foreground p-4 text-center">No hay ejercicios en esta fase.</p>}
+        </div>
+    );
+
+    return (
+        <DialogContent className="max-w-4xl p-0">
+             <ScrollArea className="max-h-[90vh]">
+                <div className="p-8 bg-white text-gray-900">
+                    <div className="text-center mb-4">
+                        <h2 className="text-lg font-bold">Previsualización de la Ficha de Sesión</h2>
+                        <p className="text-sm">Así se verá tu sesión. Puedes descargarla como PDF desde aquí.</p>
+                    </div>
+
+                    <div className="grid grid-cols-5 gap-2 border-2 border-gray-800 p-2 mb-4">
+                        <div className="flex items-center justify-center row-span-2">
+                            <Shield className="w-12 h-12 text-gray-800" />
+                        </div>
+                         <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Microciclo</p><p className="text-sm">{sessionData.microcycle || 'N/A'}</p></div>
+                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Sesión</p><p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p></div>
+                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Fecha</p><p className="text-sm">{sessionDateFormatted}</p></div>
+                        <div className="border border-gray-800 text-center p-1 col-span-3"><p className="text-xs font-bold">Objetivos</p><p className="text-sm truncate">{sessionData.objectives?.join(', ') || 'N/A'}</p></div>
+                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Jugadores</p><p className="text-sm">{totalPlayers > 0 ? totalPlayers : 'N/A'}</p></div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <PhaseSectionPro title="FASE INICIAL" exercises={getExercisesByIds(sessionData.initialExercises)} />
+                        <PhaseSectionPro title="FASE PRINCIPAL" exercises={getExercisesByIds(sessionData.mainExercises)} />
+                        <PhaseSectionPro title="FASE FINAL" exercises={getExercisesByIds(sessionData.finalExercises)} />
+                    </div>
+
+                    <p className="text-center text-xs mt-8 text-gray-500">Powered by LaPizarra</p>
+                </div>
+            </ScrollArea>
+             <DialogFooter className="p-4 border-t bg-background flex justify-end">
+                <Button variant="outline" onClick={() => window.print()}>Descargar PDF</Button>
+                <DialogClose asChild>
+                    <Button>Cerrar</Button>
+                </DialogClose>
+            </DialogFooter>
         </DialogContent>
     );
 };
@@ -303,6 +397,13 @@ export default function EditarSesionPage() {
         setIsSaving(false);
     }
   };
+
+  const handleOpenPreview = (open: boolean) => {
+      if (!open) {
+          setPreviewType(null); // Reset preview type when dialog closes
+      }
+      setShowPreview(open);
+  };
   
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
     const exercisesForPhase = selectedExercises[phase];
@@ -492,15 +593,15 @@ export default function EditarSesionPage() {
         <PhaseSection phase="finalExercises" title="Fase Final (Vuelta a la Calma)" subtitle="Ejercicios de baja intensidad para la recuperación." />
 
         <div className="flex justify-end items-center gap-4">
-            <Dialog open={showPreview} onOpenChange={setShowPreview}>
+             <Dialog open={showPreview} onOpenChange={handleOpenPreview}>
                 <DialogTrigger asChild>
                     <Button variant="outline">
                         <Eye className="mr-2" />
                         Ver Ficha de Sesión
                     </Button>
                 </DialogTrigger>
-                {previewType ? (
-                     <SessionPreview 
+                {previewType === 'Básica' ? (
+                     <SessionBasicPreview 
                            sessionData={{
                                 ...watchedValues,
                                 initialExercises: selectedExercises.initialExercises.map(e => e.id),
@@ -509,6 +610,16 @@ export default function EditarSesionPage() {
                             }}
                             exercises={allExercises}
                         />
+                ) : previewType === 'Pro' ? (
+                    <SessionProPreview
+                        sessionData={{
+                            ...watchedValues,
+                            initialExercises: selectedExercises.initialExercises.map(e => e.id),
+                            mainExercises: selectedExercises.mainExercises.map(e => e.id),
+                            finalExercises: selectedExercises.finalExercises.map(e => e.id)
+                        }}
+                        exercises={allExercises}
+                    />
                 ) : (
                     <DialogContent>
                         <DialogHeader>
