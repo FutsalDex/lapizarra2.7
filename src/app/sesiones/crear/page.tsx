@@ -263,7 +263,7 @@ export default function CrearSesionPage() {
             </Select>
         </div>
         <ScrollArea className="h-[60vh]">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4">
             {loadingExercises ? <p>Cargando ejercicios...</p> : filteredExercises.map(exercise => (
               <DialogClose key={exercise.id} asChild>
                 <Card className="cursor-pointer hover:shadow-lg overflow-hidden flex flex-col" onClick={() => addExercise(phase, exercise)}>
