@@ -41,7 +41,6 @@ const navLinks = [
 
 const adminNavLinks = [
     { href: "/admin", label: "Panel Admin", icon: <UserCog className="w-5 h-5"/>, auth: true },
-    { href: "/tacticas", label: "Pizarra", icon: <ClipboardList className="w-5 h-5"/>, auth: true },
 ]
 
 export function Header() {
@@ -268,5 +267,3 @@ export function Header() {
     </header>
   );
 }
-
-    
