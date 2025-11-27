@@ -35,13 +35,13 @@ const db = getFirestore(app);
 const navLinks = [
   { href: "/ejercicios", label: "Ver ejercicios", icon: <BookOpen className="w-5 h-5"/>, auth: false },
   { href: "/sesiones/crear", label: "Crear Sesión", icon: <PenSquare className="w-5 h-5"/>, auth: true },
-  { href: "/tacticas", label: "Pizarra", icon: <ClipboardList className="w-5 h-5"/>, auth: true },
   { href: "/favoritos", label: "Favoritos", icon: <Star className="w-5 h-5"/>, auth: true },
   { href: "/panel", label: "Mi Panel", icon: <LayoutDashboard className="w-5 h-5"/>, auth: true },
 ];
 
 const adminNavLinks = [
     { href: "/admin", label: "Panel Admin", icon: <UserCog className="w-5 h-5"/>, auth: true },
+    { href: "/tacticas", label: "Pizarra", icon: <ClipboardList className="w-5 h-5"/>, auth: true },
 ]
 
 export function Header() {
