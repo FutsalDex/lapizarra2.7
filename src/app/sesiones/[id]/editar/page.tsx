@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown, ArrowLeft } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown, ArrowLeft, Eye, ListChecks } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -64,6 +64,33 @@ const sessionSchema = z.object({
 
 type SessionFormData = z.infer<typeof sessionSchema>;
 
+const SessionPreview = ({ sessionData, exercises }: { sessionData: any, exercises: Exercise[] }) => {
+    const getExercisesByIds = (ids: string[]) => {
+        if (!ids || ids.length === 0) return [];
+        return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+    };
+
+    const PhaseSectionPreview = ({ title, exercises }: { title: string; exercises: Exercise[] }) => (
+        <div className="space-y-4">
+            <h3 className="text-xl font-bold font-headline text-primary">{title}</h3>
+            {exercises.length > 0 ? exercises.map(ex => (
+                <div key={ex.id} className="p-3 border rounded-md">
+                    <p className="font-semibold">{ex['Ejercicio']}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{ex['Descripción de la tarea']}</p>
+                </div>
+            )) : <p className="text-sm text-muted-foreground">No hay ejercicios en esta fase.</p>}
+        </div>
+    );
+
+    return (
+        <div className="space-y-6">
+            <PhaseSectionPreview title="Fase Inicial" exercises={getExercisesByIds(sessionData.initialExercises)} />
+            <PhaseSectionPreview title="Fase Principal" exercises={getExercisesByIds(sessionData.mainExercises)} />
+            <PhaseSectionPreview title="Fase Final" exercises={getExercisesByIds(sessionData.finalExercises)} />
+        </div>
+    );
+};
+
 export default function EditarSesionPage() {
   const router = useRouter();
   const params = useParams();
@@ -86,11 +113,10 @@ export default function EditarSesionPage() {
   const { register, handleSubmit, control, formState: { errors }, setValue, watch, reset } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
   });
-
-  const selectedObjectives = watch('objectives');
+  const watchedValues = watch();
   
-  const [exercisesSnapshot, loadingExercises] = useCollection(collection(db, 'exercises'));
-  const allExercises = useMemo(() => exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [], [exercisesSnapshot]);
+  const allExercisesSnapshot = useCollection(collection(db, 'exercises'));
+  const allExercises = useMemo(() => allExercisesSnapshot[0]?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [], [allExercisesSnapshot]);
 
   const teamsQuery = user ? query(collection(db, 'teams'), or(where('ownerId', '==', user.uid), where('memberIds', 'array-contains', user.uid))) : null;
   const [teamsSnapshot, loadingTeams] = useCollection(teamsQuery);
@@ -141,7 +167,7 @@ export default function EditarSesionPage() {
   };
 
   const handleObjectiveChange = (objective: string) => {
-    const currentObjectives = selectedObjectives || [];
+    const currentObjectives = watchedValues.objectives || [];
     const newObjectives = currentObjectives.includes(objective)
       ? currentObjectives.filter(o => o !== objective)
       : [...currentObjectives, objective];
@@ -190,6 +216,7 @@ export default function EditarSesionPage() {
   };
   
     const allCategories = useMemo(() => [...new Set(allExercises.map(e => e['Categoría']))], [allExercises]);
+    const loadingExercises = allExercisesSnapshot[2];
 
   const ExercisePicker = ({ phase }: { phase: SessionPhase }) => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -398,7 +425,7 @@ export default function EditarSesionPage() {
                 </div>
             </div>
             <div className="space-y-2">
-              <Label>Objetivos Principales ({selectedObjectives?.length || 0}/5)</Label>
+              <Label>Objetivos Principales ({watchedValues.objectives?.length || 0}/5)</Label>
                <div className="p-4 border rounded-lg space-y-4">
                   {Object.entries(objectivesByCategory).map(([category, objectives]) => (
                     <Collapsible key={category}>
@@ -411,7 +438,7 @@ export default function EditarSesionPage() {
                           <div key={objective} className="flex items-start space-x-2 p-2 rounded-md hover:bg-muted">
                             <Checkbox
                               id={objective}
-                              checked={selectedObjectives?.includes(objective)}
+                              checked={watchedValues.objectives?.includes(objective)}
                               onCheckedChange={() => handleObjectiveChange(objective)}
                             />
                             <Label htmlFor={objective} className="text-sm font-normal cursor-pointer">
@@ -423,11 +450,11 @@ export default function EditarSesionPage() {
                     </Collapsible>
                   ))}
                </div>
-              {selectedObjectives && selectedObjectives.length > 0 && (
+              {watchedValues.objectives && watchedValues.objectives.length > 0 && (
                 <div className="space-y-2 pt-2">
                     <Label>Objetivos seleccionados:</Label>
                     <div className="flex flex-wrap gap-2">
-                        {selectedObjectives.map(obj => <Badge key={obj} variant="secondary">{obj}</Badge>)}
+                        {watchedValues.objectives.map(obj => <Badge key={obj} variant="secondary">{obj}</Badge>)}
                     </div>
                 </div>
               )}
@@ -440,16 +467,40 @@ export default function EditarSesionPage() {
         <PhaseSection phase="mainExercises" title="Fase Principal" subtitle="El núcleo del entrenamiento, enfocado en los objetivos." />
         <PhaseSection phase="finalExercises" title="Fase Final (Vuelta a la Calma)" subtitle="Ejercicios de baja intensidad para la recuperación." />
 
-        <Card>
-            <CardHeader><CardTitle>Finalizar y Guardar</CardTitle></CardHeader>
-            <CardContent>
-              <Button type="submit" className="w-full" size="lg" disabled={isSaving}>
+        <div className="flex justify-end items-center gap-4">
+            <Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="outline">
+                        <Eye className="mr-2" />
+                        Ver Ficha de Sesión
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>Previsualización de la Sesión</DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[70vh] p-4">
+                        <SessionPreview 
+                           sessionData={{
+                                ...watchedValues,
+                                initialExercises: selectedExercises.initialExercises.map(e => e.id),
+                                mainExercises: selectedExercises.mainExercises.map(e => e.id),
+                                finalExercises: selectedExercises.finalExercises.map(e => e.id)
+                            }}
+                            exercises={allExercises}
+                        />
+                    </ScrollArea>
+                </DialogContent>
+            </Dialog>
+
+            <Button type="submit" size="lg" disabled={isSaving}>
                 {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
                 Guardar Cambios
-              </Button>
-            </CardContent>
-        </Card>
+            </Button>
+        </div>
       </form>
     </div>
   );
 }
+
+    
