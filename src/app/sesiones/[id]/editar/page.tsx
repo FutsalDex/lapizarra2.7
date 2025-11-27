@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -157,10 +158,10 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
         <DialogContent className="max-w-4xl p-0">
              <ScrollArea className="max-h-[90vh]">
                 <div className="p-8 bg-white text-gray-900">
-                    <div className="text-center mb-4">
-                        <h2 className="text-lg font-bold">Previsualización de la Ficha de Sesión</h2>
-                        <p className="text-sm">Así se verá tu sesión. Puedes descargarla como PDF desde aquí.</p>
-                    </div>
+                    <DialogHeader className="text-center mb-4">
+                        <DialogTitle className="text-lg font-bold">Previsualización de la Ficha de Sesión</DialogTitle>
+                        <DialogDescription className="text-sm">Así se verá tu sesión. Puedes descargarla como PDF desde aquí.</DialogDescription>
+                    </DialogHeader>
 
                     <div className="grid grid-cols-5 gap-2 border-2 border-gray-800 p-2 mb-4">
                         <div className="flex items-center justify-center row-span-2">
@@ -666,4 +667,3 @@ export default function EditarSesionPage() {
     </div>
   );
 }
-
