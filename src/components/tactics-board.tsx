@@ -1,10 +1,11 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { FutsalCourt } from '@/components/futsal-court';
 import { Button } from '@/components/ui/button';
 import { Trash2, Pen, MousePointer, PlusCircle, MinusCircle, Eraser } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 type Player = {
   id: number;
@@ -162,12 +163,18 @@ export function TacticsBoard() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <FutsalCourt />
+        <Image 
+            src="https://i.ibb.co/tTZ4wBFS/pista.jpg"
+            alt="Pista de futsal"
+            fill
+            className="object-cover"
+            priority
+        />
         <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 400 200">
           {lines.map((line, i) => (
             <polyline
               key={i}
-              points={line.points.map(p => `${p.x},${p.y}`).join(' ')}
+              points={line.points.map(p => `${'p.x'},${'p.y'}`).join(' ')}
               fill="none"
               stroke="hsl(var(--card-foreground))"
               strokeWidth="2"
@@ -203,5 +210,3 @@ export function TacticsBoard() {
     </div>
   );
 }
-
-    

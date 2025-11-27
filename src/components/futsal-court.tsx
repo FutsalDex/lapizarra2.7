@@ -36,5 +36,3 @@ export const FutsalCourt = ({ className }: { className?: string }) => {
     </svg>
   );
 };
-
-    
