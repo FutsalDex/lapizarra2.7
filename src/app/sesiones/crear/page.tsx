@@ -2,79 +2,141 @@
 "use client";
 
 import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Eye, Save, X } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Eye, Save, X, Loader2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Image from 'next/image';
-import { exercises, Exercise } from '@/lib/data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { collection, addDoc, Timestamp, getFirestore, query, where, or } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { app } from '@/firebase/config';
+import { Exercise } from '@/lib/data';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
-type SessionPhase = 'warmup' | 'main' | 'cooldown';
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-const phaseLimits = {
-  warmup: 2,
-  main: 4,
-  cooldown: 2,
+type SessionPhase = 'initialExercises' | 'mainExercises' | 'finalExercises';
+
+const phaseLimits: Record<SessionPhase, number> = {
+  initialExercises: 2,
+  mainExercises: 4,
+  finalExercises: 2,
 };
 
+const sessionSchema = z.object({
+  name: z.string().min(1, "El nombre es obligatorio."),
+  facility: z.string().min(1, "La instalación es obligatoria."),
+  date: z.date({ required_error: "La fecha es obligatoria." }),
+  time: z.string().min(1, "La hora es obligatoria."),
+  objectives: z.string().min(1, "Los objetivos son obligatorios."),
+  teamId: z.string().optional(),
+});
+
+type SessionFormData = z.infer<typeof sessionSchema>;
+
 export default function CrearSesionPage() {
-  const [date, setDate] = useState<Date>();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [user, loadingAuth] = useAuthState(auth);
+  
   const [selectedExercises, setSelectedExercises] = useState<Record<SessionPhase, Exercise[]>>({
-    warmup: [],
-    main: [],
-    cooldown: [],
+    initialExercises: [],
+    mainExercises: [],
+    finalExercises: [],
   });
-  const [selectedFormat, setSelectedFormat] = useState('basico');
+
+  const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  const { register, handleSubmit, control, formState: { errors } } = useForm<SessionFormData>({
+    resolver: zodResolver(sessionSchema),
+  });
+  
+  const [exercisesSnapshot, loadingExercises] = useCollection(collection(db, 'exercises'));
+  const allExercises = exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [];
+
+  const teamsQuery = user ? query(collection(db, 'teams'), or(where('ownerId', '==', user.uid), where('memberIds', 'array-contains', user.uid))) : null;
+  const [teamsSnapshot, loadingTeams] = useCollection(teamsQuery);
+  const userTeams = teamsSnapshot?.docs.map(doc => ({ id: doc.id, name: doc.data().name })) || [];
+
 
   const addExercise = (phase: SessionPhase, exercise: Exercise) => {
     setSelectedExercises(prev => {
       if (prev[phase].length < phaseLimits[phase]) {
-        return {
-          ...prev,
-          [phase]: [...prev[phase], exercise]
-        };
+        return { ...prev, [phase]: [...prev[phase], exercise] };
       }
+      toast({ variant: 'destructive', title: 'Límite alcanzado', description: `No puedes añadir más ejercicios a esta fase.` });
       return prev;
     });
   };
 
-  const removeExercise = (phase: SessionPhase, index: number) => {
-    setSelectedExercises(prev => {
-      const newPhaseExercises = [...prev[phase]];
-      newPhaseExercises.splice(index, 1);
-      return {
-        ...prev,
-        [phase]: newPhaseExercises
-      };
-    });
+  const removeExercise = (phase: SessionPhase, exerciseId: string) => {
+    setSelectedExercises(prev => ({
+      ...prev,
+      [phase]: prev[phase].filter(ex => ex.id !== exerciseId)
+    }));
+  };
+
+  const onSubmit = async (data: SessionFormData) => {
+    if (!user) {
+        toast({ variant: "destructive", title: "Error", description: "Debes iniciar sesión para crear una sesión." });
+        return;
+    }
+
+    setIsSaving(true);
+    const [hours, minutes] = data.time.split(':').map(Number);
+    const sessionDate = new Date(data.date);
+    sessionDate.setHours(hours, minutes);
+
+    const sessionData = {
+        ...data,
+        date: Timestamp.fromDate(sessionDate),
+        userId: user.uid,
+        initialExercises: selectedExercises.initialExercises.map(ex => ex.id),
+        mainExercises: selectedExercises.mainExercises.map(ex => ex.id),
+        finalExercises: selectedExercises.finalExercises.map(ex => ex.id),
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+    };
+
+    try {
+        const docRef = await addDoc(collection(db, 'sessions'), sessionData);
+        toast({ title: "Sesión guardada", description: "Tu sesión de entrenamiento ha sido creada con éxito." });
+        router.push(`/sesiones/${docRef.id}`);
+    } catch (error: any) {
+        toast({ variant: "destructive", title: "Error al guardar", description: error.message });
+        setIsSaving(false);
+    }
   };
   
-    const allCategories = [...new Set(exercises.map(e => e['Categoría']))];
-    const allEdades = [...new Set(exercises.flatMap(e => e['Edad']))];
-    const uniqueEdades = [...new Set(allEdades)].filter(Boolean);
-
   const ExercisePicker = ({ phase }: { phase: SessionPhase }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('Todos');
-    const [edadFilter, setEdadFilter] = useState('Todos');
 
-    const filteredExercises = exercises.filter(exercise => {
+    const filteredExercises = allExercises.filter(exercise => {
       const matchesSearch = exercise['Ejercicio'].toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = categoryFilter === 'Todos' || exercise['Categoría'] === categoryFilter;
-      const matchesEdad = edadFilter === 'Todos' || (Array.isArray(exercise['Edad']) && exercise['Edad'].includes(edadFilter));
-      return matchesSearch && matchesCategory && matchesEdad;
+      return matchesSearch && matchesCategory;
     });
+    
+    const allCategories = [...new Set(allExercises.map(e => e['Categoría']))];
 
     return (
     <Dialog>
@@ -87,45 +149,26 @@ export default function CrearSesionPage() {
       <DialogContent className="max-w-5xl">
         <DialogHeader>
           <DialogTitle>Seleccionar Ejercicio</DialogTitle>
-          <CardDescription>Busca y selecciona un ejercicio de tu biblioteca.</CardDescription>
+          <DialogDescription>Busca y selecciona un ejercicio de tu biblioteca.</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar por nombre..." 
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              <Input placeholder="Buscar por nombre..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <Select onValueChange={setCategoryFilter} defaultValue="Todos">
-              <SelectTrigger>
-                <SelectValue placeholder="Categoría" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todos">Todas las Categorías</SelectItem>
                  {allCategories.map(category => <SelectItem key={category} value={category}>{category}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select onValueChange={setEdadFilter} defaultValue="Todos">
-                <SelectTrigger>
-                  <SelectValue placeholder="Edad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Todos">Todas las Edades</SelectItem>
-                  {uniqueEdades.map(edad => <SelectItem key={edad} value={edad}>{edad}</SelectItem>)}
-                </SelectContent>
-            </Select>
         </div>
         <ScrollArea className="h-[60vh]">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-            {filteredExercises.map(exercise => (
+            {loadingExercises ? <p>Cargando ejercicios...</p> : filteredExercises.map(exercise => (
               <DialogClose key={exercise.id} asChild>
-                <Card 
-                  className="cursor-pointer hover:shadow-lg overflow-hidden flex flex-col"
-                  onClick={() => addExercise(phase, exercise)}
-                >
+                <Card className="cursor-pointer hover:shadow-lg overflow-hidden flex flex-col" onClick={() => addExercise(phase, exercise)}>
                   <CardContent className="p-0 flex flex-col flex-grow">
                     <div className="relative aspect-video w-full bg-primary/80">
                       <Image src={exercise['Imagen']} alt={exercise['Ejercicio']} layout="fill" objectFit="contain" className="p-2" />
@@ -157,7 +200,7 @@ export default function CrearSesionPage() {
             </CardHeader>
             <CardContent>
              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {exercisesForPhase.map((ex, index) => (
+                {exercisesForPhase.map((ex) => (
                      <Card key={ex.id} className="overflow-hidden group relative">
                         <div className="relative aspect-video w-full bg-primary/80">
                          <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" className="p-2" />
@@ -165,21 +208,12 @@ export default function CrearSesionPage() {
                         <div className="p-2 text-center border-t bg-card">
                              <p className="text-xs font-semibold truncate">{ex['Ejercicio']}</p>
                         </div>
-                        <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => removeExercise(phase, index)}
-                        >
+                        <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeExercise(phase, ex.id)}>
                             <X className="h-4 w-4" />
                         </Button>
                     </Card>
                 ))}
-                {placeholders.map((_, index) => (
-                    <div key={index}>
-                        <ExercisePicker phase={phase} />
-                    </div>
-                ))}
+                {placeholders.map((_, index) => <div key={index}><ExercisePicker phase={phase} /></div>)}
             </div>
             </CardContent>
         </Card>
@@ -188,151 +222,95 @@ export default function CrearSesionPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8">
         <div className="text-center">
             <h1 className="text-3xl md:text-4xl font-bold font-headline">Crear Sesión</h1>
             <p className="text-base md:text-lg text-muted-foreground mt-2">Planifica tu próximo entrenamiento paso a paso.</p>
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Detalles de la Sesión</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Detalles de la Sesión</CardTitle></CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="space-y-2">
+                  <Label htmlFor="teamId">Equipo</Label>
+                  <Controller
+                      name="teamId"
+                      control={control}
+                      render={({ field }) => (
+                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loadingTeams}>
+                              <SelectTrigger><SelectValue placeholder={loadingTeams ? "Cargando..." : "Seleccionar equipo"} /></SelectTrigger>
+                              <SelectContent>
+                                  {userTeams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      )}
+                  />
+                </div>
               <div className="space-y-2">
-                <Label htmlFor="session-name">Nombre</Label>
-                <Input id="session-name" placeholder="Ej: Sesión 01" />
+                <Label htmlFor="session-name">Nombre de la Sesión</Label>
+                <Input id="session-name" placeholder="Ej: Sesión 01" {...register('name')} />
+                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
               </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="facility">Instalación</Label>
-                <Input id="facility" placeholder="Ej: Polideportivo Municipal" />
+                <Input id="facility" placeholder="Ej: Polideportivo Municipal" {...register('facility')} />
+                {errors.facility && <p className="text-sm text-destructive">{errors.facility.message}</p>}
               </div>
-            </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className="space-y-2">
+               <div className="space-y-2">
                   <Label>Fecha</Label>
-                  <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !date && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date ? format(date, "PPP", { locale: es }) : <span>Selecciona una fecha</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={(newDate) => {
-                            setDate(newDate);
-                            setIsCalendarOpen(false);
-                        }}
-                        initialFocus
-                        locale={es}
-                        weekStartsOn={1}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time">Hora</Label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="time" type="time" className="pl-10" />
-                  </div>
+                  <Controller
+                      name="date"
+                      control={control}
+                      render={({ field }) => (
+                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                          <PopoverTrigger asChild>
+                            <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {field.value ? format(field.value, "PPP", { locale: es }) : <span>Selecciona una fecha</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar mode="single" selected={field.value} onSelect={(date) => { field.onChange(date); setIsCalendarOpen(false); }} initialFocus locale={es} weekStartsOn={1} />
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                  />
+                  {errors.date && <p className="text-sm text-destructive">{errors.date.message}</p>}
                 </div>
             </div>
+             <div className="space-y-2">
+                <Label htmlFor="time">Hora</Label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="time" type="time" className="pl-10" {...register('time')} />
+                </div>
+                {errors.time && <p className="text-sm text-destructive">{errors.time.message}</p>}
+              </div>
             <div className="space-y-2">
               <Label htmlFor="main-objectives">Objetivos Principales</Label>
-              <Textarea id="main-objectives" placeholder="Define los objetivos clave para este entrenamiento..." />
+              <Textarea id="main-objectives" placeholder="Define los objetivos clave para este entrenamiento..." {...register('objectives')} />
+              {errors.objectives && <p className="text-sm text-destructive">{errors.objectives.message}</p>}
             </div>
           </CardContent>
         </Card>
         
-        <PhaseSection phase="warmup" title="Fase Inicial (Calentamiento)" subtitle="Ejercicios para preparar al equipo." />
-        <PhaseSection phase="main" title="Fase Principal" subtitle="El núcleo del entrenamiento, enfocado en los objetivos." />
-        <PhaseSection phase="cooldown" title="Fase Final (Vuelta a la Calma)" subtitle="Ejercicios de baja intensidad para la recuperación." />
-
+        <PhaseSection phase="initialExercises" title="Fase Inicial (Calentamiento)" subtitle="Ejercicios para preparar al equipo." />
+        <PhaseSection phase="mainExercises" title="Fase Principal" subtitle="El núcleo del entrenamiento, enfocado en los objetivos." />
+        <PhaseSection phase="finalExercises" title="Fase Final (Vuelta a la Calma)" subtitle="Ejercicios de baja intensidad para la recuperación." />
 
         <Card>
-            <CardHeader>
-                <CardTitle>Finalizar y Guardar</CardTitle>
-                <CardDescription>Una vez que hayas añadido todos los ejercicios, puedes previsualizar la ficha de la sesión y guardarla.</CardDescription>
-            </CardHeader>
+            <CardHeader><CardTitle>Finalizar y Guardar</CardTitle></CardHeader>
             <CardContent>
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button className="w-full" size="lg">Ver ficha y Guardar Sesión</Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle>¿Qué tipo de sesión quieres guardar?</DialogTitle>
-                            <DialogDescription>
-                            Elige el formato para tu ficha de sesión. La versión Pro requiere una suscripción.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-                            <div 
-                                className={cn(
-                                    "border-2 rounded-lg p-4 cursor-pointer",
-                                    selectedFormat === 'basico' ? 'border-primary' : 'border-border'
-                                )}
-                                onClick={() => setSelectedFormat('basico')}
-                            >
-                                <h3 className="font-semibold text-center mb-4">Básico</h3>
-                                <div className="bg-muted rounded-md p-4 aspect-[4/3] flex items-center justify-center">
-                                    <div className="w-full h-full bg-card border rounded-sm p-2 grid grid-cols-2 gap-2">
-                                        <div className="bg-muted rounded-sm"></div>
-                                        <div className="bg-muted rounded-sm"></div>
-                                        <div className="bg-muted rounded-sm"></div>
-                                        <div className="bg-muted rounded-sm"></div>
-                                    </div>
-                                </div>
-                            </div>
-                             <div 
-                                className={cn(
-                                    "border-2 rounded-lg p-4 cursor-pointer",
-                                    selectedFormat === 'pro' ? 'border-primary' : 'border-border'
-                                )}
-                                onClick={() => setSelectedFormat('pro')}
-                            >
-                                <h3 className="font-semibold text-center mb-4">Pro</h3>
-                                <div className="bg-muted rounded-md p-4 aspect-[4/3] flex items-center justify-center">
-                                    <div className="w-full h-full bg-card border rounded-sm p-2 flex gap-2">
-                                        <div className="w-1/3 space-y-2">
-                                            <div className="bg-muted rounded-sm h-1/4"></div>
-                                            <div className="bg-muted rounded-sm h-1/4"></div>
-                                        </div>
-                                        <div className="w-2/3 space-y-2">
-                                           <div className="bg-muted rounded-sm h-1/4"></div>
-                                           <div className="bg-muted rounded-sm h-1/2"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline">
-                                <Eye className="mr-2 h-4 w-4" />
-                                Previsualizar PDF
-                            </Button>
-                            <Button>
-                                <Save className="mr-2 h-4 w-4" />
-                                Guardar Sesión
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+              <Button type="submit" className="w-full" size="lg" disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
+                Guardar Sesión
+              </Button>
             </CardContent>
         </Card>
-
-      </div>
+      </form>
     </div>
   );
 }
