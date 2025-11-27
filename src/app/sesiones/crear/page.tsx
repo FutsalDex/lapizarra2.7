@@ -107,12 +107,13 @@ const objectivesByCategory = {
 
 
 const sessionSchema = z.object({
-  name: z.string().min(1, "El nombre es obligatorio."),
+  sessionNumber: z.coerce.number().min(1, "El número de sesión es obligatorio."),
   facility: z.string().min(1, "La instalación es obligatoria."),
   date: z.date({ required_error: "La fecha es obligatoria." }),
   time: z.string().min(1, "La hora es obligatoria."),
   objectives: z.array(z.string()).min(1, "Debes seleccionar al menos un objetivo.").max(5, "Puedes seleccionar un máximo de 5 objetivos."),
   teamId: z.string().optional(),
+  microcycle: z.string().optional(),
 });
 
 type SessionFormData = z.infer<typeof sessionSchema>;
@@ -135,6 +136,7 @@ export default function CrearSesionPage() {
     resolver: zodResolver(sessionSchema),
     defaultValues: {
       objectives: [],
+      sessionNumber: 1,
     },
   });
 
@@ -202,6 +204,7 @@ export default function CrearSesionPage() {
 
     const sessionData = {
         ...data,
+        name: `Sesión ${data.sessionNumber}`, // Adding name for compatibility
         date: Timestamp.fromDate(sessionDate),
         userId: user.uid,
         initialExercises: selectedExercises.initialExercises.map(ex => ex.id),
@@ -342,11 +345,11 @@ export default function CrearSesionPage() {
                       )}
                   />
                 </div>
-              <div className="space-y-2">
-                <Label htmlFor="session-name">Nombre de la Sesión</Label>
-                <Input id="session-name" placeholder="Ej: Sesión 01" {...register('name')} />
-                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-              </div>
+                <div className="space-y-2">
+                    <Label htmlFor="session-number">Número de Sesión</Label>
+                    <Input id="session-number" type="number" placeholder="Ej: 1" {...register('sessionNumber')} />
+                    {errors.sessionNumber && <p className="text-sm text-destructive">{errors.sessionNumber.message}</p>}
+                </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -354,36 +357,43 @@ export default function CrearSesionPage() {
                 <Input id="facility" placeholder="Ej: Polideportivo Municipal" {...register('facility')} />
                 {errors.facility && <p className="text-sm text-destructive">{errors.facility.message}</p>}
               </div>
-               <div className="space-y-2">
-                  <Label>Fecha</Label>
-                  <Controller
-                      name="date"
-                      control={control}
-                      render={({ field }) => (
-                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                          <PopoverTrigger asChild>
-                            <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {field.value ? format(field.value, "PPP", { locale: es }) : <span>Selecciona una fecha</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar mode="single" selected={field.value} onSelect={(date) => { field.onChange(date); setIsCalendarOpen(false); }} initialFocus locale={es} weekStartsOn={1} />
-                          </PopoverContent>
-                        </Popover>
-                      )}
-                  />
-                  {errors.date && <p className="text-sm text-destructive">{errors.date.message}</p>}
+              <div className="space-y-2">
+                <Label htmlFor="microcycle">Microciclo</Label>
+                <Input id="microcycle" placeholder="Ej: Semana 3 - Competitivo" {...register('microcycle')} />
+                {errors.microcycle && <p className="text-sm text-destructive">{errors.microcycle.message}</p>}
+              </div>
+            </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                    <Label>Fecha</Label>
+                    <Controller
+                        name="date"
+                        control={control}
+                        render={({ field }) => (
+                            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                            <PopoverTrigger asChild>
+                                <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {field.value ? format(field.value, "PPP", { locale: es }) : <span>Selecciona una fecha</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={field.value} onSelect={(date) => { field.onChange(date); setIsCalendarOpen(false); }} initialFocus locale={es} weekStartsOn={1} />
+                            </PopoverContent>
+                            </Popover>
+                        )}
+                    />
+                    {errors.date && <p className="text-sm text-destructive">{errors.date.message}</p>}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="time">Hora</Label>
+                    <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input id="time" type="time" className="pl-10" {...register('time')} />
+                    </div>
+                    {errors.time && <p className="text-sm text-destructive">{errors.time.message}</p>}
                 </div>
             </div>
-             <div className="space-y-2">
-                <Label htmlFor="time">Hora</Label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input id="time" type="time" className="pl-10" {...register('time')} />
-                </div>
-                {errors.time && <p className="text-sm text-destructive">{errors.time.message}</p>}
-              </div>
             <div className="space-y-2">
               <Label>Objetivos Principales ({selectedObjectives.length}/5)</Label>
                <div className="p-4 border rounded-lg space-y-4">
