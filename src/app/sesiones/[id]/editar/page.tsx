@@ -115,6 +115,7 @@ export default function EditarSesionPage() {
         finalExercises: (session.finalExercises || []).map((id: string) => allExercises.find(ex => ex.id === id)).filter(Boolean),
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, allExercises]);
 
 
@@ -227,7 +228,7 @@ export default function EditarSesionPage() {
               <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todos">Todas las Categorías</SelectItem>
-                 {allCategories.map(category => <SelectItem key={category} value={category}>{category}</SelectItem>)}
+                 {allCategories.map((category, index) => <SelectItem key={`${category}-${index}`} value={category}>{category}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select onValueChange={setEdadFilter} defaultValue="Todos">

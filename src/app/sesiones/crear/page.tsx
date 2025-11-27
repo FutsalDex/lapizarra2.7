@@ -253,8 +253,8 @@ export default function CrearSesionPage() {
           <DialogTitle>Seleccionar Ejercicio</DialogTitle>
           <DialogDescription>Busca y selecciona un ejercicio de tu biblioteca.</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="relative">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div className="relative md:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input placeholder="Buscar por nombre..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
