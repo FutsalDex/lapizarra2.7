@@ -31,6 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -50,7 +51,6 @@ const objectivesByCategory = {
   Colectivos: ["Fomentar la comunicación verbal y no verbal entre líneas.","Mejorar la coordinación en movimientos sincronizados de equipo.","Desarrollar toma de decisiones colectivas bajo presión temporal.","Promover el apoyo mutuo en ataque y cobertura en defensa.","Cultivar el espíritu de equipo mediante rotaciones y roles intercambiables.","Entrenar la sincronía en el pressing colectivo.","Mejorar la lectura mutua de espacios y apoyos.","Fomentar el liderazgo distribuido en momentos clave.","Desarrollar la empatía en la cobertura de compañeros.","Promover la celebración colectiva para reforzar la cohesión."],
   Mentales: ["Aumentar la concentración sostenida en fases de alta intensidad.","Desarrollar adaptabilidad a cambios tácticos o imprevistos del rival.","Potenciar la motivación intrínseca para superar errores en juego.","Entrenar la gestión emocional para mantener la calma en momentos clave.","Fomentar la visualización y preparación mental pre-partido.","Mejorar la resiliencia ante derrotas parciales o fallos.","Entrenar la confianza en la toma de riesgos calculados.","Desarrollar la percepción de fatiga para autocontrol.","Potenciar la gratitud y el disfrute en el proceso de entrenamiento.","Fomentar la reflexión post-sesión para aprendizaje continuo"],
 };
-
 
 const sessionSchema = z.object({
   sessionNumber: z.coerce.number().min(1, "El número de sesión es obligatorio."),
@@ -176,7 +176,6 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
   );
 };
 
-
 export default function EditarSesionPage() {
   const router = useRouter();
   const params = useParams();
@@ -186,6 +185,7 @@ export default function EditarSesionPage() {
   const [user, loadingAuth] = useAuthState(auth);
   
   const [session, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
+  const [userProfile, loadingProfile] = useDocumentData(user ? doc(db, 'users', user.uid) : null);
   
   const [selectedExercises, setSelectedExercises] = useState<Record<SessionPhase, Exercise[]>>({
     initialExercises: [],
@@ -347,7 +347,8 @@ export default function EditarSesionPage() {
     );
   };
 
-  const isLoading = loadingAuth || loadingSession || loadingExercises || loadingTeams;
+  const isLoading = loadingAuth || loadingSession || loadingExercises || loadingTeams || loadingProfile;
+  const isProUser = userProfile?.subscription === 'Pro';
 
   if (isLoading) {
     return (
@@ -523,7 +524,22 @@ export default function EditarSesionPage() {
                             </div>
                             <div className="flex flex-col gap-2 items-center">
                                 <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                <Button onClick={() => setPreviewType('Pro')} className="w-full">Generar Ficha Pro</Button>
+                                 <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className="w-full">
+                                                <Button onClick={() => isProUser && setPreviewType('Pro')} className="w-full" disabled={!isProUser}>
+                                                    Generar Ficha Pro
+                                                </Button>
+                                            </div>
+                                        </TooltipTrigger>
+                                        {!isProUser && (
+                                            <TooltipContent>
+                                                <p>Mejora al Plan Pro para acceder a esta función.</p>
+                                            </TooltipContent>
+                                        )}
+                                    </Tooltip>
+                                </TooltipProvider>
                             </div>
                         </div>
                     </DialogContent>
