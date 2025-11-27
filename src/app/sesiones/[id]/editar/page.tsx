@@ -516,10 +516,16 @@ export default function EditarSesionPage() {
                                 Selecciona qué versión de la ficha de sesión quieres generar.
                             </DialogDescription>
                         </DialogHeader>
-                        <DialogFooter className="grid grid-cols-2 gap-4">
-                           <Button onClick={() => setPreviewType('Básica')}>Generar Ficha Básica</Button>
-                           <Button onClick={() => setPreviewType('Pro')}>Generar Ficha Pro</Button>
-                        </DialogFooter>
+                        <div className="grid grid-cols-2 gap-4 pt-4">
+                            <div className="flex flex-col gap-2 items-center">
+                                <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
+                                <Button onClick={() => setPreviewType('Básica')} className="w-full">Generar Ficha Básica</Button>
+                            </div>
+                            <div className="flex flex-col gap-2 items-center">
+                                <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
+                                <Button onClick={() => setPreviewType('Pro')} className="w-full">Generar Ficha Pro</Button>
+                            </div>
+                        </div>
                     </DialogContent>
                 )}
             </Dialog>
