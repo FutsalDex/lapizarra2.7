@@ -111,8 +111,11 @@ service cloud.firestore {
     // ============================================================
 
     match /matches/{matchId} {
-      allow get, list, create, update, delete: if isSignedIn();
+        allow get, list: if isTeamMember(resource.data.teamId) || resource.data.userId == request.auth.uid;
+        allow create: if isTeamMember(request.resource.data.teamId) || request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isTeamMember(resource.data.teamId) || resource.data.userId == request.auth.uid;
     }
+
 
     match /sessions/{sessionId} {
       allow get, list, create, update, delete: if isSignedIn();
