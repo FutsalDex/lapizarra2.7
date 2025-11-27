@@ -100,9 +100,13 @@ export default function EditarSesionPage() {
     if (session && allExercises.length > 0) {
       const sessionDate = (session.date as Timestamp).toDate();
       reset({
-        ...session,
+        sessionNumber: session.sessionNumber,
+        facility: session.facility,
         date: sessionDate,
         time: format(sessionDate, 'HH:mm'),
+        objectives: session.objectives || [],
+        teamId: session.teamId,
+        microcycle: session.microcycle,
       });
 
       setSelectedExercises({
@@ -111,7 +115,7 @@ export default function EditarSesionPage() {
         finalExercises: (session.finalExercises || []).map((id: string) => allExercises.find(ex => ex.id === id)).filter(Boolean),
       });
     }
-  }, [session, allExercises, reset]);
+  }, [session, allExercises]);
 
 
   const addExercise = (phase: SessionPhase, exercise: Exercise) => {
