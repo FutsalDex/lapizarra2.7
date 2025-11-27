@@ -160,7 +160,7 @@ export default function CrearSesionPage() {
               <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todos">Todas las Categorías</SelectItem>
-                 {allCategories.map(category => <SelectItem key={category} value={category}>{category}</SelectItem>)}
+                 {allCategories.map((category, index) => <SelectItem key={`${category}-${index}`} value={category}>{category}</SelectItem>)}
               </SelectContent>
             </Select>
         </div>
@@ -213,7 +213,7 @@ export default function CrearSesionPage() {
                         </Button>
                     </Card>
                 ))}
-                {placeholders.map((_, index) => <div key={index}><ExercisePicker phase={phase} /></div>)}
+                {placeholders.map((_, index) => <div key={`${phase}-placeholder-${index}`}><ExercisePicker phase={phase} /></div>)}
             </div>
             </CardContent>
         </Card>
