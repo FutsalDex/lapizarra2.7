@@ -4,7 +4,7 @@
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Download, Users, Clock, Target, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Users, Clock, Target, Loader2, ListChecks } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDocumentData, useCollection } from 'react-firebase-hooks/firestore';
@@ -25,7 +25,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-3">
-            <div className="md:col-span-1 relative min-h-[200px] bg-primary/80">
+            <div className="md:col-span-1 relative min-h-[200px]">
               <Image
                 src={exercise['Imagen']}
                 alt={`Táctica para ${exercise['Ejercicio']}`}
@@ -170,10 +170,21 @@ export default function SesionDetallePage() {
         
         <Card>
              <CardHeader>
-                <CardTitle>Objetivos de la Sesión</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <ListChecks className="w-5 h-5 text-primary" />
+                  Objetivos de la Sesión
+                </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-muted-foreground">{session.objectives}</p>
+                {Array.isArray(session.objectives) && session.objectives.length > 0 ? (
+                  <ul className="space-y-2 list-disc pl-5">
+                    {session.objectives.map((obj: string, index: number) => (
+                      <li key={index} className="text-muted-foreground">{obj}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground">No hay objetivos específicos definidos para esta sesión.</p>
+                )}
             </CardContent>
         </Card>
 
@@ -187,3 +198,5 @@ export default function SesionDetallePage() {
     </div>
   );
 }
+
+    

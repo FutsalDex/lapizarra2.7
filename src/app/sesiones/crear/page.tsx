@@ -9,8 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Eye, Save, X, Loader2 } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -28,6 +27,9 @@ import { app } from '@/firebase/config';
 import { Exercise } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Badge } from '@/components/ui/badge';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -40,12 +42,51 @@ const phaseLimits: Record<SessionPhase, number> = {
   finalExercises: 2,
 };
 
+const objectivesByCategory = {
+  Técnicos: [
+    "Perfeccionar el control de balón en espacios reducidos para mayor precisión.",
+    "Mejorar pases cortos y largos con ambas piernas para fluidez en el juego.",
+    "Desarrollar regates y fintas para superar rivales en uno contra uno.",
+    "Potenciar la finalización variada (tiros, vaselinas, colocados) en situaciones de gol.",
+    "Reforzar el dominio aéreo y el cabezazo ofensivo/defensivo en corners.",
+  ],
+  Tácticos: [
+    "Desarrollar patrones de juego posicional para superioridad numérica.",
+    "Implementar presión alta y robo de balón en zonas avanzadas.",
+    "Optimizar transiciones rápidas de ataque a defensa y viceversa.",
+    "Entrenar sistemas defensivos como el 2-2 o pressing zonal.",
+    "Fomentar el uso de paredes y triangulaciones para desequilibrar defensas.",
+  ],
+  Físicos: [
+    "Aumentar la resistencia aeróbica para mantener intensidad durante todo el partido.",
+    "Mejorar la velocidad explosiva en sprints cortos y cambios de dirección.",
+    "Desarrollar agilidad y coordinación motora en pista limitada.",
+    "Fortalecer el core y las piernas para mayor potencia en disparos y saltos.",
+    "Trabajar la recuperación activa para minimizar fatiga entre acciones.",
+  ],
+  Colectivos: [
+    "Fomentar la comunicación verbal y no verbal entre líneas.",
+    "Mejorar la coordinación en movimientos sincronizados de equipo.",
+    "Desarrollar toma de decisiones colectivas bajo presión temporal.",
+    "Promover el apoyo mutuo en ataque y cobertura en defensa.",
+    "Cultivar el espíritu de equipo mediante rotaciones y roles intercambiables.",
+  ],
+  Mentales: [
+    "Aumentar la concentración sostenida en fases de alta intensidad.",
+    "Desarrollar adaptabilidad a cambios tácticos o imprevistos del rival.",
+    "Potenciar la motivación intrínseca para superar errores en juego.",
+    "Entrenar la gestión emocional para mantener la calma en momentos clave.",
+    "Fomentar la visualización y preparación mental pre-partido.",
+  ],
+};
+
+
 const sessionSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio."),
   facility: z.string().min(1, "La instalación es obligatoria."),
   date: z.date({ required_error: "La fecha es obligatoria." }),
   time: z.string().min(1, "La hora es obligatoria."),
-  objectives: z.string().min(1, "Los objetivos son obligatorios."),
+  objectives: z.array(z.string()).min(1, "Debes seleccionar al menos un objetivo.").max(4, "Puedes seleccionar un máximo de 4 objetivos."),
   teamId: z.string().optional(),
 });
 
@@ -65,9 +106,14 @@ export default function CrearSesionPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
-  const { register, handleSubmit, control, formState: { errors } } = useForm<SessionFormData>({
+  const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
+    defaultValues: {
+      objectives: [],
+    },
   });
+
+  const selectedObjectives = watch('objectives');
   
   const [exercisesSnapshot, loadingExercises] = useCollection(collection(db, 'exercises'));
   const allExercises = exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [];
@@ -78,20 +124,19 @@ export default function CrearSesionPage() {
 
 
   const addExercise = (phase: SessionPhase, exercise: Exercise) => {
-    setSelectedExercises(prev => {
-      // Check if exercise already exists in the phase
-      if (prev[phase].some(ex => ex.id === exercise.id)) {
-        toast({ variant: 'default', title: 'Ejercicio duplicado', description: 'Este ejercicio ya ha sido añadido a esta fase.' });
-        return prev;
-      }
+    // Check if exercise already exists in any phase
+    const isAlreadySelected = Object.values(selectedExercises).flat().some(ex => ex.id === exercise.id);
 
-      if (prev[phase].length < phaseLimits[phase]) {
-        return { ...prev, [phase]: [...prev[phase], exercise] };
-      }
+    if (isAlreadySelected) {
+      toast({ variant: 'default', title: 'Ejercicio duplicado', description: 'Este ejercicio ya ha sido añadido a la sesión.' });
+      return;
+    }
 
+    if (selectedExercises[phase].length < phaseLimits[phase]) {
+      setSelectedExercises(prev => ({ ...prev, [phase]: [...prev[phase], exercise] }));
+    } else {
       toast({ variant: 'destructive', title: 'Límite alcanzado', description: `No puedes añadir más ejercicios a esta fase.` });
-      return prev;
-    });
+    }
   };
 
   const removeExercise = (phase: SessionPhase, exerciseId: string) => {
@@ -99,6 +144,24 @@ export default function CrearSesionPage() {
       ...prev,
       [phase]: prev[phase].filter(ex => ex.id !== exerciseId)
     }));
+  };
+
+  const handleObjectiveChange = (objective: string) => {
+    const currentObjectives = selectedObjectives || [];
+    const newObjectives = currentObjectives.includes(objective)
+      ? currentObjectives.filter(o => o !== objective)
+      : [...currentObjectives, objective];
+
+    if (newObjectives.length > 4) {
+      toast({
+        variant: "destructive",
+        title: "Límite alcanzado",
+        description: "Solo puedes seleccionar un máximo de 4 objetivos.",
+      });
+      return;
+    }
+
+    setValue("objectives", newObjectives, { shouldValidate: true });
   };
 
   const onSubmit = async (data: SessionFormData) => {
@@ -177,7 +240,7 @@ export default function CrearSesionPage() {
               <DialogClose key={exercise.id} asChild>
                 <Card className="cursor-pointer hover:shadow-lg overflow-hidden flex flex-col" onClick={() => addExercise(phase, exercise)}>
                   <CardContent className="p-0 flex flex-col flex-grow">
-                    <div className="relative aspect-video w-full bg-primary/80">
+                    <div className="relative aspect-video w-full">
                       <Image src={exercise['Imagen']} alt={exercise['Ejercicio']} layout="fill" objectFit="contain" className="p-2" />
                     </div>
                     <div className="p-2 text-center border-t bg-card">
@@ -209,7 +272,7 @@ export default function CrearSesionPage() {
              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {exercisesForPhase.map((ex) => (
                      <Card key={ex.id} className="overflow-hidden group relative">
-                        <div className="relative aspect-video w-full bg-primary/80">
+                        <div className="relative aspect-video w-full">
                          <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" className="p-2" />
                         </div>
                         <div className="p-2 text-center border-t bg-card">
@@ -297,8 +360,39 @@ export default function CrearSesionPage() {
                 {errors.time && <p className="text-sm text-destructive">{errors.time.message}</p>}
               </div>
             <div className="space-y-2">
-              <Label htmlFor="main-objectives">Objetivos Principales</Label>
-              <Textarea id="main-objectives" placeholder="Define los objetivos clave para este entrenamiento..." {...register('objectives')} />
+              <Label>Objetivos Principales ({selectedObjectives.length}/4)</Label>
+               <div className="p-4 border rounded-lg space-y-4">
+                  {Object.entries(objectivesByCategory).map(([category, objectives]) => (
+                    <Collapsible key={category}>
+                      <CollapsibleTrigger className="flex justify-between items-center w-full font-semibold">
+                        {category}
+                        <ChevronDown className="h-4 w-4" />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-2 pt-2">
+                        {objectives.map(objective => (
+                          <div key={objective} className="flex items-start space-x-2 p-2 rounded-md hover:bg-muted">
+                            <Checkbox
+                              id={objective}
+                              checked={selectedObjectives.includes(objective)}
+                              onCheckedChange={() => handleObjectiveChange(objective)}
+                            />
+                            <Label htmlFor={objective} className="text-sm font-normal cursor-pointer">
+                              {objective}
+                            </Label>
+                          </div>
+                        ))}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))}
+               </div>
+              {selectedObjectives.length > 0 && (
+                <div className="space-y-2 pt-2">
+                    <Label>Objetivos seleccionados:</Label>
+                    <div className="flex flex-wrap gap-2">
+                        {selectedObjectives.map(obj => <Badge key={obj} variant="secondary">{obj}</Badge>)}
+                    </div>
+                </div>
+              )}
               {errors.objectives && <p className="text-sm text-destructive">{errors.objectives.message}</p>}
             </div>
           </CardContent>
@@ -321,3 +415,5 @@ export default function CrearSesionPage() {
     </div>
   );
 }
+
+    
