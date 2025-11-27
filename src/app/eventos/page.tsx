@@ -1,15 +1,23 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection, query, where, getDocs, or, Timestamp, getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { app } from '@/firebase/config';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
-import { ArrowLeft, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Loader2, Trophy, ClipboardList } from 'lucide-react';
 import Link from 'next/link';
-import { sessions, matches } from '@/lib/data';
 import { es } from 'date-fns/locale';
 import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 type Event = {
   date: Date;
@@ -20,28 +28,83 @@ type Event = {
 };
 
 export default function EventosPage() {
-  const allEvents: Event[] = [
-    ...sessions.map(s => ({
-      date: new Date(s.date),
-      type: 'session' as const,
-      title: 'Sesión de entrenamiento:',
-      details: s.name,
-      link: `/sesiones/${s.id}`
-    })),
-    ...matches.map(m => ({
-      date: new Date(m.date),
-      type: 'match' as const,
-      title: 'Partido:',
-      details: m.opponent,
-      link: `/partidos/${m.id}`
-    }))
-  ];
+  const [user, loadingAuth] = useAuthState(auth);
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      if (!user) {
+        setLoadingEvents(false);
+        return;
+      }
+
+      try {
+        setLoadingEvents(true);
+        
+        // 1. Get user's teams
+        const teamsQuery1 = query(collection(db, 'teams'), where('ownerId', '==', user.uid));
+        const teamsQuery2 = query(collection(db, 'teams'), where('memberIds', 'array-contains', user.uid));
+        
+        const [ownedTeamsSnapshot, memberTeamsSnapshot] = await Promise.all([
+          getDocs(teamsQuery1),
+          getDocs(teamsQuery2)
+        ]);
+
+        const teamIds = new Set<string>();
+        ownedTeamsSnapshot.forEach(doc => teamIds.add(doc.id));
+        memberTeamsSnapshot.forEach(doc => teamIds.add(doc.id));
+        const userTeamIds = Array.from(teamIds);
+
+        // 2. Fetch matches and sessions
+        let matches: any[] = [];
+        if (userTeamIds.length > 0) {
+            const matchesQuery = query(collection(db, 'matches'), where('teamId', 'in', userTeamIds));
+            const matchesSnapshot = await getDocs(matchesQuery);
+            matches = matchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+        
+        const sessionsQuery = query(collection(db, 'sessions'), where('userId', '==', user.uid));
+        const sessionsSnapshot = await getDocs(sessionsQuery);
+        const sessions = sessionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // 3. Format events
+        const formattedEvents: Event[] = [
+          ...sessions.map((s: any) => ({
+            date: (s.date as Timestamp).toDate(),
+            type: 'session' as const,
+            title: 'Sesión de entrenamiento:',
+            details: s.name || `Sesión del ${format((s.date as Timestamp).toDate(), 'P')}`,
+            link: `/sesiones/${s.id}`
+          })),
+          ...matches.map((m: any) => ({
+            date: (m.date as Timestamp).toDate(),
+            type: 'match' as const,
+            title: 'Partido:',
+            details: `${m.localTeam} vs ${m.visitorTeam}`,
+            link: `/partidos/${m.id}`
+          }))
+        ];
+        
+        setAllEvents(formattedEvents);
+
+      } catch (error) {
+        console.error("Error fetching events: ", error);
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+
+    if (!loadingAuth) {
+      fetchEvents();
+    }
+  }, [user, loadingAuth]);
 
   const eventDates = allEvents.map(e => e.date);
+  const selectedEvents = date ? allEvents.filter(e => e.date.toDateString() === date.toDateString()) : [];
 
-  const [date, setDate] = useState<Date | undefined>(new Date('2025-11-01T00:00:00'));
-  
-  const selectedEvent = date ? allEvents.find(e => e.date.toDateString() === date.toDateString()) : undefined;
+  const isLoading = loadingAuth || loadingEvents;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -63,41 +126,57 @@ export default function EventosPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
         <div className="md:col-span-2">
            <Card>
-            <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                className="p-4 w-full"
-                locale={es}
-                weekStartsOn={1}
-                month={new Date('2025-10-01T00:00:00')}
-                modifiers={{ with_event: eventDates }}
-                modifiersClassNames={{
-                    with_event: 'bg-primary/20 rounded-md',
-                }}
-            />
+            {isLoading ? (
+                <div className="p-4"><Skeleton className="w-full aspect-square" /></div>
+            ) : (
+                <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    className="p-4 w-full"
+                    locale={es}
+                    weekStartsOn={1}
+                    modifiers={{ with_event: eventDates }}
+                    modifiersClassNames={{
+                        with_event: 'bg-primary/20 rounded-md',
+                    }}
+                />
+            )}
            </Card>
         </div>
         <div className="md:col-span-1">
           <Card>
             <CardContent className="p-6">
-              {date && (
-                <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground">
-                    <CalendarIcon className="w-5 h-5"/>
-                    <p>{format(date, 'EEEE, dd MMMM yyyy', { locale: es })}</p>
-                </div>
-              )}
-              
-              {selectedEvent ? (
-                <div className="space-y-2">
-                    <p className="font-semibold">{selectedEvent.title}</p>
-                    <p className="text-muted-foreground">{selectedEvent.details}</p>
-                    <Link href={selectedEvent.link} className="text-primary hover:underline text-sm font-semibold">
-                      Ver detalles completos
-                    </Link>
-                </div>
+              {isLoading ? (
+                 <div className="flex items-center justify-center h-48">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No hay eventos para este día.</p>
+                <>
+                  <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground">
+                      <CalendarIcon className="w-5 h-5"/>
+                      <p>{date ? format(date, 'EEEE, dd MMMM yyyy', { locale: es }) : 'Selecciona una fecha'}</p>
+                  </div>
+                  
+                  {selectedEvents.length > 0 ? (
+                    <div className="space-y-4">
+                      {selectedEvents.map((event, index) => (
+                        <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                            <div className="flex items-center gap-2 mb-1">
+                                {event.type === 'match' ? <Trophy className="w-4 h-4 text-primary" /> : <ClipboardList className="w-4 h-4 text-primary" />}
+                                <p className="font-semibold text-sm">{event.title}</p>
+                            </div>
+                            <p className="text-muted-foreground text-sm truncate">{event.details}</p>
+                            <Link href={event.link} className="text-primary hover:underline text-xs font-semibold">
+                              Ver detalles completos
+                            </Link>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-10">No hay eventos para este día.</p>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
