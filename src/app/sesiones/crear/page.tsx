@@ -79,9 +79,16 @@ export default function CrearSesionPage() {
 
   const addExercise = (phase: SessionPhase, exercise: Exercise) => {
     setSelectedExercises(prev => {
+      // Check if exercise already exists in the phase
+      if (prev[phase].some(ex => ex.id === exercise.id)) {
+        toast({ variant: 'default', title: 'Ejercicio duplicado', description: 'Este ejercicio ya ha sido añadido a esta fase.' });
+        return prev;
+      }
+
       if (prev[phase].length < phaseLimits[phase]) {
         return { ...prev, [phase]: [...prev[phase], exercise] };
       }
+
       toast({ variant: 'destructive', title: 'Límite alcanzado', description: `No puedes añadir más ejercicios a esta fase.` });
       return prev;
     });
