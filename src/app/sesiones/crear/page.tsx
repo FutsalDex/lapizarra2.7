@@ -227,14 +227,18 @@ export default function CrearSesionPage() {
   const ExercisePicker = ({ phase }: { phase: SessionPhase }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('Todos');
+    const [edadFilter, setEdadFilter] = useState('Todos');
 
     const filteredExercises = allExercises.filter(exercise => {
       const matchesSearch = exercise['Ejercicio'].toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = categoryFilter === 'Todos' || exercise['Categoría'] === categoryFilter;
-      return matchesSearch && matchesCategory;
+      const matchesEdad = edadFilter === 'Todos' || (Array.isArray(exercise['Edad']) && exercise['Edad'].includes(edadFilter));
+      return matchesSearch && matchesCategory && matchesEdad;
     });
     
     const allCategories = [...new Set(allExercises.map(e => e['Categoría']))];
+    const allEdades = ["Benjamín", "Alevín", "Infantil", "Cadete", "Juvenil", "Senior"];
+
 
     return (
     <Dialog>
@@ -249,7 +253,7 @@ export default function CrearSesionPage() {
           <DialogTitle>Seleccionar Ejercicio</DialogTitle>
           <DialogDescription>Busca y selecciona un ejercicio de tu biblioteca.</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input placeholder="Buscar por nombre..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -260,6 +264,15 @@ export default function CrearSesionPage() {
                 <SelectItem value="Todos">Todas las Categorías</SelectItem>
                  {allCategories.map((category, index) => <SelectItem key={`${category}-${index}`} value={category}>{category}</SelectItem>)}
               </SelectContent>
+            </Select>
+            <Select onValueChange={setEdadFilter} defaultValue="Todos">
+                <SelectTrigger>
+                  <SelectValue placeholder="Edad" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todos">Todas las Edades</SelectItem>
+                  {allEdades.map((edad, index) => <SelectItem key={`${edad}-${index}`} value={edad}>{edad}</SelectItem>)}
+                </SelectContent>
             </Select>
         </div>
         <ScrollArea className="h-[60vh]">
@@ -329,7 +342,7 @@ export default function CrearSesionPage() {
         <Card>
           <CardHeader><CardTitle>Detalles de la Sesión</CardTitle></CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="space-y-2">
                   <Label htmlFor="teamId">Equipo</Label>
                   <Controller
