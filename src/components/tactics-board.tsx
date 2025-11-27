@@ -94,6 +94,40 @@ export function TacticsBoard() {
     setLines([]);
   };
 
+  // Touch event handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.target instanceof HTMLElement && e.target.dataset.playerId) {
+        if(mode === 'move') {
+            setDraggingPlayer(Number(e.target.dataset.playerId));
+        }
+    } else if (mode === 'draw') {
+        setDrawing(true);
+        const { x, y } = getCoords(e);
+        setLines(prev => [...prev, { points: [{ x, y }] }]);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (mode === 'draw' && drawing) {
+        e.preventDefault();
+        const { x, y } = getCoords(e);
+        setLines(prev => {
+            const newLines = [...prev];
+            newLines[newLines.length - 1].points.push({ x, y });
+            return newLines;
+        });
+    } else if (mode === 'move' && draggingPlayer !== null) {
+        e.preventDefault();
+        const { x, y } = getCoords(e);
+        setPlayers(prev => prev.map(p => p.id === draggingPlayer ? { ...p, x, y } : p));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (mode === 'draw') setDrawing(false);
+    if (mode === 'move') setDraggingPlayer(null);
+  };
+
   return (
     <div className="p-4 md:p-6 flex flex-col items-center gap-4">
       <div className="flex flex-wrap items-center justify-center gap-2">
@@ -124,6 +158,9 @@ export function TacticsBoard() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <FutsalCourt />
         <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 400 200">
@@ -132,7 +169,7 @@ export function TacticsBoard() {
               key={i}
               points={line.points.map(p => `${p.x},${p.y}`).join(' ')}
               fill="none"
-              stroke="hsl(var(--accent))"
+              stroke="hsl(var(--card-foreground))"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -142,6 +179,7 @@ export function TacticsBoard() {
         {players.map(player => (
           <div
             key={player.id}
+            data-player-id={player.id}
             className={cn("absolute w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-md -translate-x-1/2 -translate-y-1/2", { "cursor-grab active:cursor-grabbing": mode === 'move' })}
             style={{
               left: `${player.x / 400 * 100}%`,
@@ -150,7 +188,13 @@ export function TacticsBoard() {
               color: 'hsl(var(--primary-foreground))',
               cursor: mode === 'move' ? 'grab' : 'crosshair'
             }}
-            onMouseDown={() => { if(mode === 'move') setDraggingPlayer(player.id)}}
+            onMouseDown={(e) => { 
+                if(mode === 'move') {
+                    setDraggingPlayer(player.id);
+                    // Prevent text selection while dragging
+                    e.preventDefault();
+                }
+            }}
           >
             {player.label}
           </div>
@@ -159,3 +203,5 @@ export function TacticsBoard() {
     </div>
   );
 }
+
+    
