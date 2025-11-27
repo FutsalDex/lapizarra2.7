@@ -76,8 +76,10 @@ service cloud.firestore {
 
     match /teams/{teamId} {
 
-      // Leer info del equipo
-      allow get, list: if isTeamMember(teamId) || isAdmin();
+      // Leer info de un equipo concreto
+      allow get: if isTeamMember(teamId) || isAdmin();
+      // Listar todos los equipos (para filtrar en cliente)
+      allow list: if isSignedIn();
 
       // Crear equipo
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
