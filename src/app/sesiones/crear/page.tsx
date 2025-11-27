@@ -118,6 +118,86 @@ const sessionSchema = z.object({
 
 type SessionFormData = z.infer<typeof sessionSchema>;
 
+type ExercisePickerProps = {
+  phase: SessionPhase;
+  allExercises: Exercise[];
+  allCategories: string[];
+  loadingExercises: boolean;
+  onAddExercise: (phase: SessionPhase, exercise: Exercise) => void;
+};
+
+const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, onAddExercise }: ExercisePickerProps) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('Todos');
+  const [edadFilter, setEdadFilter] = useState('Todos');
+
+  const filteredExercises = useMemo(() => allExercises.filter(exercise => {
+    const matchesSearch = exercise['Ejercicio'].toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === 'Todos' || exercise['Categoría'] === categoryFilter;
+    const matchesEdad = edadFilter === 'Todos' || (Array.isArray(exercise['Edad']) && exercise['Edad'].includes(edadFilter));
+    return matchesSearch && matchesCategory && matchesEdad;
+  }), [searchTerm, categoryFilter, edadFilter, allExercises]);
+  
+  const allEdades = ["Benjamín", "Alevín", "Infantil", "Cadete", "Juvenil", "Senior"];
+
+  return (
+  <Dialog>
+    <DialogTrigger asChild>
+      <button className="w-full h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-4 text-muted-foreground hover:bg-muted transition-colors">
+        <PlusCircle className="h-8 w-8 mb-2" />
+        <span className="text-sm">Añadir Tarea</span>
+      </button>
+    </DialogTrigger>
+    <DialogContent className="max-w-5xl">
+      <DialogHeader>
+        <DialogTitle>Seleccionar Ejercicio</DialogTitle>
+        <DialogDescription>Busca y selecciona un ejercicio de tu biblioteca.</DialogDescription>
+      </DialogHeader>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="relative md:col-span-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input placeholder="Buscar por nombre..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </div>
+          <Select onValueChange={setCategoryFilter} defaultValue="Todos">
+            <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Todos">Todas las Categorías</SelectItem>
+               {allCategories.map((category, index) => <SelectItem key={`${category}-${index}`} value={category}>{category}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select onValueChange={setEdadFilter} defaultValue="Todos">
+              <SelectTrigger>
+                <SelectValue placeholder="Edad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Todos">Todas las Edades</SelectItem>
+                {allEdades.map((edad, index) => <SelectItem key={`${edad}-${index}`} value={edad}>{edad}</SelectItem>)}
+              </SelectContent>
+          </Select>
+      </div>
+      <ScrollArea className="h-[60vh]">
+        <div className="grid grid-cols-3 gap-4 p-4">
+          {loadingExercises ? <p>Cargando ejercicios...</p> : filteredExercises.map(exercise => (
+            <DialogClose key={exercise.id} asChild>
+              <Card className="cursor-pointer hover:shadow-lg overflow-hidden flex flex-col" onClick={() => onAddExercise(phase, exercise)}>
+                <CardContent className="p-0 flex flex-col flex-grow">
+                  <div className="relative aspect-video w-full">
+                    <Image src={exercise['Imagen']} alt={exercise['Ejercicio']} layout="fill" objectFit="contain" className="p-2" />
+                  </div>
+                  <div className="p-2 text-center border-t bg-card">
+                      <p className="text-xs font-semibold truncate">{exercise['Ejercicio']}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </DialogClose>
+          ))}
+        </div>
+      </ScrollArea>
+    </DialogContent>
+  </Dialog>
+  );
+};
+
 export default function CrearSesionPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -144,11 +224,11 @@ export default function CrearSesionPage() {
   
   const [exercisesSnapshot, loadingExercises] = useCollection(collection(db, 'exercises'));
   const allExercises = useMemo(() => exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [], [exercisesSnapshot]);
+  const allCategories = useMemo(() => [...new Set(allExercises.map(e => e['Categoría']))].sort(), [allExercises]);
 
   const teamsQuery = user ? query(collection(db, 'teams'), or(where('ownerId', '==', user.uid), where('memberIds', 'array-contains', user.uid))) : null;
   const [teamsSnapshot, loadingTeams] = useCollection(teamsQuery);
   const userTeams = useMemo(() => teamsSnapshot?.docs.map(doc => ({ id: doc.id, name: doc.data().name })) || [], [teamsSnapshot]);
-
 
   const addExercise = (phase: SessionPhase, exercise: Exercise) => {
     // Check if exercise already exists in any phase
@@ -224,81 +304,6 @@ export default function CrearSesionPage() {
     }
   };
   
-    const allCategories = useMemo(() => [...new Set(allExercises.map(e => e['Categoría']))], [allExercises]);
-  
-  const ExercisePicker = ({ phase }: { phase: SessionPhase }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState('Todos');
-    const [edadFilter, setEdadFilter] = useState('Todos');
-
-    const filteredExercises = useMemo(() => allExercises.filter(exercise => {
-      const matchesSearch = exercise['Ejercicio'].toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'Todos' || exercise['Categoría'] === categoryFilter;
-      const matchesEdad = edadFilter === 'Todos' || (Array.isArray(exercise['Edad']) && exercise['Edad'].includes(edadFilter));
-      return matchesSearch && matchesCategory && matchesEdad;
-    }), [searchTerm, categoryFilter, edadFilter]);
-    
-    const allEdades = ["Benjamín", "Alevín", "Infantil", "Cadete", "Juvenil", "Senior"];
-
-
-    return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <button className="w-full h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-4 text-muted-foreground hover:bg-muted transition-colors">
-          <PlusCircle className="h-8 w-8 mb-2" />
-          <span className="text-sm">Añadir Tarea</span>
-        </button>
-      </DialogTrigger>
-      <DialogContent className="max-w-5xl">
-        <DialogHeader>
-          <DialogTitle>Seleccionar Ejercicio</DialogTitle>
-          <DialogDescription>Busca y selecciona un ejercicio de tu biblioteca.</DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div className="relative md:col-span-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input placeholder="Buscar por nombre..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-            <Select onValueChange={setCategoryFilter} defaultValue="Todos">
-              <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Todos">Todas las Categorías</SelectItem>
-                 {allCategories.map((category, index) => <SelectItem key={`${category}-${index}`} value={category}>{category}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select onValueChange={setEdadFilter} defaultValue="Todos">
-                <SelectTrigger>
-                  <SelectValue placeholder="Edad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Todos">Todas las Edades</SelectItem>
-                  {allEdades.map((edad, index) => <SelectItem key={`${edad}-${index}`} value={edad}>{edad}</SelectItem>)}
-                </SelectContent>
-            </Select>
-        </div>
-        <ScrollArea className="h-[60vh]">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4">
-            {loadingExercises ? <p>Cargando ejercicios...</p> : filteredExercises.map(exercise => (
-              <DialogClose key={exercise.id} asChild>
-                <Card className="cursor-pointer hover:shadow-lg overflow-hidden flex flex-col" onClick={() => addExercise(phase, exercise)}>
-                  <CardContent className="p-0 flex flex-col flex-grow">
-                    <div className="relative aspect-video w-full">
-                      <Image src={exercise['Imagen']} alt={exercise['Ejercicio']} layout="fill" objectFit="contain" className="p-2" />
-                    </div>
-                    <div className="p-2 text-center border-t bg-card">
-                        <p className="text-xs font-semibold truncate">{exercise['Ejercicio']}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </DialogClose>
-            ))}
-          </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
-    );
-  };
-  
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
     const exercisesForPhase = selectedExercises[phase];
     const limit = phaseLimits[phase];
@@ -325,7 +330,17 @@ export default function CrearSesionPage() {
                         </Button>
                     </Card>
                 ))}
-                {placeholders.map((_, index) => <div key={`${phase}-placeholder-${index}`}><ExercisePicker phase={phase} /></div>)}
+                {placeholders.map((_, index) => (
+                    <div key={`${phase}-placeholder-${index}`}>
+                      <ExercisePicker 
+                        phase={phase} 
+                        allExercises={allExercises} 
+                        allCategories={allCategories}
+                        loadingExercises={loadingExercises}
+                        onAddExercise={addExercise}
+                      />
+                    </div>
+                ))}
             </div>
             </CardContent>
         </Card>
@@ -409,7 +424,7 @@ export default function CrearSesionPage() {
                 </div>
             </div>
             <div className="space-y-2">
-              <Label>Objetivos Principales ({selectedObjectives.length}/5)</Label>
+              <Label>Objetivos Principales ({(selectedObjectives || []).length}/5)</Label>
                <div className="p-4 border rounded-lg space-y-4">
                   {Object.entries(objectivesByCategory).map(([category, objectives]) => (
                     <Collapsible key={category}>
@@ -422,7 +437,7 @@ export default function CrearSesionPage() {
                           <div key={objective} className="flex items-start space-x-2 p-2 rounded-md hover:bg-muted">
                             <Checkbox
                               id={objective}
-                              checked={selectedObjectives.includes(objective)}
+                              checked={(selectedObjectives || []).includes(objective)}
                               onCheckedChange={() => handleObjectiveChange(objective)}
                             />
                             <Label htmlFor={objective} className="text-sm font-normal cursor-pointer">
@@ -434,7 +449,7 @@ export default function CrearSesionPage() {
                     </Collapsible>
                   ))}
                </div>
-              {selectedObjectives.length > 0 && (
+              {selectedObjectives && selectedObjectives.length > 0 && (
                 <div className="space-y-2 pt-2">
                     <Label>Objetivos seleccionados:</Label>
                     <div className="flex flex-wrap gap-2">
