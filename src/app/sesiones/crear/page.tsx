@@ -299,7 +299,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                         </div>
                          <div className="bg-white dark:bg-gray-600 p-1 rounded-sm flex flex-col items-center justify-center col-span-3">
                             <p className="font-bold">Material</p>
-                            <p className="truncate">{ex['Espacio y materiales necesarios']}</p>
+                            <p>{ex['Espacio y materiales necesarios']}</p>
                         </div>
                     </CardFooter>
                 </Card>
@@ -315,11 +315,8 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
             </DialogHeader>
              <ScrollArea className="max-h-[80vh]">
                 <div className="p-8 bg-white text-gray-900">
-                    <div className="grid grid-cols-6 gap-2 border-2 border-gray-800 p-2 mb-4 items-center">
-                        <div className="flex items-center justify-center">
-                            <Shield className="w-12 h-12 text-gray-800" />
-                        </div>
-                        <div className="col-span-2 space-y-1">
+                    <div className="grid grid-cols-3 gap-2 border-2 border-gray-800 p-2 mb-4 items-center">
+                        <div className="space-y-1">
                             <div className="border border-gray-800 text-center p-1">
                                 <p className="text-xs font-bold">Microciclo</p>
                                 <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
@@ -329,7 +326,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                                 <p className="text-sm">{sessionDateFormatted}</p>
                             </div>
                         </div>
-                         <div className="col-span-1 space-y-1">
+                         <div className="space-y-1">
                             <div className="border border-gray-800 text-center p-1 h-1/2 flex flex-col justify-center">
                                 <p className="text-xs font-bold">Sesión</p>
                                 <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
@@ -339,7 +336,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                                 <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
                             </div>
                         </div>
-                        <div className="col-span-2 border border-gray-800 text-center p-1 self-stretch flex flex-col justify-center">
+                        <div className="border border-gray-800 text-center p-1 self-stretch flex flex-col justify-center">
                             <p className="text-xs font-bold">Objetivos</p>
                             <p className="text-sm truncate">{sessionData.objectives?.join(', ') || 'N/A'}</p>
                         </div>
