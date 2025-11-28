@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown, Eye, ListChecks, Shield } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown, Eye, ListChecks, Shield, Download } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -211,15 +211,15 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
     ];
 
     return (
-        <DialogContent className="max-w-4xl">
-            <DialogHeader>
+        <DialogContent className="max-w-4xl p-0">
+            <DialogHeader className="p-6 pb-2">
                 <DialogTitle>Previsualización de la Ficha (Básica)</DialogTitle>
                 <DialogDescription>
                     Un resumen visual de tu sesión de entrenamiento.
                 </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="max-h-[70vh] p-4">
-                <div className="space-y-6">
+            <ScrollArea className="max-h-[70vh]">
+                <div className="space-y-6 p-6">
                     <div className="p-4 border rounded-lg space-y-2">
                         <h3 className="font-bold">Equipo: <span className="font-normal">{teamName || 'No especificado'}</span></h3>
                         <h3 className="font-bold">Fecha: <span className="font-normal">{sessionData.date ? format(sessionData.date, 'PPP', { locale: es }) : 'N/A'}</span></h3>
@@ -242,6 +242,15 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
                     </div>
                 </div>
             </ScrollArea>
+             <DialogFooter className="p-4 border-t bg-background flex justify-end">
+                <Button variant="outline" onClick={() => window.print()}>
+                  <Download className="mr-2" />
+                  Descargar PDF
+                </Button>
+                <DialogClose asChild>
+                    <Button>Cerrar</Button>
+                </DialogClose>
+            </DialogFooter>
         </DialogContent>
     );
 };
@@ -329,7 +338,10 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                 </div>
             </ScrollArea>
              <DialogFooter className="p-4 border-t bg-background flex justify-end">
-                <Button variant="outline" onClick={() => window.print()}>Descargar PDF</Button>
+                <Button variant="outline" onClick={() => window.print()}>
+                  <Download className="mr-2" />
+                  Descargar PDF
+                </Button>
                 <DialogClose asChild>
                     <Button>Cerrar</Button>
                 </DialogClose>
@@ -697,4 +709,3 @@ export default function CrearSesionPage() {
     </div>
   );
 }
-

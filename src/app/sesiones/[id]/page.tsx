@@ -139,6 +139,10 @@ export default function SesionDetallePage() {
                     Volver
                 </Link>
             </Button>
+             <Button onClick={() => window.print()}>
+              <Download className="mr-2" />
+              Descargar PDF
+            </Button>
         </div>
       </div>
       
