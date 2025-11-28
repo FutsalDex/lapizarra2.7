@@ -43,7 +43,6 @@ export default function EventosPage() {
       try {
         setLoadingEvents(true);
         
-        // 1. Get user's teams
         const teamsQuery1 = query(collection(db, 'teams'), where('ownerId', '==', user.uid));
         const teamsQuery2 = query(collection(db, 'teams'), where('memberIds', 'array-contains', user.uid));
         
@@ -57,7 +56,6 @@ export default function EventosPage() {
         memberTeamsSnapshot.forEach(doc => teamIds.add(doc.id));
         const userTeamIds = Array.from(teamIds);
 
-        // 2. Fetch matches and sessions for user and their teams
         let matches: any[] = [];
         let sessions: any[] = [];
 
@@ -71,7 +69,6 @@ export default function EventosPage() {
         const userSessionsSnapshot = await getDocs(userSessionsQuery);
         const userSessions = userSessionsSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
         
-        // Use a map to avoid duplicates if a session is tied to both userId and a teamId
         const sessionMap = new Map<string, any>();
         userSessions.forEach(s => sessionMap.set(s.id, s));
 
@@ -88,7 +85,6 @@ export default function EventosPage() {
         sessions = Array.from(sessionMap.values());
 
 
-        // 3. Format events
         const formattedEvents: Event[] = [
           ...sessions.map((s: any) => ({
             date: (s.date as Timestamp).toDate(),
@@ -167,7 +163,7 @@ export default function EventosPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-8 max-w-6xl mx-auto">
         <div className="md:col-span-3 flex justify-center">
-           <Card>
+           <Card className="p-4">
             {isLoading ? (
                 <div className="p-4"><Skeleton className="w-full aspect-square" /></div>
             ) : (
@@ -175,7 +171,6 @@ export default function EventosPage() {
                     mode="single"
                     selected={date}
                     onSelect={setDate}
-                    className="p-0"
                     locale={es}
                     weekStartsOn={1}
                     modifiers={{ 
