@@ -158,8 +158,8 @@ export default function EventosPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        <div className="md:col-span-2">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-8 max-w-6xl mx-auto">
+        <div className="md:col-span-3">
            <Card>
             {isLoading ? (
                 <div className="p-4"><Skeleton className="w-full aspect-square" /></div>
@@ -183,7 +183,7 @@ export default function EventosPage() {
             )}
            </Card>
         </div>
-        <div className="md:col-span-1">
+        <div className="md:col-span-2">
           <Card>
             <CardContent className="p-6">
               {isLoading ? (
