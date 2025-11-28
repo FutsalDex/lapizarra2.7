@@ -384,8 +384,13 @@ export default function CrearSesionPage() {
 
   useEffect(() => {
     if (printContent) {
-      window.print();
-      setPrintContent(null);
+      setTimeout(() => {
+        const printableElement = document.getElementById(printContent.type === 'Básica' ? 'print-basic' : 'print-pro');
+        if (printableElement) {
+          window.print();
+        }
+        setPrintContent(null);
+      }, 100);
     }
   }, [printContent]);
 
@@ -539,10 +544,10 @@ export default function CrearSesionPage() {
   return (
     <div className="container mx-auto px-4 py-8">
         <div className="hidden">
-            <div id="print-basic" className="print-content">
+            <div id="print-basic" className="printable-content">
                 <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
             </div>
-            <div id="print-pro" className="print-content">
+            <div id="print-pro" className="printable-content">
                  <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />
             </div>
         </div>

@@ -336,8 +336,13 @@ export default function EditarSesionPage() {
 
   useEffect(() => {
     if (printContent) {
-      window.print();
-      setPrintContent(null);
+      setTimeout(() => {
+        const printableElement = document.getElementById(printContent.type === 'Básica' ? 'print-basic' : 'print-pro');
+        if (printableElement) {
+          window.print();
+        }
+        setPrintContent(null);
+      }, 100);
     }
   }, [printContent]);
 
@@ -524,10 +529,10 @@ export default function EditarSesionPage() {
   return (
     <div className="container mx-auto px-4 py-8">
         <div className="hidden">
-            <div id="print-basic" className="print-content">
+            <div id="print-basic" className="printable-content">
                 <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
             </div>
-            <div id="print-pro" className="print-content">
+            <div id="print-pro" className="printable-content">
                  <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />
             </div>
         </div>
@@ -675,9 +680,9 @@ export default function EditarSesionPage() {
                                   Descargar Básica
                                 </Button>
                             </div>
-                            <div className="flex flex-col gap-2 items-center">
+                             <div className="flex flex-col gap-2 items-center">
                                 <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                 <TooltipProvider>
+                                <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <div className="w-full">
