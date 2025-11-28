@@ -113,13 +113,36 @@ export default function EventosPage() {
     }
   }, [user, loadingAuth]);
 
-  const eventDates = allEvents.map(e => e.date);
+  const matchDates = allEvents.filter(e => e.type === 'match').map(e => e.date);
+  const sessionDates = allEvents.filter(e => e.type === 'session').map(e => e.date);
   const selectedEvents = date ? allEvents.filter(e => e.date.toDateString() === date.toDateString()) : [];
 
   const isLoading = loadingAuth || loadingEvents;
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <style>{`
+        .session-day {
+          border: 1px solid hsl(var(--primary));
+          background-color: transparent;
+          color: hsl(var(--primary-foreground));
+        }
+        .match-day {
+            background-color: hsl(var(--primary) / 0.2);
+        }
+        .rdp-day_today:not(.rdp-day_outside) {
+            font-weight: bold;
+            background-color: hsl(var(--accent));
+        }
+        .session-day.rdp-day_today:not(.rdp-day_outside) {
+             background-color: hsl(var(--accent));
+             border: 1px solid hsl(var(--primary));
+        }
+         .match-day.rdp-day_today:not(.rdp-day_outside) {
+             background-color: hsl(var(--primary) / 0.4);
+        }
+
+      `}</style>
       <div className="mb-6">
         <Button variant="outline" asChild>
           <Link href="/panel">
@@ -148,9 +171,13 @@ export default function EventosPage() {
                     className="p-4 w-full"
                     locale={es}
                     weekStartsOn={1}
-                    modifiers={{ with_event: eventDates }}
+                    modifiers={{ 
+                        matches: matchDates,
+                        sessions: sessionDates,
+                    }}
                     modifiersClassNames={{
-                        with_event: 'bg-primary/20 rounded-md',
+                        matches: 'match-day',
+                        sessions: 'session-day',
                     }}
                 />
             )}
