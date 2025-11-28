@@ -61,24 +61,24 @@ export default function EventosPage() {
         let matches: any[] = [];
         let sessions: any[] = [];
         
+        const sessionPromises: Promise<any>[] = [getDocs(query(collection(db, 'sessions'), where('userId', '==', user.uid)))];
         if (userTeamIds.length > 0) {
+            sessionPromises.push(getDocs(query(collection(db, 'sessions'), where('teamId', 'in', userTeamIds))));
             const matchesQuery = query(collection(db, 'matches'), where('teamId', 'in', userTeamIds));
-            const sessionsQuery = query(collection(db, 'sessions'), or(where('userId', '==', user.uid), where('teamId', 'in', userTeamIds)));
-            
-            const [matchesSnapshot, sessionsSnapshot] = await Promise.all([
-                getDocs(matchesQuery),
-                getDocs(sessionsQuery)
-            ]);
-
+            const matchesSnapshot = await getDocs(matchesQuery);
             matches = matchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            sessions = sessionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        } else {
-            // If user has no teams, just fetch their own sessions
-             const sessionsQuery = query(collection(db, 'sessions'), where('userId', '==', user.uid));
-             const sessionsSnapshot = await getDocs(sessionsQuery);
-             sessions = sessionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
+
+        const sessionSnapshots = await Promise.all(sessionPromises);
+        const sessionDocs = new Map<string, any>();
+        sessionSnapshots.forEach(snapshot => {
+            snapshot.docs.forEach(doc => {
+                if (!sessionDocs.has(doc.id)) {
+                    sessionDocs.set(doc.id, { id: doc.id, ...doc.data() });
+                }
+            });
+        });
+        sessions = Array.from(sessionDocs.values());
 
 
         // 3. Format events
