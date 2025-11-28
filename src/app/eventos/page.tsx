@@ -57,28 +57,35 @@ export default function EventosPage() {
         memberTeamsSnapshot.forEach(doc => teamIds.add(doc.id));
         const userTeamIds = Array.from(teamIds);
 
-        // 2. Fetch matches and sessions
+        // 2. Fetch matches and sessions for user and their teams
         let matches: any[] = [];
         let sessions: any[] = [];
-        
-        const sessionPromises: Promise<any>[] = [getDocs(query(collection(db, 'sessions'), where('userId', '==', user.uid)))];
+
         if (userTeamIds.length > 0) {
-            sessionPromises.push(getDocs(query(collection(db, 'sessions'), where('teamId', 'in', userTeamIds))));
             const matchesQuery = query(collection(db, 'matches'), where('teamId', 'in', userTeamIds));
             const matchesSnapshot = await getDocs(matchesQuery);
             matches = matchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
+        
+        const userSessionsQuery = query(collection(db, 'sessions'), where('userId', '==', user.uid));
+        const userSessionsSnapshot = await getDocs(userSessionsQuery);
+        const userSessions = userSessionsSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+        
+        // Use a map to avoid duplicates if a session is tied to both userId and a teamId
+        const sessionMap = new Map<string, any>();
+        userSessions.forEach(s => sessionMap.set(s.id, s));
 
-        const sessionSnapshots = await Promise.all(sessionPromises);
-        const sessionDocs = new Map<string, any>();
-        sessionSnapshots.forEach(snapshot => {
-            snapshot.docs.forEach(doc => {
-                if (!sessionDocs.has(doc.id)) {
-                    sessionDocs.set(doc.id, { id: doc.id, ...doc.data() });
-                }
-            });
-        });
-        sessions = Array.from(sessionDocs.values());
+        if (userTeamIds.length > 0) {
+          const teamSessionsQuery = query(collection(db, 'sessions'), where('teamId', 'in', userTeamIds));
+          const teamSessionsSnapshot = await getDocs(teamSessionsQuery);
+          teamSessionsSnapshot.docs.forEach(doc => {
+            if (!sessionMap.has(doc.id)) {
+              sessionMap.set(doc.id, { id: doc.id, ...doc.data() });
+            }
+          });
+        }
+        
+        sessions = Array.from(sessionMap.values());
 
 
         // 3. Format events
@@ -159,7 +166,7 @@ export default function EventosPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-8 max-w-6xl mx-auto">
-        <div className="md:col-span-3">
+        <div className="md:col-span-3 flex justify-center">
            <Card>
             {isLoading ? (
                 <div className="p-4"><Skeleton className="w-full aspect-square" /></div>
@@ -168,7 +175,7 @@ export default function EventosPage() {
                     mode="single"
                     selected={date}
                     onSelect={setDate}
-                    className="p-0 flex justify-center"
+                    className="p-0"
                     locale={es}
                     weekStartsOn={1}
                     modifiers={{ 
