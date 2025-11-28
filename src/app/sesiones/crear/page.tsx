@@ -162,7 +162,7 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
             <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Todos">Todas las Categorías</SelectItem>
-               {allCategories.map((category, index) => <SelectItem key={`${category}-${index}`} value={category}>{category}</SelectItem>)}
+               {allCategories.map((category, index) => <SelectItem key={`${'${category}'}-${index}`} value={category}>{category}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select onValueChange={setEdadFilter} defaultValue="Todos">
@@ -171,7 +171,7 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todos">Todas las Edades</SelectItem>
-                {allEdades.map((edad, index) => <SelectItem key={`${edad}-${index}`} value={edad}>{edad}</SelectItem>)}
+                {allEdades.map((edad, index) => <SelectItem key={`${'${edad}'}-${index}`} value={edad}>{edad}</SelectItem>)}
               </SelectContent>
           </Select>
       </div>
@@ -242,7 +242,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
                     </div>
                 </div>
             </ScrollArea>
-            <DialogFooter className="p-4 border-t bg-background flex justify-end gap-2">
+             <DialogFooter className="p-4 border-t bg-background flex justify-end gap-2">
                 <Button variant="outline" onClick={() => window.print()}>
                   <Download className="mr-2" />
                   Descargar PDF
@@ -291,7 +291,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                      <CardFooter className="bg-gray-200 dark:bg-gray-700 p-1 grid grid-cols-5 gap-1 text-xs text-center">
                         <div className="bg-white dark:bg-gray-600 p-1 rounded-sm flex flex-col items-center justify-center">
                             <p className="font-bold">Tiempo</p>
-                            <p>{ex['Duración (min)']} min</p>
+                            <p>{ex['Duración (min)']}</p>
                         </div>
                         <div className="bg-white dark:bg-gray-600 p-1 rounded-sm flex flex-col items-center justify-center">
                             <p className="font-bold">Jugadores</p>
@@ -315,27 +315,33 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
             </DialogHeader>
              <ScrollArea className="max-h-[80vh]">
                 <div className="p-8 bg-white text-gray-900">
-                    <div className="grid grid-cols-3 gap-4 border-2 border-gray-800 p-2 mb-4">
+                    <div className="grid grid-cols-6 gap-2 border-2 border-gray-800 p-2 mb-4 items-center">
                         <div className="flex items-center justify-center">
                             <Shield className="w-12 h-12 text-gray-800" />
                         </div>
-                        <div className="col-span-2 grid grid-cols-2 gap-2">
+                        <div className="col-span-2 space-y-1">
                             <div className="border border-gray-800 text-center p-1">
                                 <p className="text-xs font-bold">Microciclo</p>
-                                <p className="text-sm">{sessionData.microcycle || 'N/A'}</p>
+                                <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
                             </div>
-                            <div className="border border-gray-800 text-center p-1">
+                             <div className="border border-gray-800 text-center p-1">
+                                <p className="text-xs font-bold">Fecha</p>
+                                <p className="text-sm">{sessionDateFormatted}</p>
+                            </div>
+                        </div>
+                         <div className="col-span-1 space-y-1">
+                            <div className="border border-gray-800 text-center p-1 h-1/2 flex flex-col justify-center">
                                 <p className="text-xs font-bold">Sesión</p>
                                 <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
                             </div>
-                             <div className="border border-gray-800 text-center p-1 col-span-2">
-                                <p className="text-xs font-bold">Objetivos</p>
-                                <p className="text-sm truncate">{sessionData.objectives?.join(', ') || 'N/A'}</p>
+                             <div className="border border-gray-800 text-center p-1 h-1/2 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Instalación</p>
+                                <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
                             </div>
                         </div>
-                         <div className="border border-gray-800 text-center p-1">
-                            <p className="text-xs font-bold">Fecha</p>
-                            <p className="text-sm">{sessionDateFormatted}</p>
+                        <div className="col-span-2 border border-gray-800 text-center p-1 self-stretch flex flex-col justify-center">
+                            <p className="text-xs font-bold">Objetivos</p>
+                            <p className="text-sm truncate">{sessionData.objectives?.join(', ') || 'N/A'}</p>
                         </div>
                     </div>
 
@@ -507,7 +513,7 @@ export default function CrearSesionPage() {
                     </Card>
                 ))}
                 {placeholders.map((_, index) => (
-                    <div key={`${phase}-placeholder-${index}`}>
+                    <div key={`${'${phase}'}-placeholder-${index}`}>
                       <ExercisePicker 
                         phase={phase} 
                         allExercises={allExercises} 
