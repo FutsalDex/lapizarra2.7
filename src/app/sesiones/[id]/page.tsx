@@ -139,10 +139,6 @@ export default function SesionDetallePage() {
                     Volver
                 </Link>
             </Button>
-             <Button>
-                <Download className="mr-2" />
-                Descargar PDF
-            </Button>
         </div>
       </div>
       
