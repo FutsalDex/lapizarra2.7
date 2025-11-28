@@ -538,9 +538,13 @@ export default function CrearSesionPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-        <div className="hidden print-container">
-            {printContent?.type === 'Básica' && <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />}
-            {printContent?.type === 'Pro' && <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />}
+        <div className="hidden">
+            <div id="print-basic" className="print-content">
+                <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+            </div>
+            <div id="print-pro" className="print-content">
+                 <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />
+            </div>
         </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8 non-printable">

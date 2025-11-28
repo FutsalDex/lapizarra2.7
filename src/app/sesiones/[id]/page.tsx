@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Download, Users, Clock, Target, Loader2, ListChecks } from 'lucide-react';
+import { ArrowLeft, Download, Users, Clock, Target, Loader2, ListChecks, Edit } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDocumentData, useCollection } from 'react-firebase-hooks/firestore';
@@ -13,6 +14,8 @@ import { app } from '@/firebase/config';
 import { Exercise } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Timestamp } from 'firebase/firestore';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const db = getFirestore(app);
 
@@ -130,7 +133,7 @@ export default function SesionDetallePage() {
           <div>
             <h1 className="text-4xl font-bold font-headline">{session.name}</h1>
             <p className="text-lg text-muted-foreground mt-1">
-                {sessionDate ? new Date(sessionDate).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Fecha no especificada'}
+                {sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}
             </p>
           </div>
           <div className="flex gap-2">
@@ -140,9 +143,11 @@ export default function SesionDetallePage() {
                       Volver
                   </Link>
               </Button>
-               <Button onClick={() => window.print()}>
-                <Download className="mr-2" />
-                Descargar PDF
+               <Button asChild>
+                  <Link href={`/sesiones/${sessionId}/editar`}>
+                      <Edit className="mr-2" />
+                      Editar
+                  </Link>
               </Button>
           </div>
         </div>
