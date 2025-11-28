@@ -72,3 +72,21 @@ body {
     -webkit-text-size-adjust: 100%;
   }
 }
+
+@media print {
+  body {
+    background: white;
+  }
+  .non-printable {
+    display: none !important;
+  }
+  .printable-content {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 1rem;
+    color: black;
+  }
+}

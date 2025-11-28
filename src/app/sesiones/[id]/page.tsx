@@ -125,28 +125,30 @@ export default function SesionDetallePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-4xl font-bold font-headline">{session.name}</h1>
-          <p className="text-lg text-muted-foreground mt-1">
-              {sessionDate ? new Date(sessionDate).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Fecha no especificada'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-            <Button variant="outline" asChild>
-                <Link href="/sesiones">
-                    <ArrowLeft className="mr-2" />
-                    Volver
-                </Link>
-            </Button>
-             <Button onClick={() => window.print()}>
-              <Download className="mr-2" />
-              Descargar PDF
-            </Button>
+      <div className="non-printable">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-4xl font-bold font-headline">{session.name}</h1>
+            <p className="text-lg text-muted-foreground mt-1">
+                {sessionDate ? new Date(sessionDate).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Fecha no especificada'}
+            </p>
+          </div>
+          <div className="flex gap-2">
+              <Button variant="outline" asChild>
+                  <Link href="/sesiones">
+                      <ArrowLeft className="mr-2" />
+                      Volver
+                  </Link>
+              </Button>
+               <Button onClick={() => window.print()}>
+                <Download className="mr-2" />
+                Descargar PDF
+              </Button>
+          </div>
         </div>
       </div>
       
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-8 printable-content">
         <Card>
             <CardHeader>
                 <CardTitle>Detalles de la Sesión</CardTitle>

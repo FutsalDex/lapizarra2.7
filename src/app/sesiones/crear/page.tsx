@@ -213,7 +213,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
     const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
     return (
-        <div className="printable-content overflow-y-auto px-6">
+        <div className="overflow-y-auto px-6">
             <div className="space-y-6">
                 <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4 text-gray-900">
                     <div className="flex w-full space-x-2">
@@ -319,7 +319,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
     );
 
     return (
-        <div className="printable-content">
+        <div className="overflow-y-auto">
             <div className="p-8 bg-white text-gray-900">
                 <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
                     <div className="flex w-full space-x-2">
@@ -380,7 +380,7 @@ export default function CrearSesionPage() {
   
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [printContent, setPrintContent] = useState<React.ReactNode | null>(null);
+  const [printContent, setPrintContent] = useState<{type: 'Básica' | 'Pro'} | null>(null);
 
   useEffect(() => {
     if (printContent) {
@@ -484,22 +484,14 @@ export default function CrearSesionPage() {
         setIsSaving(false);
     }
   };
-  
-    const handleGeneratePreview = (type: 'Básica' | 'Pro') => {
-        const sessionDataForPreview = {
-            ...watchedValues,
-            initialExercises: selectedExercises.initialExercises.map(e => e.id),
-            mainExercises: selectedExercises.mainExercises.map(e => e.id),
-            finalExercises: selectedExercises.finalExercises.map(e => e.id)
-        };
-        const teamName = userTeams.find(t => t.id === watchedValues.teamId)?.name || '';
 
-        if (type === 'Básica') {
-            setPrintContent(<SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />);
-        } else {
-            setPrintContent(<SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />);
-        }
-    };
+  const sessionDataForPreview = {
+      ...watchedValues,
+      initialExercises: selectedExercises.initialExercises.map(e => e.id),
+      mainExercises: selectedExercises.mainExercises.map(e => e.id),
+      finalExercises: selectedExercises.finalExercises.map(e => e.id)
+  };
+  const teamNameForPreview = userTeams.find(t => t.id === watchedValues.teamId)?.name || '';
 
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
     const exercisesForPhase = selectedExercises[phase];
@@ -546,21 +538,10 @@ export default function CrearSesionPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-        <style jsx global>{`
-            @media print {
-              body > *:not(.print-container) {
-                display: none;
-              }
-              .print-container {
-                display: block !important;
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-              }
-            }
-          `}</style>
-         {printContent && <div className="print-container hidden">{printContent}</div>}
+        <div className="hidden print-container">
+            {printContent?.type === 'Básica' && <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />}
+            {printContent?.type === 'Pro' && <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />}
+        </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8 non-printable">
         <div className="text-center">
@@ -693,41 +674,37 @@ export default function CrearSesionPage() {
                             <DialogHeader>
                                 <DialogTitle>Elige el tipo de ficha</DialogTitle>
                                 <DialogDescription>
-                                    Selecciona qué versión de la ficha de sesión quieres generar.
+                                    Sesión de entrenamiento
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="grid grid-cols-2 gap-4 pt-4">
-                                <DialogClose asChild>
-                                    <div className="flex flex-col gap-2 items-center">
-                                        <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                        <Button onClick={() => handleGeneratePreview('Básica')} className="w-full">
-                                          <Download className="mr-2" />
-                                          Descargar Básica
-                                        </Button>
-                                    </div>
-                                </DialogClose>
-                                <DialogClose asChild>
-                                     <div className="flex flex-col gap-2 items-center">
-                                        <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                         <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div className="w-full">
-                                                        <Button onClick={() => isProUser && handleGeneratePreview('Pro')} className="w-full" disabled={!isProUser}>
-                                                            <Download className="mr-2" />
-                                                            Descargar Pro
-                                                        </Button>
-                                                    </div>
-                                                </TooltipTrigger>
-                                                {!isProUser && (
-                                                    <TooltipContent>
-                                                        <p>Mejora al Plan Pro para acceder a esta función.</p>
-                                                    </TooltipContent>
-                                                )}
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </div>
-                                </DialogClose>
+                                <div className="flex flex-col gap-2 items-center">
+                                    <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
+                                    <Button onClick={() => setPrintContent({type: 'Básica'})} className="w-full">
+                                      <Download className="mr-2" />
+                                      Descargar Básica
+                                    </Button>
+                                </div>
+                                 <div className="flex flex-col gap-2 items-center">
+                                    <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
+                                     <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="w-full">
+                                                    <Button onClick={() => isProUser && setPrintContent({type: 'Pro'})} className="w-full" disabled={!isProUser}>
+                                                        <Download className="mr-2" />
+                                                        Descargar Pro
+                                                    </Button>
+                                                </div>
+                                            </TooltipTrigger>
+                                            {!isProUser && (
+                                                <TooltipContent>
+                                                    <p>Mejora al Plan Pro para acceder a esta función.</p>
+                                                </TooltipContent>
+                                            )}
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
                             </div>
                         </DialogContent>
                     </Dialog>
