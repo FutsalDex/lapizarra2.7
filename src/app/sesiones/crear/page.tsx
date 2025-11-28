@@ -217,7 +217,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
             <DialogHeader className="p-6 pb-2 non-printable">
                 <DialogTitle>Previsualización de la Ficha (Básica)</DialogTitle>
                 <DialogDescription>
-                    Un resumen visual de tu sesión de entrenamiento.
+                    Sesión de entrenamiento
                 </DialogDescription>
             </DialogHeader>
             <div className="printable-content overflow-y-auto px-6">
@@ -337,58 +337,58 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
 
     return (
         <DialogContent className="max-w-4xl p-0 flex flex-col max-h-[90vh]">
-             <DialogHeader className="p-6 pb-0 non-printable">
+            <DialogHeader className="p-6 pb-0 non-printable">
                 <DialogTitle className="text-lg font-bold">Previsualización de la Ficha de Sesión</DialogTitle>
                 <DialogDescription className="text-sm">Así se verá tu sesión. Puedes descargarla como PDF desde aquí.</DialogDescription>
             </DialogHeader>
-            <div className="printable-content overflow-y-auto">
-              <div className="p-8 bg-white text-gray-900">
-                  <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
-                      <div className="flex w-full space-x-2">
-                          <div className="flex flex-col justify-between gap-1 basis-1/5">
-                              <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                  <p className="text-xs font-bold">Microciclo</p>
-                                  <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
-                              </div>
-                              <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                  <p className="text-xs font-bold">Fecha</p>
-                                  <p className="text-sm">{sessionDateFormatted}</p>
-                              </div>
-                          </div>
-                          <div className="flex flex-col justify-between gap-1 basis-1/5">
-                              <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                  <p className="text-xs font-bold">Sesión</p>
-                                  <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
-                              </div>
-                              <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                  <p className="text-xs font-bold">Instalación</p>
-                                  <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
-                              </div>
-                          </div>
-                          <div className="border border-gray-800 text-left p-1 flex-grow">
-                              <p className="text-xs font-bold">Objetivos</p>
-                              <ul className="text-sm space-y-1 mt-1">
-                                  {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                      <li key={index} className='list-disc list-inside'>{obj}</li>
-                                  ))}
-                              </ul>
-                          </div>
-                      </div>
-                  </div>
+            <div className="printable-content flex-1 overflow-y-auto">
+                <div className="p-8 bg-white text-gray-900">
+                    <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
+                        <div className="flex w-full space-x-2">
+                            <div className="flex flex-col justify-between gap-1 basis-1/5">
+                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                    <p className="text-xs font-bold">Microciclo</p>
+                                    <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
+                                </div>
+                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                    <p className="text-xs font-bold">Fecha</p>
+                                    <p className="text-sm">{sessionDateFormatted}</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-col justify-between gap-1 basis-1/5">
+                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                    <p className="text-xs font-bold">Sesión</p>
+                                    <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
+                                </div>
+                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                    <p className="text-xs font-bold">Instalación</p>
+                                    <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div className="border border-gray-800 text-left p-1 flex-grow">
+                                <p className="text-xs font-bold">Objetivos</p>
+                                <ul className="text-sm space-y-1 mt-1">
+                                    {(sessionData.objectives || []).map((obj: string, index: number) => (
+                                        <li key={index} className='list-disc list-inside'>{obj}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
 
-                  <div className="space-y-6 pt-0">
-                      <PhaseSectionPro title="FASE INICIAL" exercises={getExercisesByIds(sessionData.initialExercises)} />
-                      <PhaseSectionPro title="FASE PRINCIPAL" exercises={getExercisesByIds(sessionData.mainExercises)} />
-                      <PhaseSectionPro title="FASE FINAL" exercises={getExercisesByIds(sessionData.finalExercises)} />
-                  </div>
+                    <div className="space-y-6 pt-0">
+                        <PhaseSectionPro title="FASE INICIAL" exercises={getExercisesByIds(sessionData.initialExercises)} />
+                        <PhaseSectionPro title="FASE PRINCIPAL" exercises={getExercisesByIds(sessionData.mainExercises)} />
+                        <PhaseSectionPro title="FASE FINAL" exercises={getExercisesByIds(sessionData.finalExercises)} />
+                    </div>
 
-                  <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
-              </div>
+                    <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
+                </div>
             </div>
-             <DialogFooter className="p-4 border-t bg-background flex justify-end non-printable mt-auto">
+            <DialogFooter className="p-4 border-t bg-background flex justify-end non-printable">
                 <Button variant="outline" onClick={() => window.print()} className="print-button">
-                  <Download className="mr-2" />
-                  Descargar PDF
+                    <Download className="mr-2" />
+                    Descargar PDF
                 </Button>
                 <DialogClose asChild>
                     <Button>Cerrar</Button>
