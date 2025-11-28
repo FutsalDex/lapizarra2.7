@@ -161,7 +161,7 @@ export default function EventosPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-8 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 max-w-6xl mx-auto">
         <div className="md:col-span-3 flex justify-center">
            <Card className="p-4">
             {isLoading ? (
