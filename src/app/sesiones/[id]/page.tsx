@@ -24,22 +24,22 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
       <h2 className="text-2xl font-bold font-headline text-primary">{title}</h2>
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-3">
-            <div className="md:col-span-1 relative min-h-[200px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+            <div className="md:col-span-1 relative min-h-[200px] bg-muted rounded-md">
               <Image
                 src={exercise['Imagen']}
                 alt={`Táctica para ${exercise['Ejercicio']}`}
                 fill
-                className="object-contain p-4"
+                className="object-contain p-2"
               />
             </div>
-            <div className="md:col-span-2">
-              <CardHeader>
-                <CardTitle>{exercise['Ejercicio']}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-muted-foreground">{exercise['Descripción de la tarea']}</p>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="md:col-span-2 space-y-4">
+               <div>
+                  <h3 className="text-xl font-bold font-headline">{exercise['Ejercicio']}</h3>
+                  <p className="text-muted-foreground mt-2">{exercise['Descripción de la tarea']}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm pt-4">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-muted-foreground" />
                     <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
@@ -49,14 +49,14 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
                     <span><span className="font-semibold">Jugadores:</span> {exercise['Número de jugadores']}</span>
                   </div>
                 </div>
-                <div>
+
+                <div className="pt-4">
                   <div className="flex items-center gap-2 mb-2">
                       <Target className="w-4 h-4 text-primary" />
                       <h4 className="font-semibold">Objetivos del Ejercicio</h4>
                   </div>
                   <p className="text-sm text-muted-foreground">{exercise['Objetivos']}</p>
                 </div>
-              </CardContent>
             </div>
           </div>
         </Card>
