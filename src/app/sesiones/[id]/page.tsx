@@ -34,7 +34,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
                   className="object-contain p-2"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-muted-foreground" />
                     <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
