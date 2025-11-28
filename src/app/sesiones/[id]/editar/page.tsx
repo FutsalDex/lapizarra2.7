@@ -80,15 +80,15 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
     const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
     return (
-        <DialogContent className="max-w-4xl p-0">
+        <DialogContent className="max-w-4xl p-0 flex flex-col max-h-[90vh]">
             <DialogHeader className="p-6 pb-2 non-printable">
                 <DialogTitle>Previsualización de la Ficha (Básica)</DialogTitle>
                 <DialogDescription>
                     Un resumen visual de tu sesión de entrenamiento.
                 </DialogDescription>
             </DialogHeader>
-            <div className="printable-content max-h-[70vh] overflow-y-auto">
-              <div className="space-y-6 p-6">
+            <div className="printable-content overflow-y-auto px-6">
+              <div className="space-y-6">
                   <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4 text-gray-900">
                       <div className="flex w-full space-x-2">
                           <div className="flex flex-col gap-1 basis-1/5">
@@ -121,7 +121,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
                           </div>
                       </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4 pt-0">
                       {allSessionExercises.map(ex => (
                           <Card key={ex.id} className="overflow-hidden">
                               <div className="relative aspect-video w-full bg-muted">
@@ -135,7 +135,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
                   </div>
               </div>
             </div>
-             <DialogFooter className="p-4 border-t bg-background flex justify-end gap-2 non-printable">
+             <DialogFooter className="p-4 border-t bg-background flex justify-end gap-2 non-printable mt-auto">
                 <Button variant="outline" onClick={() => window.print()} className="print-button">
                   <Download className="mr-2" />
                   Descargar PDF
@@ -203,12 +203,12 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
     );
 
     return (
-        <DialogContent className="max-w-4xl p-0">
+        <DialogContent className="max-w-4xl p-0 flex flex-col max-h-[90vh]">
              <DialogHeader className="p-6 pb-0 non-printable">
                 <DialogTitle className="text-lg font-bold">Previsualización de la Ficha de Sesión</DialogTitle>
                 <DialogDescription className="text-sm">Así se verá tu sesión. Puedes descargarla como PDF desde aquí.</DialogDescription>
             </DialogHeader>
-            <div className="printable-content max-h-[70vh] overflow-y-auto">
+            <div className="printable-content overflow-y-auto">
               <div className="p-8 bg-white text-gray-900">
                   <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
                       <div className="flex w-full space-x-2">
@@ -243,16 +243,16 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                       </div>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-6 pt-0">
                       <PhaseSectionPro title="FASE INICIAL" exercises={getExercisesByIds(sessionData.initialExercises)} />
                       <PhaseSectionPro title="FASE PRINCIPAL" exercises={getExercisesByIds(sessionData.mainExercises)} />
                       <PhaseSectionPro title="FASE FINAL" exercises={getExercisesByIds(sessionData.finalExercises)} />
                   </div>
 
-                  <p className="text-center text-xs mt-8 text-gray-500">Powered by LaPizarra</p>
+                  <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
               </div>
             </div>
-             <DialogFooter className="p-4 border-t bg-background flex justify-end non-printable">
+             <DialogFooter className="p-4 border-t bg-background flex justify-end non-printable mt-auto">
                 <Button variant="outline" onClick={() => window.print()} className="print-button">
                   <Download className="mr-2" />
                   Descargar PDF
