@@ -276,7 +276,7 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
             <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Todos">Todas las Categorías</SelectItem>
-               {allCategories.map((category, index) => <SelectItem key={'${category}-${index}'} value={category}>{category}</SelectItem>)}
+               {allCategories.map((category, index) => <SelectItem key={`${category}-${index}`} value={category}>{category}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select onValueChange={setEdadFilter} defaultValue="Todos">
@@ -285,7 +285,7 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todos">Todas las Edades</SelectItem>
-                {allEdades.map((edad, index) => <SelectItem key={'${edad}-${index}'} value={edad}>{edad}</SelectItem>)}
+                {allEdades.map((edad, index) => <SelectItem key={`${edad}-${index}`} value={edad}>{edad}</SelectItem>)}
               </SelectContent>
           </Select>
       </div>
@@ -485,7 +485,7 @@ export default function EditarSesionPage() {
                     </Card>
                 ))}
                 {placeholders.map((_, index) => (
-                  <div key={'${phase}-placeholder-${index}'}>
+                  <div key={`${phase}-placeholder-${index}`}>
                     <ExercisePicker 
                       phase={phase}
                       allExercises={allExercises}
