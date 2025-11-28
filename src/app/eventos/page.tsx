@@ -168,7 +168,7 @@ export default function EventosPage() {
                     mode="single"
                     selected={date}
                     onSelect={setDate}
-                    className="p-4 w-full"
+                    className="p-0 flex justify-center"
                     locale={es}
                     weekStartsOn={1}
                     modifiers={{ 
