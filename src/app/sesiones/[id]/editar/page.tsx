@@ -119,7 +119,6 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
         return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
     };
     
-    const totalPlayers = exercises.map(ex => ex['Número de jugadores']).reduce((a, b) => Math.max(a, b), 0);
     const sessionDateFormatted = sessionData.date ? format(sessionData.date, 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
     const PhaseSectionPro = ({ title, exercises }: { title: string; exercises: Exercise[] }) => (
@@ -180,11 +179,11 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                         <div className="flex items-center justify-center row-span-2">
                             <Shield className="w-12 h-12 text-gray-800" />
                         </div>
-                         <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Microciclo</p><p className="text-sm">{sessionData.microcycle || 'N/A'}</p></div>
+                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Microciclo</p><p className="text-sm">{sessionData.microcycle || 'N/A'}</p></div>
                         <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Sesión</p><p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p></div>
                         <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Fecha</p><p className="text-sm">{sessionDateFormatted}</p></div>
-                        <div className="border border-gray-800 text-center p-1 col-span-3"><p className="text-xs font-bold">Objetivos</p><p className="text-sm truncate">{sessionData.objectives?.join(', ') || 'N/A'}</p></div>
-                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Jugadores</p><p className="text-sm">{totalPlayers > 0 ? totalPlayers : 'N/A'}</p></div>
+                        <div className="border border-gray-800 text-center p-1 col-span-2"><p className="text-xs font-bold">Objetivos</p><p className="text-sm truncate">{sessionData.objectives?.join(', ') || 'N/A'}</p></div>
+                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Instalación</p><p className="text-sm">{sessionData.facility || 'N/A'}</p></div>
                     </div>
 
                     <div className="space-y-6">
@@ -681,3 +680,4 @@ export default function EditarSesionPage() {
     </div>
   );
 }
+
