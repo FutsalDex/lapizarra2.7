@@ -162,7 +162,7 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
             <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Todos">Todas las Categorías</SelectItem>
-               {allCategories.map((category, index) => <SelectItem key={`${'${category}'}-${index}`} value={category}>{category}</SelectItem>)}
+               {allCategories.map((category, index) => <SelectItem key={'${category}-${index}'} value={category}>{category}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select onValueChange={setEdadFilter} defaultValue="Todos">
@@ -171,7 +171,7 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todos">Todas las Edades</SelectItem>
-                {allEdades.map((edad, index) => <SelectItem key={`${'${edad}'}-${index}`} value={edad}>{edad}</SelectItem>)}
+                {allEdades.map((edad, index) => <SelectItem key={'${edad}-${index}'} value={edad}>{edad}</SelectItem>)}
               </SelectContent>
           </Select>
       </div>
@@ -385,10 +385,7 @@ export default function CrearSesionPage() {
   useEffect(() => {
     if (printContent) {
       setTimeout(() => {
-        const printableElement = document.getElementById(printContent.type === 'Básica' ? 'print-basic' : 'print-pro');
-        if (printableElement) {
-          window.print();
-        }
+        window.print();
         setPrintContent(null);
       }, 100);
     }
@@ -525,7 +522,7 @@ export default function CrearSesionPage() {
                     </Card>
                 ))}
                 {placeholders.map((_, index) => (
-                    <div key={`${'${phase}'}-placeholder-${index}`}>
+                    <div key={'${phase}-placeholder-${index}'}>
                       <ExercisePicker 
                         phase={phase} 
                         allExercises={allExercises} 
@@ -543,16 +540,20 @@ export default function CrearSesionPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-        <div className="hidden">
-            <div id="print-basic" className="printable-content">
-                <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-            </div>
-            <div id="print-pro" className="printable-content">
-                 <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />
-            </div>
-        </div>
+      <div className="hidden print:block">
+        {printContent?.type === 'Básica' && (
+          <div id="print-basic">
+            <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+          </div>
+        )}
+        {printContent?.type === 'Pro' && (
+          <div id="print-pro">
+            <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />
+          </div>
+        )}
+      </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8 non-printable">
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8 print:hidden">
         <div className="text-center">
             <h1 className="text-3xl md:text-4xl font-bold font-headline">Crear Sesión</h1>
             <p className="text-base md:text-lg text-muted-foreground mt-2">Planifica tu próximo entrenamiento paso a paso.</p>

@@ -276,7 +276,7 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
             <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Todos">Todas las Categorías</SelectItem>
-               {allCategories.map((category, index) => <SelectItem key={`${'${category}'}-${index}`} value={category}>{category}</SelectItem>)}
+               {allCategories.map((category, index) => <SelectItem key={'${category}-${index}'} value={category}>{category}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select onValueChange={setEdadFilter} defaultValue="Todos">
@@ -285,7 +285,7 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todos">Todas las Edades</SelectItem>
-                {allEdades.map((edad, index) => <SelectItem key={`${'${edad}'}-${index}`} value={edad}>{edad}</SelectItem>)}
+                {allEdades.map((edad, index) => <SelectItem key={'${edad}-${index}'} value={edad}>{edad}</SelectItem>)}
               </SelectContent>
           </Select>
       </div>
@@ -337,10 +337,7 @@ export default function EditarSesionPage() {
   useEffect(() => {
     if (printContent) {
       setTimeout(() => {
-        const printableElement = document.getElementById(printContent.type === 'Básica' ? 'print-basic' : 'print-pro');
-        if (printableElement) {
-          window.print();
-        }
+        window.print();
         setPrintContent(null);
       }, 100);
     }
@@ -488,7 +485,7 @@ export default function EditarSesionPage() {
                     </Card>
                 ))}
                 {placeholders.map((_, index) => (
-                  <div key={`${'${phase}'}-placeholder-${index}`}>
+                  <div key={'${phase}-placeholder-${index}'}>
                     <ExercisePicker 
                       phase={phase}
                       allExercises={allExercises}
@@ -528,189 +525,194 @@ export default function EditarSesionPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-        <div className="hidden">
-            <div id="print-basic" className="printable-content">
-                <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-            </div>
-            <div id="print-pro" className="printable-content">
-                 <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />
-            </div>
-        </div>
-        <div className="non-printable">
-            <Button variant="outline" asChild className="mb-6">
-                <a href={`/sesiones/${sessionId}`}><ArrowLeft className="mr-2" />Volver a la Sesión</a>
-            </Button>
-          <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8">
-            <div className="text-center">
-                <h1 className="text-3xl md:text-4xl font-bold font-headline">Editar Sesión</h1>
-                <p className="text-base md:text-lg text-muted-foreground mt-2">Modifica los detalles de tu entrenamiento.</p>
-            </div>
+      <div className="hidden print:block">
+        {printContent?.type === 'Básica' && (
+          <div id="print-basic">
+            <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+          </div>
+        )}
+        {printContent?.type === 'Pro' && (
+          <div id="print-pro">
+            <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />
+          </div>
+        )}
+      </div>
 
-            <Card>
-              <CardHeader><CardTitle>Detalles de la Sesión</CardTitle></CardHeader>
-              <CardContent className="space-y-6">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="space-y-2">
-                      <Label htmlFor="teamId">Equipo</Label>
-                      <Controller
-                          name="teamId"
-                          control={control}
-                          render={({ field }) => (
-                              <Select onValueChange={field.onChange} value={field.value} disabled={loadingTeams}>
-                                  <SelectTrigger><SelectValue placeholder={loadingTeams ? "Cargando..." : "Seleccionar equipo"} /></SelectTrigger>
-                                  <SelectContent>
-                                      {userTeams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
-                                  </SelectContent>
-                              </Select>
-                          )}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="session-number">Número de Sesión</Label>
-                        <Input id="session-number" type="number" placeholder="Ej: 1" {...register('sessionNumber')} />
-                        {errors.sessionNumber && <p className="text-sm text-destructive">{errors.sessionNumber.message}</p>}
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="facility">Instalación</Label>
-                    <Input id="facility" placeholder="Ej: Polideportivo Municipal" {...register('facility')} />
-                    {errors.facility && <p className="text-sm text-destructive">{errors.facility.message}</p>}
+      <div className="print:hidden">
+          <Button variant="outline" asChild className="mb-6">
+              <a href={`/sesiones/${sessionId}`}><ArrowLeft className="mr-2" />Volver a la Sesión</a>
+          </Button>
+        <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8">
+          <div className="text-center">
+              <h1 className="text-3xl md:text-4xl font-bold font-headline">Editar Sesión</h1>
+              <p className="text-base md:text-lg text-muted-foreground mt-2">Modifica los detalles de tu entrenamiento.</p>
+          </div>
+
+          <Card>
+            <CardHeader><CardTitle>Detalles de la Sesión</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                    <Label htmlFor="teamId">Equipo</Label>
+                    <Controller
+                        name="teamId"
+                        control={control}
+                        render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value} disabled={loadingTeams}>
+                                <SelectTrigger><SelectValue placeholder={loadingTeams ? "Cargando..." : "Seleccionar equipo"} /></SelectTrigger>
+                                <SelectContent>
+                                    {userTeams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="microcycle">Microciclo</Label>
-                    <Input id="microcycle" placeholder="Ej: Semana 3 - Competitivo" {...register('microcycle')} />
-                    {errors.microcycle && <p className="text-sm text-destructive">{errors.microcycle.message}</p>}
+                      <Label htmlFor="session-number">Número de Sesión</Label>
+                      <Input id="session-number" type="number" placeholder="Ej: 1" {...register('sessionNumber')} />
+                      {errors.sessionNumber && <p className="text-sm text-destructive">{errors.sessionNumber.message}</p>}
                   </div>
-                </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <div className="space-y-2">
-                        <Label>Fecha</Label>
-                        <Controller
-                            name="date"
-                            control={control}
-                            render={({ field }) => (
-                                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {field.value ? format(field.value, "PPP", { locale: es }) : <span>Selecciona una fecha</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={field.value} onSelect={(date) => { field.onChange(date); setIsCalendarOpen(false); }} initialFocus locale={es} weekStartsOn={1} />
-                                </PopoverContent>
-                                </Popover>
-                            )}
-                        />
-                        {errors.date && <p className="text-sm text-destructive">{errors.date.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="time">Hora</Label>
-                        <div className="relative">
-                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="time" type="time" className="pl-10" {...register('time')} />
-                        </div>
-                        {errors.time && <p className="text-sm text-destructive">{errors.time.message}</p>}
-                    </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="facility">Instalación</Label>
+                  <Input id="facility" placeholder="Ej: Polideportivo Municipal" {...register('facility')} />
+                  {errors.facility && <p className="text-sm text-destructive">{errors.facility.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label>Objetivos Principales ({watchedValues.objectives?.length || 0}/5)</Label>
-                   <div className="p-4 border rounded-lg space-y-4">
-                      {Object.entries(objectivesByCategory).map(([category, objectives]) => (
-                        <Collapsible key={category}>
-                          <CollapsibleTrigger className="flex justify-between items-center w-full font-semibold">
-                            {category}
-                            <ChevronDown className="h-4 w-4" />
-                          </CollapsibleTrigger>
-                          <CollapsibleContent className="space-y-2 pt-2">
-                            {objectives.map(objective => (
-                              <div key={objective} className="flex items-start space-x-2 p-2 rounded-md hover:bg-muted">
-                                <Checkbox
-                                  id={objective}
-                                  checked={watchedValues.objectives?.includes(objective)}
-                                  onCheckedChange={() => handleObjectiveChange(objective)}
-                                />
-                                <Label htmlFor={objective} className="text-sm font-normal cursor-pointer">
-                                  {objective}
-                                </Label>
-                              </div>
-                            ))}
-                          </CollapsibleContent>
-                        </Collapsible>
-                      ))}
-                   </div>
-                  {watchedValues.objectives && watchedValues.objectives.length > 0 && (
-                    <div className="space-y-2 pt-2">
-                        <Label>Objetivos seleccionados:</Label>
-                        <div className="flex flex-wrap gap-2">
-                            {watchedValues.objectives.map(obj => <Badge key={obj} variant="secondary">{obj}</Badge>)}
-                        </div>
-                    </div>
-                  )}
-                  {errors.objectives && <p className="text-sm text-destructive">{errors.objectives.message}</p>}
+                  <Label htmlFor="microcycle">Microciclo</Label>
+                  <Input id="microcycle" placeholder="Ej: Semana 3 - Competitivo" {...register('microcycle')} />
+                  {errors.microcycle && <p className="text-sm text-destructive">{errors.microcycle.message}</p>}
                 </div>
-              </CardContent>
-            </Card>
-            
-            <PhaseSection phase="initialExercises" title="Fase Inicial (Calentamiento)" subtitle="Ejercicios para preparar al equipo." />
-            <PhaseSection phase="mainExercises" title="Fase Principal" subtitle="El núcleo del entrenamiento, enfocado en los objetivos." />
-            <PhaseSection phase="finalExercises" title="Fase Final (Vuelta a la Calma)" subtitle="Ejercicios de baja intensidad para la recuperación." />
-
-            <div className="flex justify-end items-center gap-4">
-                 <Dialog>
-                    <DialogTrigger asChild>
-                        <Button variant="outline">
-                            <Eye className="mr-2" />
-                            Ver Ficha de Sesión
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Elige el tipo de ficha</DialogTitle>
-                            <DialogDescription>
-                                Sesión de entrenamiento
-                            </DialogDescription>
-                        </DialogHeader>
-                         <div className="grid grid-cols-2 gap-4 pt-4">
-                            <div className="flex flex-col gap-2 items-center">
-                                <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                <Button onClick={() => setPrintContent({type: 'Básica'})} className="w-full">
-                                  <Download className="mr-2" />
-                                  Descargar Básica
-                                </Button>
+              </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-2">
+                      <Label>Fecha</Label>
+                      <Controller
+                          name="date"
+                          control={control}
+                          render={({ field }) => (
+                              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                              <PopoverTrigger asChild>
+                                  <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {field.value ? format(field.value, "PPP", { locale: es }) : <span>Selecciona una fecha</span>}
+                                  </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                  <Calendar mode="single" selected={field.value} onSelect={(date) => { field.onChange(date); setIsCalendarOpen(false); }} initialFocus locale={es} weekStartsOn={1} />
+                              </PopoverContent>
+                              </Popover>
+                          )}
+                      />
+                      {errors.date && <p className="text-sm text-destructive">{errors.date.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="time">Hora</Label>
+                      <div className="relative">
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input id="time" type="time" className="pl-10" {...register('time')} />
+                      </div>
+                      {errors.time && <p className="text-sm text-destructive">{errors.time.message}</p>}
+                  </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Objetivos Principales ({watchedValues.objectives?.length || 0}/5)</Label>
+                 <div className="p-4 border rounded-lg space-y-4">
+                    {Object.entries(objectivesByCategory).map(([category, objectives]) => (
+                      <Collapsible key={category}>
+                        <CollapsibleTrigger className="flex justify-between items-center w-full font-semibold">
+                          {category}
+                          <ChevronDown className="h-4 w-4" />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="space-y-2 pt-2">
+                          {objectives.map(objective => (
+                            <div key={objective} className="flex items-start space-x-2 p-2 rounded-md hover:bg-muted">
+                              <Checkbox
+                                id={objective}
+                                checked={watchedValues.objectives?.includes(objective)}
+                                onCheckedChange={() => handleObjectiveChange(objective)}
+                              />
+                              <Label htmlFor={objective} className="text-sm font-normal cursor-pointer">
+                                {objective}
+                              </Label>
                             </div>
-                             <div className="flex flex-col gap-2 items-center">
-                                <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <div className="w-full">
-                                                <Button onClick={() => isProUser && setPrintContent({type: 'Pro'})} className="w-full" disabled={!isProUser}>
-                                                    <Download className="mr-2" />
-                                                    Descargar Pro
-                                                </Button>
-                                            </div>
-                                        </TooltipTrigger>
-                                        {!isProUser && (
-                                            <TooltipContent>
-                                                <p>Mejora al Plan Pro para acceder a esta función.</p>
-                                            </TooltipContent>
-                                        )}
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                          ))}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
+                 </div>
+                {watchedValues.objectives && watchedValues.objectives.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                      <Label>Objetivos seleccionados:</Label>
+                      <div className="flex flex-wrap gap-2">
+                          {watchedValues.objectives.map(obj => <Badge key={obj} variant="secondary">{obj}</Badge>)}
+                      </div>
+                  </div>
+                )}
+                {errors.objectives && <p className="text-sm text-destructive">{errors.objectives.message}</p>}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <PhaseSection phase="initialExercises" title="Fase Inicial (Calentamiento)" subtitle="Ejercicios para preparar al equipo." />
+          <PhaseSection phase="mainExercises" title="Fase Principal" subtitle="El núcleo del entrenamiento, enfocado en los objetivos." />
+          <PhaseSection phase="finalExercises" title="Fase Final (Vuelta a la Calma)" subtitle="Ejercicios de baja intensidad para la recuperación." />
 
-                <Button type="submit" size="lg" disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
-                    Guardar Cambios
-                </Button>
-            </div>
-          </form>
-        </div>
+          <div className="flex justify-end items-center gap-4">
+               <Dialog>
+                  <DialogTrigger asChild>
+                      <Button variant="outline">
+                          <Eye className="mr-2" />
+                          Ver Ficha de Sesión
+                      </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                      <DialogHeader>
+                          <DialogTitle>Elige el tipo de ficha</DialogTitle>
+                          <DialogDescription>
+                              Sesión de entrenamiento
+                          </DialogDescription>
+                      </DialogHeader>
+                       <div className="grid grid-cols-2 gap-4 pt-4">
+                          <div className="flex flex-col gap-2 items-center">
+                              <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
+                              <Button onClick={() => setPrintContent({type: 'Básica'})} className="w-full">
+                                <Download className="mr-2" />
+                                Descargar Básica
+                              </Button>
+                          </div>
+                           <div className="flex flex-col gap-2 items-center">
+                              <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
+                              <TooltipProvider>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <div className="w-full">
+                                              <Button onClick={() => isProUser && setPrintContent({type: 'Pro'})} className="w-full" disabled={!isProUser}>
+                                                  <Download className="mr-2" />
+                                                  Descargar Pro
+                                              </Button>
+                                          </div>
+                                      </TooltipTrigger>
+                                      {!isProUser && (
+                                          <TooltipContent>
+                                              <p>Mejora al Plan Pro para acceder a esta función.</p>
+                                          </TooltipContent>
+                                      )}
+                                  </Tooltip>
+                              </TooltipProvider>
+                          </div>
+                      </div>
+                  </DialogContent>
+              </Dialog>
+
+              <Button type="submit" size="lg" disabled={isSaving}>
+                  {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
+                  Guardar Cambios
+              </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
