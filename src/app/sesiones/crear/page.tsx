@@ -22,7 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { collection, addDoc, Timestamp, getFirestore, query, where, or } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, getFirestore, query, where, or, doc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { app } from '@/firebase/config';
 import { Exercise } from '@/lib/data';
@@ -683,4 +683,3 @@ export default function CrearSesionPage() {
     </div>
   );
 }
-
