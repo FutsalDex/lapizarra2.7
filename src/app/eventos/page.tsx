@@ -125,7 +125,7 @@ export default function EventosPage() {
         .session-day {
           border: 1px solid hsl(var(--primary));
           background-color: transparent;
-          color: hsl(var(--primary-foreground));
+          color: hsl(var(--foreground));
         }
         .match-day {
             background-color: hsl(var(--primary) / 0.2);
