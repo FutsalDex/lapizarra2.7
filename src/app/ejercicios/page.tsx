@@ -196,7 +196,7 @@ export default function EjerciciosPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-6 flex-grow flex flex-col">
-                <CardTitle className="font-headline text-xl truncate mb-2" title={exercise['Ejercicio']}>{exercise['Ejercicio']}</CardTitle>
+                <CardTitle className="font-headline text-lg truncate mb-2" title={exercise['Ejercicio']}>{exercise['Ejercicio']}</CardTitle>
                 
                 <div className="space-y-1 text-sm text-muted-foreground mb-4">
                   <p><span className="font-semibold text-foreground">Fase:</span> {exercise['Fase']}</p>
