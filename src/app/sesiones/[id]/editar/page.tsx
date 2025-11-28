@@ -109,7 +109,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
                     </div>
                 </div>
             </ScrollArea>
-             <DialogFooter className="p-4 border-t bg-background flex justify-end gap-2">
+            <DialogFooter className="p-4 border-t bg-background flex justify-end gap-2">
                 <Button variant="outline" onClick={() => window.print()}>
                   <Download className="mr-2" />
                   Descargar PDF
@@ -155,7 +155,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                             </div>
                         </div>
                     </CardContent>
-                     <CardFooter className="bg-gray-200 dark:bg-gray-700 p-1 grid grid-cols-3 gap-1 text-xs text-center">
+                     <CardFooter className="bg-gray-200 dark:bg-gray-700 p-1 grid grid-cols-5 gap-1 text-xs text-center">
                         <div className="bg-white dark:bg-gray-600 p-1 rounded-sm flex flex-col items-center justify-center">
                             <p className="font-bold">Tiempo</p>
                             <p>{ex['Duración (min)']} min</p>
@@ -164,7 +164,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                             <p className="font-bold">Jugadores</p>
                             <p>{ex['Número de jugadores']}</p>
                         </div>
-                         <div className="bg-white dark:bg-gray-600 p-1 rounded-sm flex flex-col items-center justify-center">
+                         <div className="bg-white dark:bg-gray-600 p-1 rounded-sm flex flex-col items-center justify-center col-span-3">
                             <p className="font-bold">Material</p>
                             <p className="truncate">{ex['Espacio y materiales necesarios']}</p>
                         </div>
