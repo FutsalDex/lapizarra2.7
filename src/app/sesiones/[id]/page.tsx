@@ -25,28 +25,31 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-            <div className="md:col-span-1 relative min-h-[200px] bg-muted rounded-md">
-              <Image
-                src={exercise['Imagen']}
-                alt={`Táctica para ${exercise['Ejercicio']}`}
-                fill
-                className="object-contain p-2"
-              />
+            <div className="md:col-span-1 space-y-4">
+              <div className="relative min-h-[200px] bg-muted rounded-md">
+                <Image
+                  src={exercise['Imagen']}
+                  alt={`Táctica para ${exercise['Ejercicio']}`}
+                  fill
+                  className="object-contain p-2"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <span><span className="font-semibold">Jugadores:</span> {exercise['Número de jugadores']}</span>
+                </div>
+              </div>
             </div>
+
             <div className="md:col-span-2 space-y-4">
                 <div>
                   <h3 className="text-xl font-bold font-headline">{exercise['Ejercicio']}</h3>
                   <p className="text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm pt-4">
-                    <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-muted-foreground" />
-                        <span><span className="font-semibold">Jugadores:</span> {exercise['Número de jugadores']}</span>
-                    </div>
                 </div>
                 <div className="pt-4">
                   <div className="flex items-center gap-2 mb-2">
