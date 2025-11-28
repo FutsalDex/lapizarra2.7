@@ -34,22 +34,20 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
               />
             </div>
             <div className="md:col-span-2 space-y-4">
-               <div>
+                <div>
                   <h3 className="text-xl font-bold font-headline">{exercise['Ejercicio']}</h3>
                   <p className="text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 text-sm pt-4">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                    <span><span className="font-semibold">Jugadores:</span> {exercise['Número de jugadores']}</span>
-                  </div>
+                    <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-muted-foreground" />
+                        <span><span className="font-semibold">Jugadores:</span> {exercise['Número de jugadores']}</span>
+                    </div>
                 </div>
-
                 <div className="pt-4">
                   <div className="flex items-center gap-2 mb-2">
                       <Target className="w-4 h-4 text-primary" />
