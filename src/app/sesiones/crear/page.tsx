@@ -198,34 +198,48 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
   );
 };
 
-const SessionBasicPreview = ({ sessionData, exercises }: { sessionData: any, exercises: Exercise[] }) => {
+const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData: any, exercises: Exercise[], teamName: string }) => {
     const getExercisesByIds = (ids: string[]) => {
         if (!ids || ids.length === 0) return [];
         return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
     };
-
-    const PhaseSectionPreview = ({ title, exercises }: { title: string; exercises: Exercise[] }) => (
-        <div className="space-y-4">
-            <h3 className="text-xl font-bold font-headline text-primary">{title}</h3>
-            {exercises.length > 0 ? exercises.map(ex => (
-                <div key={ex.id} className="p-3 border rounded-md">
-                    <p className="font-semibold">{ex['Ejercicio']}</p>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{ex['Descripción de la tarea']}</p>
-                </div>
-            )) : <p className="text-sm text-muted-foreground">No hay ejercicios en esta fase.</p>}
-        </div>
-    );
+    
+    const allSessionExercises = [
+        ...getExercisesByIds(sessionData.initialExercises),
+        ...getExercisesByIds(sessionData.mainExercises),
+        ...getExercisesByIds(sessionData.finalExercises)
+    ];
 
     return (
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl">
             <DialogHeader>
                 <DialogTitle>Previsualización de la Ficha (Básica)</DialogTitle>
+                <DialogDescription>
+                    Un resumen visual de tu sesión de entrenamiento.
+                </DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[70vh] p-4">
                 <div className="space-y-6">
-                    <PhaseSectionPreview title="Fase Inicial" exercises={getExercisesByIds(sessionData.initialExercises)} />
-                    <PhaseSectionPreview title="Fase Principal" exercises={getExercisesByIds(sessionData.mainExercises)} />
-                    <PhaseSectionPreview title="Fase Final" exercises={getExercisesByIds(sessionData.finalExercises)} />
+                    <div className="p-4 border rounded-lg space-y-2">
+                        <h3 className="font-bold">Equipo: <span className="font-normal">{teamName || 'No especificado'}</span></h3>
+                        <h3 className="font-bold">Fecha: <span className="font-normal">{sessionData.date ? format(sessionData.date, 'PPP', { locale: es }) : 'N/A'}</span></h3>
+                        <h3 className="font-bold">Objetivos:</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {(sessionData.objectives || []).map((obj: string) => <Badge key={obj} variant="secondary">{obj}</Badge>)}
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        {allSessionExercises.map(ex => (
+                            <Card key={ex.id} className="overflow-hidden">
+                                <div className="relative aspect-video w-full bg-muted">
+                                    <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" />
+                                </div>
+                                <CardFooter className="p-2 bg-card border-t">
+                                    <p className="text-xs font-semibold truncate text-center w-full">{ex.Ejercicio}</p>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
                 </div>
             </ScrollArea>
         </DialogContent>
@@ -289,12 +303,12 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
 
     return (
         <DialogContent className="max-w-4xl p-0">
-             <ScrollArea className="max-h-[90vh]">
+             <DialogHeader className="p-6 pb-0">
+                <DialogTitle className="text-lg font-bold">Previsualización de la Ficha de Sesión</DialogTitle>
+                <DialogDescription className="text-sm">Así se verá tu sesión. Puedes descargarla como PDF desde aquí.</DialogDescription>
+            </DialogHeader>
+             <ScrollArea className="max-h-[80vh]">
                 <div className="p-8 bg-white text-gray-900">
-                     <DialogHeader className="text-center mb-4">
-                        <DialogTitle className="text-lg font-bold">Previsualización de la Ficha de Sesión</DialogTitle>
-                        <DialogDescription className="text-sm">Así se verá tu sesión. Puedes descargarla como PDF desde aquí.</DialogDescription>
-                    </DialogHeader>
                     <div className="grid grid-cols-5 gap-2 border-2 border-gray-800 p-2 mb-4">
                         <div className="flex items-center justify-center row-span-2">
                             <Shield className="w-12 h-12 text-gray-800" />
@@ -625,6 +639,7 @@ export default function CrearSesionPage() {
                                     finalExercises: selectedExercises.finalExercises.map(e => e.id)
                                 }}
                                 exercises={allExercises}
+                                teamName={userTeams.find(t => t.id === watchedValues.teamId)?.name || ''}
                             />
                         ) : previewType === 'Pro' ? (
                             <SessionProPreview
