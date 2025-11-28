@@ -341,7 +341,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                 <DialogTitle className="text-lg font-bold">Previsualización de la Ficha de Sesión</DialogTitle>
                 <DialogDescription className="text-sm">Así se verá tu sesión. Puedes descargarla como PDF desde aquí.</DialogDescription>
             </DialogHeader>
-            <div className="printable-content max-h-[80vh] overflow-y-auto">
+            <div className="printable-content max-h-[70vh] overflow-y-auto">
               <div className="p-8 bg-white text-gray-900">
                   <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
                       <div className="flex w-full space-x-2">
