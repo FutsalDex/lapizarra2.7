@@ -190,7 +190,7 @@ export default function EjerciciosPage() {
                     alt={exercise['Ejercicio']}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover"
+                    className="object-contain"
                     data-ai-hint={exercise.imageHint}
                   />
                 </div>
