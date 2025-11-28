@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -118,15 +119,13 @@ const sessionSchema = z.object({
 
 type SessionFormData = z.infer<typeof sessionSchema>;
 
-type ExercisePickerProps = {
+const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, onAddExercise }: {
   phase: SessionPhase;
   allExercises: Exercise[];
   allCategories: string[];
   loadingExercises: boolean;
   onAddExercise: (phase: SessionPhase, exercise: Exercise) => void;
-};
-
-const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, onAddExercise }: ExercisePickerProps) => {
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('Todos');
   const [edadFilter, setEdadFilter] = useState('Todos');
