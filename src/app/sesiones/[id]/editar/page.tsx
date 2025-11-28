@@ -182,8 +182,8 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
             </DialogHeader>
              <ScrollArea className="max-h-[80vh]">
                 <div className="p-8 bg-white text-gray-900">
-                    <div className="grid grid-cols-4 gap-2 border-2 border-gray-800 p-2 mb-4">
-                        <div className="col-span-1 flex flex-col gap-y-1 h-full">
+                    <div className="grid grid-cols-20 gap-2 border-2 border-gray-800 p-2 mb-4">
+                        <div className="col-span-3 flex flex-col gap-y-1 h-full">
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                 <p className="text-xs font-bold">Microciclo</p>
                                 <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
@@ -193,7 +193,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                                 <p className="text-sm">{sessionDateFormatted}</p>
                             </div>
                         </div>
-                        <div className="col-span-1 flex flex-col gap-y-1 h-full">
+                        <div className="col-span-3 flex flex-col gap-y-1 h-full">
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                 <p className="text-xs font-bold">Sesión</p>
                                 <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
@@ -203,9 +203,9 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                                 <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
                             </div>
                         </div>
-                        <div className="border border-gray-800 text-center p-1 col-span-2 flex flex-col justify-center">
-                            <p className="text-xs font-bold text-left">Objetivos</p>
-                            <div className="text-sm text-left break-words">
+                        <div className="border border-gray-800 text-left p-1 col-span-14 flex flex-col justify-center">
+                            <p className="text-xs font-bold">Objetivos</p>
+                            <div className="text-sm break-words">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
                                     <div key={index}>{obj}</div>
                                 ))}
