@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown, Eye, ListChecks, Shield, Download } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown, Eye, ListChecks, Shield, Download, Repeat, Layers, Pause } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -242,7 +242,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
                     </div>
                 </div>
             </ScrollArea>
-             <DialogFooter className="p-4 border-t bg-background flex justify-end">
+             <DialogFooter className="p-4 border-t bg-background flex justify-end gap-2">
                 <Button variant="outline" onClick={() => window.print()}>
                   <Download className="mr-2" />
                   Descargar PDF
@@ -289,19 +289,25 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                         </div>
                     </CardContent>
                      <CardFooter className="bg-gray-200 dark:bg-gray-700 p-1 grid grid-cols-4 gap-1 text-xs text-center">
-                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
+                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm flex flex-col items-center justify-center">
+                            <Clock className="w-4 h-4 mb-1 text-gray-600 dark:text-gray-300"/>
                             <p className="font-bold">Tiempo</p>
                             <p>{ex['Duración (min)']} min</p>
                         </div>
-                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
-                            <p className="font-bold">Descanso</p><p>N/A</p>
+                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm flex flex-col items-center justify-center">
+                            <Repeat className="w-4 h-4 mb-1 text-gray-600 dark:text-gray-300"/>
+                            <p className="font-bold">Repeticiones</p>
+                            <p>N/A</p>
                         </div>
-                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
-                            <p className="font-bold">Jugadores</p>
-                            <p>{ex['Número de jugadores']}</p>
+                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm flex flex-col items-center justify-center">
+                            <Layers className="w-4 h-4 mb-1 text-gray-600 dark:text-gray-300"/>
+                            <p className="font-bold">Series</p>
+                            <p>N/A</p>
                         </div>
-                         <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
-                            <p className="font-bold">Espacio</p><p>N/A</p>
+                         <div className="bg-white dark:bg-gray-600 p-1 rounded-sm flex flex-col items-center justify-center">
+                            <Pause className="w-4 h-4 mb-1 text-gray-600 dark:text-gray-300"/>
+                            <p className="font-bold">Descanso</p>
+                            <p>N/A</p>
                         </div>
                     </CardFooter>
                 </Card>
