@@ -155,17 +155,17 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                             </div>
                         </div>
                     </CardContent>
-                    <CardFooter className="p-2 text-xs text-center space-y-1">
+                    <CardFooter className="p-2 text-xs text-center">
                         <div className="flex gap-1 w-full">
-                            <div className="border p-1 rounded-sm basis-[15%]">
+                            <div className="border p-1 rounded-sm basis-[15%] flex flex-col justify-center">
                                 <p className="font-bold">Tiempo</p>
                                 <p>{ex['Duración (min)']}</p>
                             </div>
-                            <div className="border p-1 rounded-sm basis-[15%]">
+                            <div className="border p-1 rounded-sm basis-[15%] flex flex-col justify-center">
                                 <p className="font-bold">Jugadores</p>
                                 <p>{ex['Número de jugadores']}</p>
                             </div>
-                            <div className="border p-1 rounded-sm flex-1">
+                            <div className="border p-1 rounded-sm flex-1 flex flex-col justify-center">
                                 <p className="font-bold">Material</p>
                                 <p className="break-words">{ex['Espacio y materiales necesarios']}</p>
                             </div>
@@ -185,7 +185,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
              <ScrollArea className="max-h-[80vh]">
                 <div className="p-8 bg-white text-gray-900">
                     <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
-                        <div className="flex flex-col gap-1 basis-1/5">
+                        <div className="flex flex-col gap-1 basis-[17.5%]">
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                 <p className="text-xs font-bold">Microciclo</p>
                                 <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
@@ -195,7 +195,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                                 <p className="text-sm">{sessionDateFormatted}</p>
                             </div>
                         </div>
-                        <div className="flex flex-col gap-1 basis-1/5">
+                        <div className="flex flex-col gap-1 basis-[17.5%]">
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                 <p className="text-xs font-bold">Sesión</p>
                                 <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
@@ -205,11 +205,11 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                                 <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
                             </div>
                         </div>
-                        <div className="border border-gray-800 text-left p-1 flex-1 flex flex-col justify-center">
+                        <div className="border border-gray-800 text-left p-1 flex-1">
                             <p className="text-xs font-bold">Objetivos</p>
                             <div className="text-sm">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                    <div key={index}>{obj}</div>
+                                    <div key={index} className="truncate">{obj}</div>
                                 ))}
                             </div>
                         </div>
