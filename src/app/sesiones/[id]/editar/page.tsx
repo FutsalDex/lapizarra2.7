@@ -113,11 +113,11 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
                             </div>
                             <div className="border border-gray-800 text-left p-1 basis-1/2">
                                 <p className="text-xs font-bold">Objetivos</p>
-                                <div className="text-sm space-y-1 mt-1">
+                                <ul className="text-sm space-y-1 mt-1">
                                     {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                        <div key={index} className="truncate">{obj}</div>
+                                        <li key={index} className="truncate list-disc list-inside">{obj}</li>
                                     ))}
-                                </div>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -212,33 +212,33 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
                 <div className="p-8 bg-white text-gray-900">
                      <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
                         <div className="flex w-full space-x-2">
-                            <div className="flex flex-col justify-around gap-1 basis-1/5">
-                                <div className="border border-gray-800 text-center p-1">
+                            <div className="flex flex-col justify-between gap-1 basis-1/5">
+                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                     <p className="text-xs font-bold">Microciclo</p>
                                     <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
                                 </div>
-                                <div className="border border-gray-800 text-center p-1">
+                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                     <p className="text-xs font-bold">Fecha</p>
                                     <p className="text-sm">{sessionDateFormatted}</p>
                                 </div>
                             </div>
-                             <div className="flex flex-col justify-around gap-1 basis-1/5">
-                                <div className="border border-gray-800 text-center p-1">
+                             <div className="flex flex-col justify-between gap-1 basis-1/5">
+                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                     <p className="text-xs font-bold">Sesión</p>
                                     <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
                                 </div>
-                                <div className="border border-gray-800 text-center p-1">
+                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                     <p className="text-xs font-bold">Instalación</p>
                                     <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
                                 </div>
                             </div>
                             <div className="border border-gray-800 text-left p-1 flex-grow">
                                 <p className="text-xs font-bold">Objetivos</p>
-                                <div className="text-sm space-y-1 mt-1">
+                                <ul className="text-sm space-y-1 mt-1">
                                     {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                        <div key={index}>{obj}</div>
+                                        <li key={index} className='list-disc list-inside'>{obj}</li>
                                     ))}
-                                </div>
+                                </ul>
                             </div>
                         </div>
                     </div>
