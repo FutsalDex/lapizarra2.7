@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -213,71 +213,54 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
     const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
     return (
-        <DialogContent className="max-w-4xl p-0 flex flex-col max-h-[90vh]">
-            <DialogHeader className="p-6 pb-2 non-printable">
-                <DialogTitle>Previsualización de la Ficha (Básica)</DialogTitle>
-                <DialogDescription>
-                    Sesión de entrenamiento
-                </DialogDescription>
-            </DialogHeader>
-            <div className="printable-content overflow-y-auto px-6">
-              <div className="space-y-6">
-                  <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4 text-gray-900">
-                      <div className="flex w-full space-x-2">
-                          <div className="flex flex-col gap-1 basis-1/5">
-                              <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                  <p className="text-xs font-bold">Microciclo</p>
-                                  <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
-                              </div>
-                              <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                  <p className="text-xs font-bold">Fecha</p>
-                                  <p className="text-sm">{sessionDateFormatted}</p>
-                              </div>
-                          </div>
-                          <div className="flex flex-col gap-1 basis-1/5">
-                              <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                  <p className="text-xs font-bold">Sesión</p>
-                                  <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
-                              </div>
-                              <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                  <p className="text-xs font-bold">Instalación</p>
-                                  <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
-                              </div>
-                          </div>
-                          <div className="border border-gray-800 text-left p-1 flex-grow">
-                              <p className="text-xs font-bold">Objetivos</p>
-                              <ul className="text-sm space-y-1 mt-1">
-                                  {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                      <li key={index} className="truncate list-disc list-inside">{obj}</li>
-                                  ))}
-                              </ul>
-                          </div>
-                      </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 pt-0">
-                      {allSessionExercises.map(ex => (
-                          <Card key={ex.id} className="overflow-hidden">
-                              <div className="relative aspect-video w-full bg-muted">
-                                  <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" />
-                              </div>
-                              <CardFooter className="p-2 bg-card border-t">
-                                  <p className="text-xs font-semibold truncate text-center w-full">{ex.Ejercicio}</p>
-                              </CardFooter>
-                          </Card>
-                      ))}
-                  </div>
-              </div>
+        <div className="printable-content overflow-y-auto px-6">
+            <div className="space-y-6">
+                <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4 text-gray-900">
+                    <div className="flex w-full space-x-2">
+                        <div className="flex flex-col gap-1 basis-1/5">
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Microciclo</p>
+                                <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
+                            </div>
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Fecha</p>
+                                <p className="text-sm">{sessionDateFormatted}</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-1 basis-1/5">
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Sesión</p>
+                                <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
+                            </div>
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Instalación</p>
+                                <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div className="border border-gray-800 text-left p-1 flex-grow">
+                            <p className="text-xs font-bold">Objetivos</p>
+                            <ul className="text-sm space-y-1 mt-1">
+                                {(sessionData.objectives || []).map((obj: string, index: number) => (
+                                    <li key={index} className="truncate list-disc list-inside">{obj}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-0">
+                    {allSessionExercises.map(ex => (
+                        <Card key={ex.id} className="overflow-hidden">
+                            <div className="relative aspect-video w-full bg-muted">
+                                <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" />
+                            </div>
+                            <CardFooter className="p-2 bg-card border-t">
+                                <p className="text-xs font-semibold truncate text-center w-full">{ex.Ejercicio}</p>
+                            </CardFooter>
+                        </Card>
+                    ))}
+                </div>
             </div>
-             <DialogFooter className="p-4 border-t bg-background flex justify-end gap-2 non-printable mt-auto">
-                <Button variant="outline" onClick={() => window.print()} className="print-button">
-                  <Download className="mr-2" />
-                  Descargar PDF
-                </Button>
-                <DialogClose asChild>
-                    <Button>Cerrar</Button>
-                </DialogClose>
-            </DialogFooter>
-        </DialogContent>
+        </div>
     );
 };
 
@@ -336,65 +319,50 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
     );
 
     return (
-        <DialogContent className="max-w-4xl p-0 flex flex-col max-h-[90vh]">
-            <DialogHeader className="p-6 pb-0 non-printable">
-                <DialogTitle className="text-lg font-bold">Previsualización de la Ficha de Sesión</DialogTitle>
-                <DialogDescription className="text-sm">Así se verá tu sesión. Puedes descargarla como PDF desde aquí.</DialogDescription>
-            </DialogHeader>
-            <div className="printable-content flex-1 overflow-y-auto">
-                <div className="p-8 bg-white text-gray-900">
-                    <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
-                        <div className="flex w-full space-x-2">
-                            <div className="flex flex-col justify-between gap-1 basis-1/5">
-                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                    <p className="text-xs font-bold">Microciclo</p>
-                                    <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
-                                </div>
-                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                    <p className="text-xs font-bold">Fecha</p>
-                                    <p className="text-sm">{sessionDateFormatted}</p>
-                                </div>
+        <div className="printable-content">
+            <div className="p-8 bg-white text-gray-900">
+                <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
+                    <div className="flex w-full space-x-2">
+                        <div className="flex flex-col justify-between gap-1 basis-1/5">
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Microciclo</p>
+                                <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
                             </div>
-                            <div className="flex flex-col justify-between gap-1 basis-1/5">
-                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                    <p className="text-xs font-bold">Sesión</p>
-                                    <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
-                                </div>
-                                <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                    <p className="text-xs font-bold">Instalación</p>
-                                    <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
-                                </div>
-                            </div>
-                            <div className="border border-gray-800 text-left p-1 flex-grow">
-                                <p className="text-xs font-bold">Objetivos</p>
-                                <ul className="text-sm space-y-1 mt-1">
-                                    {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                        <li key={index} className='list-disc list-inside'>{obj}</li>
-                                    ))}
-                                </ul>
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Fecha</p>
+                                <p className="text-sm">{sessionDateFormatted}</p>
                             </div>
                         </div>
+                        <div className="flex flex-col justify-between gap-1 basis-1/5">
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Sesión</p>
+                                <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
+                            </div>
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Instalación</p>
+                                <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div className="border border-gray-800 text-left p-1 flex-grow">
+                            <p className="text-xs font-bold">Objetivos</p>
+                            <ul className="text-sm space-y-1 mt-1">
+                                {(sessionData.objectives || []).map((obj: string, index: number) => (
+                                    <li key={index} className='list-disc list-inside'>{obj}</li>
+                                ))}
+                            </ul>
+                        </div>
                     </div>
-
-                    <div className="space-y-6 pt-0">
-                        <PhaseSectionPro title="FASE INICIAL" exercises={getExercisesByIds(sessionData.initialExercises)} />
-                        <PhaseSectionPro title="FASE PRINCIPAL" exercises={getExercisesByIds(sessionData.mainExercises)} />
-                        <PhaseSectionPro title="FASE FINAL" exercises={getExercisesByIds(sessionData.finalExercises)} />
-                    </div>
-
-                    <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
                 </div>
+
+                <div className="space-y-6 pt-0">
+                    <PhaseSectionPro title="FASE INICIAL" exercises={getExercisesByIds(sessionData.initialExercises)} />
+                    <PhaseSectionPro title="FASE PRINCIPAL" exercises={getExercisesByIds(sessionData.mainExercises)} />
+                    <PhaseSectionPro title="FASE FINAL" exercises={getExercisesByIds(sessionData.finalExercises)} />
+                </div>
+
+                <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
             </div>
-            <DialogFooter className="p-4 border-t bg-background flex justify-end non-printable">
-                <Button variant="outline" onClick={() => window.print()} className="print-button">
-                    <Download className="mr-2" />
-                    Descargar PDF
-                </Button>
-                <DialogClose asChild>
-                    <Button>Cerrar</Button>
-                </DialogClose>
-            </DialogFooter>
-        </DialogContent>
+        </div>
     );
 };
 
@@ -412,8 +380,15 @@ export default function CrearSesionPage() {
   
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewType, setPreviewType] = useState<'Básica' | 'Pro' | null>(null);
+  const [printContent, setPrintContent] = useState<React.ReactNode | null>(null);
+
+  useEffect(() => {
+    if (printContent) {
+      window.print();
+      setPrintContent(null);
+    }
+  }, [printContent]);
+
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
@@ -510,11 +485,20 @@ export default function CrearSesionPage() {
     }
   };
   
-    const handleOpenPreview = (open: boolean) => {
-      if (!open) {
-          setPreviewType(null);
-      }
-      setShowPreview(open);
+    const handleGeneratePreview = (type: 'Básica' | 'Pro') => {
+        const sessionDataForPreview = {
+            ...watchedValues,
+            initialExercises: selectedExercises.initialExercises.map(e => e.id),
+            mainExercises: selectedExercises.mainExercises.map(e => e.id),
+            finalExercises: selectedExercises.finalExercises.map(e => e.id)
+        };
+        const teamName = userTeams.find(t => t.id === watchedValues.teamId)?.name || '';
+
+        if (type === 'Básica') {
+            setPrintContent(<SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />);
+        } else {
+            setPrintContent(<SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />);
+        }
     };
 
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
@@ -562,27 +546,22 @@ export default function CrearSesionPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          .printable-content, .printable-content * {
-            visibility: visible;
-          }
-          .printable-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: auto;
-            overflow: visible;
-          }
-          .non-printable, .print-button {
-            display: none !important;
-          }
-        }
-      `}</style>
+        <style jsx global>{`
+            @media print {
+              body > *:not(.print-container) {
+                display: none;
+              }
+              .print-container {
+                display: block !important;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+              }
+            }
+          `}</style>
+         {printContent && <div className="print-container hidden">{printContent}</div>}
+
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8 non-printable">
         <div className="text-center">
             <h1 className="text-3xl md:text-4xl font-bold font-headline">Crear Sesión</h1>
@@ -703,55 +682,40 @@ export default function CrearSesionPage() {
         <Card>
             <CardContent className="p-6">
                 <div className="flex justify-end items-center gap-4">
-                    <Dialog open={showPreview} onOpenChange={handleOpenPreview}>
+                    <Dialog>
                         <DialogTrigger asChild>
                             <Button variant="outline">
                                 <Eye className="mr-2" />
                                 Ver Ficha de Sesión
                             </Button>
                         </DialogTrigger>
-                        {previewType === 'Básica' ? (
-                            <SessionBasicPreview 
-                                sessionData={{
-                                    ...watchedValues,
-                                    initialExercises: selectedExercises.initialExercises.map(e => e.id),
-                                    mainExercises: selectedExercises.mainExercises.map(e => e.id),
-                                    finalExercises: selectedExercises.finalExercises.map(e => e.id)
-                                }}
-                                exercises={allExercises}
-                                teamName={userTeams.find(t => t.id === watchedValues.teamId)?.name || ''}
-                            />
-                        ) : previewType === 'Pro' ? (
-                            <SessionProPreview
-                                sessionData={{
-                                    ...watchedValues,
-                                    initialExercises: selectedExercises.initialExercises.map(e => e.id),
-                                    mainExercises: selectedExercises.mainExercises.map(e => e.id),
-                                    finalExercises: selectedExercises.finalExercises.map(e => e.id)
-                                }}
-                                exercises={allExercises}
-                            />
-                        ) : (
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Elige el tipo de ficha</DialogTitle>
-                                    <DialogDescription>
-                                        Selecciona qué versión de la ficha de sesión quieres generar.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid grid-cols-2 gap-4 pt-4">
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Elige el tipo de ficha</DialogTitle>
+                                <DialogDescription>
+                                    Selecciona qué versión de la ficha de sesión quieres generar.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid grid-cols-2 gap-4 pt-4">
+                                <DialogClose asChild>
                                     <div className="flex flex-col gap-2 items-center">
                                         <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                        <Button onClick={() => setPreviewType('Básica')} className="w-full">Generar Ficha Básica</Button>
+                                        <Button onClick={() => handleGeneratePreview('Básica')} className="w-full">
+                                          <Download className="mr-2" />
+                                          Descargar Básica
+                                        </Button>
                                     </div>
-                                    <div className="flex flex-col gap-2 items-center">
+                                </DialogClose>
+                                <DialogClose asChild>
+                                     <div className="flex flex-col gap-2 items-center">
                                         <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                        <TooltipProvider>
+                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <div className="w-full">
-                                                        <Button onClick={() => isProUser && setPreviewType('Pro')} className="w-full" disabled={!isProUser}>
-                                                            Generar Ficha Pro
+                                                        <Button onClick={() => isProUser && handleGeneratePreview('Pro')} className="w-full" disabled={!isProUser}>
+                                                            <Download className="mr-2" />
+                                                            Descargar Pro
                                                         </Button>
                                                     </div>
                                                 </TooltipTrigger>
@@ -763,9 +727,9 @@ export default function CrearSesionPage() {
                                             </Tooltip>
                                         </TooltipProvider>
                                     </div>
-                                </div>
-                            </DialogContent>
-                        )}
+                                </DialogClose>
+                            </div>
+                        </DialogContent>
                     </Dialog>
                     <Button type="submit" size="lg" disabled={isSaving}>
                         {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
