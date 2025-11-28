@@ -315,15 +315,28 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
             </DialogHeader>
              <ScrollArea className="max-h-[80vh]">
                 <div className="p-8 bg-white text-gray-900">
-                    <div className="grid grid-cols-5 gap-2 border-2 border-gray-800 p-2 mb-4">
-                        <div className="flex items-center justify-center row-span-2">
+                    <div className="grid grid-cols-3 gap-4 border-2 border-gray-800 p-2 mb-4">
+                        <div className="flex items-center justify-center">
                             <Shield className="w-12 h-12 text-gray-800" />
                         </div>
-                         <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Microciclo</p><p className="text-sm">{sessionData.microcycle || 'N/A'}</p></div>
-                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Sesión</p><p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p></div>
-                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Fecha</p><p className="text-sm">{sessionDateFormatted}</p></div>
-                        <div className="border border-gray-800 text-center p-1 col-span-2"><p className="text-xs font-bold">Objetivos</p><p className="text-sm truncate">{sessionData.objectives?.join(', ') || 'N/A'}</p></div>
-                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Instalación</p><p className="text-sm">{sessionData.facility || 'N/A'}</p></div>
+                        <div className="col-span-2 grid grid-cols-2 gap-2">
+                            <div className="border border-gray-800 text-center p-1">
+                                <p className="text-xs font-bold">Microciclo</p>
+                                <p className="text-sm">{sessionData.microcycle || 'N/A'}</p>
+                            </div>
+                            <div className="border border-gray-800 text-center p-1">
+                                <p className="text-xs font-bold">Sesión</p>
+                                <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
+                            </div>
+                             <div className="border border-gray-800 text-center p-1 col-span-2">
+                                <p className="text-xs font-bold">Objetivos</p>
+                                <p className="text-sm truncate">{sessionData.objectives?.join(', ') || 'N/A'}</p>
+                            </div>
+                        </div>
+                         <div className="border border-gray-800 text-center p-1">
+                            <p className="text-xs font-bold">Fecha</p>
+                            <p className="text-sm">{sessionDateFormatted}</p>
+                        </div>
                     </div>
 
                     <div className="space-y-6">
