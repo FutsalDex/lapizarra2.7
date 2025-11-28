@@ -6,11 +6,11 @@ import { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown, Eye, ListChecks, Shield } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -20,7 +20,7 @@ import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCollection } from 'react-firebase-hooks/firestore';
+import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, addDoc, Timestamp, getFirestore, query, where, or } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -31,6 +31,7 @@ import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -197,6 +198,134 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
   );
 };
 
+const SessionBasicPreview = ({ sessionData, exercises }: { sessionData: any, exercises: Exercise[] }) => {
+    const getExercisesByIds = (ids: string[]) => {
+        if (!ids || ids.length === 0) return [];
+        return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+    };
+
+    const PhaseSectionPreview = ({ title, exercises }: { title: string; exercises: Exercise[] }) => (
+        <div className="space-y-4">
+            <h3 className="text-xl font-bold font-headline text-primary">{title}</h3>
+            {exercises.length > 0 ? exercises.map(ex => (
+                <div key={ex.id} className="p-3 border rounded-md">
+                    <p className="font-semibold">{ex['Ejercicio']}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{ex['Descripción de la tarea']}</p>
+                </div>
+            )) : <p className="text-sm text-muted-foreground">No hay ejercicios en esta fase.</p>}
+        </div>
+    );
+
+    return (
+        <DialogContent className="max-w-3xl">
+            <DialogHeader>
+                <DialogTitle>Previsualización de la Ficha (Básica)</DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[70vh] p-4">
+                <div className="space-y-6">
+                    <PhaseSectionPreview title="Fase Inicial" exercises={getExercisesByIds(sessionData.initialExercises)} />
+                    <PhaseSectionPreview title="Fase Principal" exercises={getExercisesByIds(sessionData.mainExercises)} />
+                    <PhaseSectionPreview title="Fase Final" exercises={getExercisesByIds(sessionData.finalExercises)} />
+                </div>
+            </ScrollArea>
+        </DialogContent>
+    );
+};
+
+const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exercises: Exercise[] }) => {
+    const getExercisesByIds = (ids: string[]) => {
+        if (!ids || ids.length === 0) return [];
+        return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+    };
+    
+    const totalPlayers = exercises.map(ex => ex['Número de jugadores']).reduce((a, b) => Math.max(a, b), 0);
+    const sessionDateFormatted = sessionData.date ? format(sessionData.date, 'dd/MM/yyyy', { locale: es }) : 'N/A';
+
+    const PhaseSectionPro = ({ title, exercises }: { title: string; exercises: Exercise[] }) => (
+        <div className="space-y-4">
+            <div className="bg-gray-800 text-white text-center py-1">
+                <h3 className="font-bold tracking-widest">{title}</h3>
+            </div>
+            {exercises.length > 0 ? exercises.map(ex => (
+                <Card key={ex.id} className="overflow-hidden">
+                    <CardHeader className="bg-gray-200 dark:bg-gray-700 p-2">
+                         <CardTitle className="text-sm text-center font-bold">{ex['Ejercicio']}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-2 grid grid-cols-2 gap-2">
+                        <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
+                            <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
+                        </div>
+                        <div className="text-xs space-y-2">
+                            <div>
+                                <p className="font-bold">Descripción</p>
+                                <p className="text-gray-600 dark:text-gray-400">{ex['Descripción de la tarea']}</p>
+                            </div>
+                            <div>
+                                <p className="font-bold">Objetivos</p>
+                                <p className="text-gray-600 dark:text-gray-400">{ex['Objetivos']}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                     <CardFooter className="bg-gray-200 dark:bg-gray-700 p-1 grid grid-cols-4 gap-1 text-xs text-center">
+                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
+                            <p className="font-bold">Tiempo</p>
+                            <p>{ex['Duración (min)']} min</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
+                            <p className="font-bold">Descanso</p><p>N/A</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
+                            <p className="font-bold">Jugadores</p>
+                            <p>{ex['Número de jugadores']}</p>
+                        </div>
+                         <div className="bg-white dark:bg-gray-600 p-1 rounded-sm">
+                            <p className="font-bold">Espacio</p><p>N/A</p>
+                        </div>
+                    </CardFooter>
+                </Card>
+            )) : <p className="text-sm text-muted-foreground p-4 text-center">No hay ejercicios en esta fase.</p>}
+        </div>
+    );
+
+    return (
+        <DialogContent className="max-w-4xl p-0">
+             <ScrollArea className="max-h-[90vh]">
+                <div className="p-8 bg-white text-gray-900">
+                     <DialogHeader className="text-center mb-4">
+                        <DialogTitle className="text-lg font-bold">Previsualización de la Ficha de Sesión</DialogTitle>
+                        <DialogDescription className="text-sm">Así se verá tu sesión. Puedes descargarla como PDF desde aquí.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-5 gap-2 border-2 border-gray-800 p-2 mb-4">
+                        <div className="flex items-center justify-center row-span-2">
+                            <Shield className="w-12 h-12 text-gray-800" />
+                        </div>
+                         <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Microciclo</p><p className="text-sm">{sessionData.microcycle || 'N/A'}</p></div>
+                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Sesión</p><p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p></div>
+                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Fecha</p><p className="text-sm">{sessionDateFormatted}</p></div>
+                        <div className="border border-gray-800 text-center p-1 col-span-3"><p className="text-xs font-bold">Objetivos</p><p className="text-sm truncate">{sessionData.objectives?.join(', ') || 'N/A'}</p></div>
+                        <div className="border border-gray-800 text-center p-1"><p className="text-xs font-bold">Jugadores</p><p className="text-sm">{totalPlayers > 0 ? totalPlayers : 'N/A'}</p></div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <PhaseSectionPro title="FASE INICIAL" exercises={getExercisesByIds(sessionData.initialExercises)} />
+                        <PhaseSectionPro title="FASE PRINCIPAL" exercises={getExercisesByIds(sessionData.mainExercises)} />
+                        <PhaseSectionPro title="FASE FINAL" exercises={getExercisesByIds(sessionData.finalExercises)} />
+                    </div>
+
+                    <p className="text-center text-xs mt-8 text-gray-500">Powered by LaPizarra</p>
+                </div>
+            </ScrollArea>
+             <DialogFooter className="p-4 border-t bg-background flex justify-end">
+                <Button variant="outline" onClick={() => window.print()}>Descargar PDF</Button>
+                <DialogClose asChild>
+                    <Button>Cerrar</Button>
+                </DialogClose>
+            </DialogFooter>
+        </DialogContent>
+    );
+};
+
+
 export default function CrearSesionPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -207,9 +336,11 @@ export default function CrearSesionPage() {
     mainExercises: [],
     finalExercises: [],
   });
-
+  
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewType, setPreviewType] = useState<'Básica' | 'Pro' | null>(null);
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
@@ -219,11 +350,14 @@ export default function CrearSesionPage() {
     },
   });
 
-  const selectedObjectives = watch('objectives');
+  const watchedValues = watch();
   
   const [exercisesSnapshot, loadingExercises] = useCollection(collection(db, 'exercises'));
   const allExercises = useMemo(() => exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [], [exercisesSnapshot]);
   const allCategories = useMemo(() => [...new Set(allExercises.map(e => e['Categoría']))].sort(), [allExercises]);
+  
+  const [userProfile, loadingProfile] = useDocumentData(user ? doc(db, 'users', user.uid) : null);
+  const isProUser = userProfile?.subscription === 'Pro';
 
   const teamsQuery = user ? query(collection(db, 'teams'), or(where('ownerId', '==', user.uid), where('memberIds', 'array-contains', user.uid))) : null;
   const [teamsSnapshot, loadingTeams] = useCollection(teamsQuery);
@@ -253,7 +387,7 @@ export default function CrearSesionPage() {
   };
 
   const handleObjectiveChange = (objective: string) => {
-    const currentObjectives = selectedObjectives || [];
+    const currentObjectives = watchedValues.objectives || [];
     const newObjectives = currentObjectives.includes(objective)
       ? currentObjectives.filter(o => o !== objective)
       : [...currentObjectives, objective];
@@ -303,6 +437,13 @@ export default function CrearSesionPage() {
     }
   };
   
+    const handleOpenPreview = (open: boolean) => {
+      if (!open) {
+          setPreviewType(null);
+      }
+      setShowPreview(open);
+    };
+
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
     const exercisesForPhase = selectedExercises[phase];
     const limit = phaseLimits[phase];
@@ -423,7 +564,7 @@ export default function CrearSesionPage() {
                 </div>
             </div>
             <div className="space-y-2">
-              <Label>Objetivos Principales ({(selectedObjectives || []).length}/5)</Label>
+              <Label>Objetivos Principales ({watchedValues.objectives?.length || 0}/5)</Label>
                <div className="p-4 border rounded-lg space-y-4">
                   {Object.entries(objectivesByCategory).map(([category, objectives]) => (
                     <Collapsible key={category}>
@@ -436,7 +577,7 @@ export default function CrearSesionPage() {
                           <div key={objective} className="flex items-start space-x-2 p-2 rounded-md hover:bg-muted">
                             <Checkbox
                               id={objective}
-                              checked={(selectedObjectives || []).includes(objective)}
+                              checked={(watchedValues.objectives || []).includes(objective)}
                               onCheckedChange={() => handleObjectiveChange(objective)}
                             />
                             <Label htmlFor={objective} className="text-sm font-normal cursor-pointer">
@@ -448,11 +589,11 @@ export default function CrearSesionPage() {
                     </Collapsible>
                   ))}
                </div>
-              {selectedObjectives && selectedObjectives.length > 0 && (
+              {watchedValues.objectives && watchedValues.objectives.length > 0 && (
                 <div className="space-y-2 pt-2">
                     <Label>Objetivos seleccionados:</Label>
                     <div className="flex flex-wrap gap-2">
-                        {selectedObjectives.map(obj => <Badge key={obj} variant="secondary">{obj}</Badge>)}
+                        {watchedValues.objectives.map(obj => <Badge key={obj} variant="secondary">{obj}</Badge>)}
                     </div>
                 </div>
               )}
@@ -466,15 +607,80 @@ export default function CrearSesionPage() {
         <PhaseSection phase="finalExercises" title="Fase Final (Vuelta a la Calma)" subtitle="Ejercicios de baja intensidad para la recuperación." />
 
         <Card>
-            <CardHeader><CardTitle>Finalizar y Guardar</CardTitle></CardHeader>
-            <CardContent>
-              <Button type="submit" className="w-full" size="lg" disabled={isSaving}>
-                {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
-                Guardar Sesión
-              </Button>
+            <CardContent className="p-6">
+                <div className="flex justify-end items-center gap-4">
+                    <Dialog open={showPreview} onOpenChange={handleOpenPreview}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline">
+                                <Eye className="mr-2" />
+                                Ver Ficha de Sesión
+                            </Button>
+                        </DialogTrigger>
+                        {previewType === 'Básica' ? (
+                            <SessionBasicPreview 
+                                sessionData={{
+                                    ...watchedValues,
+                                    initialExercises: selectedExercises.initialExercises.map(e => e.id),
+                                    mainExercises: selectedExercises.mainExercises.map(e => e.id),
+                                    finalExercises: selectedExercises.finalExercises.map(e => e.id)
+                                }}
+                                exercises={allExercises}
+                            />
+                        ) : previewType === 'Pro' ? (
+                            <SessionProPreview
+                                sessionData={{
+                                    ...watchedValues,
+                                    initialExercises: selectedExercises.initialExercises.map(e => e.id),
+                                    mainExercises: selectedExercises.mainExercises.map(e => e.id),
+                                    finalExercises: selectedExercises.finalExercises.map(e => e.id)
+                                }}
+                                exercises={allExercises}
+                            />
+                        ) : (
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Elige el tipo de ficha</DialogTitle>
+                                    <DialogDescription>
+                                        Selecciona qué versión de la ficha de sesión quieres generar.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="grid grid-cols-2 gap-4 pt-4">
+                                    <div className="flex flex-col gap-2 items-center">
+                                        <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
+                                        <Button onClick={() => setPreviewType('Básica')} className="w-full">Generar Ficha Básica</Button>
+                                    </div>
+                                    <div className="flex flex-col gap-2 items-center">
+                                        <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="w-full">
+                                                        <Button onClick={() => isProUser && setPreviewType('Pro')} className="w-full" disabled={!isProUser}>
+                                                            Generar Ficha Pro
+                                                        </Button>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                {!isProUser && (
+                                                    <TooltipContent>
+                                                        <p>Mejora al Plan Pro para acceder a esta función.</p>
+                                                    </TooltipContent>
+                                                )}
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        )}
+                    </Dialog>
+                    <Button type="submit" size="lg" disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
+                        Guardar Sesión
+                    </Button>
+                </div>
             </CardContent>
         </Card>
       </form>
     </div>
   );
 }
+
