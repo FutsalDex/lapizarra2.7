@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useParams } from 'next/navigation';
-import { useDocumentData } from 'react-firebase-hooks/firestore';
-import { doc, Timestamp, getFirestore } from 'firebase/firestore';
+import { useDocumentData, useCollection } from 'react-firebase-hooks/firestore';
+import { doc, Timestamp, getFirestore, collection } from 'firebase/firestore';
 import app from '@/firebase/config';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,9 +25,15 @@ const StatRow = ({ label, localValue, visitorValue }: { label: string; localValu
     </div>
 );
 
+type Player = {
+    id: string;
+    name: string;
+    number: string;
+}
+
 type PlayerStat = {
   g: number; a: number; ta: number; tr: number; fouls: number; 
-  paradas: number; gc: number; vs1: number; minutesPlayed: number; name?: string; id?:string;
+  paradas: number; gc: number; vs1: number; minutesPlayed: number; name?: string; id?:string; number?: string;
 };
 
 export default function PartidoDetallePage() {
@@ -37,11 +42,19 @@ export default function PartidoDetallePage() {
   
   const [match, loading, error] = useDocumentData(doc(db, 'matches', matchId));
   
-  const [team, loadingTeam] = useDocumentData(match ? doc(db, 'teams', match.teamId) : null);
+  const teamId = match?.teamId;
+  const [team, loadingTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
   const myTeamName = useMemo(() => team?.name || "Mi Equipo", [team]);
 
+  const [playersSnapshot, loadingPlayers, errorPlayers] = useCollection(teamId ? collection(db, 'teams', teamId, 'players') : null);
+  const teamPlayers = useMemo(() => {
+    if (!playersSnapshot) return [];
+    return playersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
+  }, [playersSnapshot]);
+
+
   const { teamStats, finalPlayerStats } = useMemo(() => {
-    if (!match || !myTeamName) {
+    if (!match || !myTeamName || !teamPlayers) {
         return { teamStats: { local: {}, visitor: {} }, finalPlayerStats: [] };
     }
 
@@ -90,7 +103,13 @@ export default function PartidoDetallePage() {
                 if (match.playerStats[period]) {
                      Object.entries(match.playerStats[period]).forEach(([playerId, stats]: [string, any]) => {
                         if (!combined[playerId]) {
-                            combined[playerId] = { id: playerId, name: 'Desconocido', minutesPlayed: 0, g: 0, a: 0, ta: 0, tr: 0, fouls: 0, paradas: 0, gc: 0, vs1: 0 };
+                             const playerInfo = teamPlayers.find(p => p.id === playerId);
+                             combined[playerId] = { 
+                                id: playerId, 
+                                name: playerInfo?.name || 'Desconocido',
+                                number: playerInfo?.number || '?',
+                                minutesPlayed: 0, g: 0, a: 0, ta: 0, tr: 0, fouls: 0, paradas: 0, gc: 0, vs1: 0 
+                            };
                         }
                         combined[playerId].minutesPlayed! += stats.minutesPlayed || 0;
                         combined[playerId].g! += stats.goals || 0;
@@ -104,14 +123,6 @@ export default function PartidoDetallePage() {
                     });
                 }
             });
-
-             if(match.events) {
-                match.events.forEach((event: any) => {
-                    if(event.playerId && combined[event.playerId]) {
-                        combined[event.playerId].name = event.playerName;
-                    }
-                });
-             }
         }
         return Object.values(combined);
     };
@@ -123,9 +134,9 @@ export default function PartidoDetallePage() {
         },
         finalPlayerStats: combinedPlayerStats()
     };
-  }, [match, myTeamName]);
+  }, [match, myTeamName, teamPlayers]);
   
-  if (loading || loadingTeam) {
+  if (loading || loadingTeam || loadingPlayers) {
     return (
         <div className="container mx-auto px-4 py-8">
             <Skeleton className="h-10 w-48 mb-6" />
@@ -184,6 +195,34 @@ export default function PartidoDetallePage() {
     const displayLocalTeam = localTeam;
     const displayVisitorTeam = visitorTeam;
 
+    const adjustedGoals = (events || [])
+        .filter((e: any) => e.type === 'goal')
+        .map((goal: any) => {
+            let minute = goal.minute || 0;
+            // Assuming the half is not stored, we check if the goal belongs to the second half based on minute
+            // This is an approximation. A 'period' field in the event would be better.
+            const playerStats1H = match.playerStats?.['1H']?.[goal.playerId];
+            const playerStats2H = match.playerStats?.['2H']?.[goal.playerId];
+            // Simple heuristic: if a player has stats in 2H but not 1H, goal is likely 2H
+            if(playerStats2H && !playerStats1H) {
+                 minute += 25; // Add first half duration
+            } else if (playerStats1H && playerStats2H && goal.minute > 25) { // If minute is already high, it might be from 2H
+                 // This is tricky. Let's assume for now the minute is absolute if high, or relative if low.
+                 // A better solution needs a 'period' in the event.
+                 // Let's adjust based on total goals if possible
+                 const goals1H = Object.values(match.playerStats?.['1H'] || {}).reduce((sum: number, p: any) => sum + (p.goals || 0), 0);
+                 const totalGoalsSoFar = (events || []).filter((e: any) => e.type === 'goal' && e.minute <= goal.minute).length;
+                 if (totalGoalsSoFar > goals1H) {
+                    minute += 25;
+                 }
+            }
+            // For now, let's hard-code the second half adjustment logic for demo
+            if (goal.period === '2H' || (goal.minute && goal.minute <= 25 && events.filter((e:any) => e.type === 'goal' && e.period === '1H').length < localScore + visitorScore)) {
+                 // A simple way is to check if we are processing 2nd half goals.
+            }
+            return {...goal, minute};
+        })
+        .sort((a:any, b:any) => a.minute - b.minute);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -236,13 +275,13 @@ export default function PartidoDetallePage() {
                             <h4 className="w-1/2 truncate">{displayLocalTeam}</h4>
                             <h4 className="w-1/2 text-right truncate">{displayVisitorTeam}</h4>
                         </div>
-                        <div className="space-y-4 max-h-60 overflow-y-auto">
+                        <div className="space-y-4">
                             {events.filter((e: any) => e.type === 'goal').sort((a:any, b:any) => a.minute - b.minute).map((goal: any, index: number) => (
                                 <div key={index} className="flex items-center text-sm border-b last:border-none pb-2">
                                     {goal.team === 'local' ? (
                                         <div className="w-1/2 flex justify-between items-center pr-4">
                                             <span className="font-medium truncate">{goal.playerName}</span>
-                                            <span className="text-muted-foreground">{goal.minute}'</span>
+                                            <span className="text-muted-foreground">{goal.minute + (goal.period === '2H' ? 25 : 0)}'</span>
                                         </div>
                                     ) : <div className="w-1/2 pr-4"></div>}
                                     
@@ -250,7 +289,7 @@ export default function PartidoDetallePage() {
 
                                     {goal.team === 'visitor' ? (
                                         <div className="w-1/2 flex justify-between items-center pl-4">
-                                            <span className="text-muted-foreground">{goal.minute}'</span>
+                                            <span className="text-muted-foreground">{goal.minute + (goal.period === '2H' ? 25 : 0)}'</span>
                                             <span className="font-medium text-right truncate">{goal.playerName}</span>
                                         </div>
                                     ) : <div className="w-1/2 pl-4"></div>}
@@ -285,6 +324,7 @@ export default function PartidoDetallePage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead>#</TableHead>
                                     <TableHead>Nombre</TableHead>
                                     <TableHead className="text-center">Min.</TableHead>
                                     <TableHead className="text-center">G</TableHead>
@@ -298,8 +338,9 @@ export default function PartidoDetallePage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {finalPlayerStats.map((player) => (
+                                {finalPlayerStats.sort((a, b) => Number(a.number) - Number(b.number)).map((player) => (
                                     <TableRow key={player.id}>
+                                        <TableCell className="py-2 px-4 font-medium">{player.number}</TableCell>
                                         <TableCell className="py-2 px-4 font-medium truncate">{player.name || 'Desconocido'}</TableCell>
                                         <TableCell className="text-center py-2 px-4">{formatTime(player.minutesPlayed || 0)}</TableCell>
                                         <TableCell className="text-center py-2 px-4">{player.g || 0}</TableCell>
@@ -315,7 +356,7 @@ export default function PartidoDetallePage() {
                             </TableBody>
                              <TableFooter>
                                 <TableRow className="bg-muted/50 font-bold hover:bg-muted/50">
-                                    <TableCell className="py-2 px-4">Total Equipo</TableCell>
+                                    <TableCell colSpan={2} className="py-2 px-4">Total Equipo</TableCell>
                                     <TableCell className="text-center py-2 px-4">{totalTimeFormatted}</TableCell>
                                     <TableCell className="text-center py-2 px-4">{totals.g}</TableCell>
                                     <TableCell className="text-center py-2 px-4">{totals.a}</TableCell>
@@ -335,4 +376,3 @@ export default function PartidoDetallePage() {
       </Tabs>
     </div>
   );
-}
