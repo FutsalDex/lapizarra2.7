@@ -269,7 +269,10 @@ export default function EstadisticasPartidoPage() {
         opponentStatsRef.current[stat] = newValue;
 
         if (stat === 'goals' && delta > 0) {
-            const currentMinute = matchDuration - Math.floor(time / 60);
+            let currentMinute = matchDuration - Math.floor(time / 60);
+            if (period === '2H') {
+                currentMinute += matchDuration;
+            }
             const myTeamIsLocal = match?.localTeam === myTeamName;
             const opponentTeamName = myTeamIsLocal ? match?.visitorTeam : match?.localTeam;
 
@@ -293,7 +296,10 @@ export default function EstadisticasPartidoPage() {
     const handleOpponentOwnGoal = () => {
         if (isFinished || !match) return;
 
-        const currentMinute = matchDuration - Math.floor(time / 60);
+        let currentMinute = matchDuration - Math.floor(time / 60);
+        if (period === '2H') {
+            currentMinute += matchDuration;
+        }
         const myTeamIsLocal = match.localTeam === myTeamName;
 
         const newEvent: MatchEvent = {
@@ -385,7 +391,10 @@ export default function EstadisticasPartidoPage() {
         playerStat[stat as keyof PlayerStat] = newVal;
 
         if (stat === 'goals' && delta > 0) {
-             const currentMinute = matchDuration - Math.floor(time / 60);
+             let currentMinute = matchDuration - Math.floor(time / 60);
+             if (period === '2H') {
+                currentMinute += matchDuration;
+             }
              const player = activePlayers.find(p => p.id === playerId);
              const myTeamIsLocal = match?.localTeam === myTeamName;
              const newEvent: MatchEvent = {
