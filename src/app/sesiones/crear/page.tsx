@@ -2,6 +2,7 @@
 
 "use client";
 
+import * as React from 'react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -386,7 +387,7 @@ export default function CrearSesionPage() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
   const printRef = useRef(null);
-  const [printableContent, setPrintableContent] = useState<React.ReactNode | null>(null);
+  
   
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<SessionFormData>({
@@ -544,9 +545,6 @@ export default function CrearSesionPage() {
 
   return (
     <>
-      <div style={{ display: "none" }}>
-        {printableContent}
-      </div>
       <div className="container mx-auto px-4 py-8 no-print">
         <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8">
           <div className="text-center">
