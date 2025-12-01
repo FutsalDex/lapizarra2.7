@@ -316,6 +316,33 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
   );
 };
 
+const PreviewDialog = ({ open, onOpenChange, children, trigger }: { open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode, trigger: React.ReactNode }) => {
+    const printRef = useRef<HTMLDivElement>(null);
+    const handlePrint = useReactToPrint({
+        content: () => printRef.current,
+    });
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            {trigger}
+            <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>Vista Previa de la Ficha</DialogTitle>
+                    <div className="flex gap-2 pt-2">
+                        <Button onClick={handlePrint}><Download className="mr-2"/>Descargar PDF</Button>
+                        <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
+                    </div>
+                </DialogHeader>
+                <div className="overflow-auto flex-1 bg-gray-200 p-4">
+                    <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg">
+                        {React.cloneElement(children as React.ReactElement, { ref: printRef })}
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 export default function EditarSesionPage() {
   const router = useRouter();
   const params = useParams();
@@ -337,11 +364,7 @@ export default function EditarSesionPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
-  const printRef = useRef<HTMLDivElement>(null);
-  
-  const handlePrint = useReactToPrint({
-    content: () => printRef.current,
-  });
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch, reset } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
@@ -459,9 +482,10 @@ export default function EditarSesionPage() {
   
   const handleOpenPreview = (type: 'Básica' | 'Pro') => {
     const content = type === 'Básica' 
-      ? <SessionBasicPreview ref={printRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-      : <SessionProPreview ref={printRef} sessionData={sessionDataForPreview} exercises={allExercises} />;
+      ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+      : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
     setPreviewContent(content);
+    setIsPreviewOpen(true);
   };
 
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
@@ -654,47 +678,47 @@ export default function EditarSesionPage() {
             <Card>
                 <CardContent className="p-6">
                     <div className="flex justify-end items-center gap-4">
-                        <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="outline">
-                                <Eye className="mr-2" />
-                                Ver Ficha de Sesión
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                             <DialogHeader>
-                                <DialogTitle>Elige el tipo de ficha</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid grid-cols-2 gap-4 pt-4">
-                                <div className="flex flex-col gap-2 items-center">
-                                    <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                    <Button onClick={() => handleOpenPreview('Básica')} className="w-full">
-                                        <Eye className="mr-2" />
-                                        Ver Ficha Básica
-                                    </Button>
+                       <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="outline">
+                                    <Eye className="mr-2" />
+                                    Ver Ficha de Sesión
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Elige el tipo de ficha</DialogTitle>
+                                </DialogHeader>
+                                <div className="grid grid-cols-2 gap-4 pt-4">
+                                    <div className="flex flex-col gap-2 items-center">
+                                        <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
+                                        <Button onClick={() => handleOpenPreview('Básica')} className="w-full">
+                                            <Eye className="mr-2" />
+                                            Ver Ficha Básica
+                                        </Button>
+                                    </div>
+                                    <div className="flex flex-col gap-2 items-center">
+                                        <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="w-full">
+                                                        <Button onClick={() => handleOpenPreview('Pro')} className="w-full" disabled={!isProUser}>
+                                                            <Eye className="mr-2" />
+                                                            Ver Ficha Pro
+                                                        </Button>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                {!isProUser && (
+                                                    <TooltipContent>
+                                                        <p>Mejora al Plan Pro para acceder a esta función.</p>
+                                                    </TooltipContent>
+                                                )}
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col gap-2 items-center">
-                                    <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <div className="w-full">
-                                                    <Button onClick={() => isProUser && handleOpenPreview('Pro')} className="w-full" disabled={!isProUser}>
-                                                        <Eye className="mr-2" />
-                                                        Ver Ficha Pro
-                                                    </Button>
-                                                </div>
-                                            </TooltipTrigger>
-                                            {!isProUser && (
-                                                <TooltipContent>
-                                                    <p>Mejora al Plan Pro para acceder a esta función.</p>
-                                                </TooltipContent>
-                                            )}
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </div>
-                            </div>
-                        </DialogContent>
+                            </DialogContent>
                         </Dialog>
                         <Button type="submit" size="lg" disabled={isSaving}>
                             {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
@@ -706,25 +730,10 @@ export default function EditarSesionPage() {
         </form>
       </div>
 
-       <Dialog open={!!previewContent} onOpenChange={(open) => !open && setPreviewContent(null)}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-            <DialogHeader>
-                <DialogTitle>Vista Previa de la Ficha</DialogTitle>
-                 <div className="flex gap-2 pt-2">
-                    <Button onClick={handlePrint}><Download className="mr-2"/>Descargar PDF</Button>
-                    <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
-                </div>
-            </DialogHeader>
-            <div className="overflow-auto flex-1 bg-gray-200 p-4">
-                <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg">
-                    {previewContent}
-                </div>
-            </div>
-        </DialogContent>
-      </Dialog>
+       <PreviewDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen} trigger={null}>
+            {previewContent}
+       </PreviewDialog>
     </>
   );
 }
-
-
 

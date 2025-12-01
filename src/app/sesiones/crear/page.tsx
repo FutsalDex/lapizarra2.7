@@ -371,6 +371,32 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
 });
 SessionProPreview.displayName = 'SessionProPreview';
 
+const PreviewDialog = ({ open, onOpenChange, children, trigger }: { open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode, trigger: React.ReactNode }) => {
+    const printRef = useRef<HTMLDivElement>(null);
+    const handlePrint = useReactToPrint({
+        content: () => printRef.current,
+    });
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            {trigger}
+            <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>Vista Previa de la Ficha</DialogTitle>
+                    <div className="flex gap-2 pt-2">
+                        <Button onClick={handlePrint}><Download className="mr-2"/>Descargar PDF</Button>
+                        <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
+                    </div>
+                </DialogHeader>
+                <div className="overflow-auto flex-1 bg-gray-200 p-4">
+                    <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg">
+                        {React.cloneElement(children as React.ReactElement, { ref: printRef })}
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 export default function CrearSesionPage() {
   const router = useRouter();
@@ -386,12 +412,8 @@ export default function CrearSesionPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
-  const printRef = useRef(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
-  const handlePrint = useReactToPrint({
-    content: () => printRef.current,
-  });
-
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
     defaultValues: {
@@ -496,9 +518,10 @@ export default function CrearSesionPage() {
 
   const handleOpenPreview = (type: 'Básica' | 'Pro') => {
     const content = type === 'Básica' 
-      ? <SessionBasicPreview ref={printRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-      : <SessionProPreview ref={printRef} sessionData={sessionDataForPreview} exercises={allExercises} />;
+      ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+      : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
     setPreviewContent(content);
+    setIsPreviewOpen(true);
   };
   
 
@@ -693,7 +716,7 @@ export default function CrearSesionPage() {
                                           <Tooltip>
                                               <TooltipTrigger asChild>
                                                   <div className="w-full">
-                                                      <Button onClick={() => isProUser && handleOpenPreview('Pro')} className="w-full" disabled={!isProUser}>
+                                                      <Button onClick={() => handleOpenPreview('Pro')} className="w-full" disabled={!isProUser}>
                                                           <Eye className="mr-2" />
                                                           Ver Ficha Pro
                                                       </Button>
@@ -720,23 +743,11 @@ export default function CrearSesionPage() {
         </form>
       </div>
 
-       <Dialog open={!!previewContent} onOpenChange={(open) => !open && setPreviewContent(null)}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-            <DialogHeader>
-                <DialogTitle>Vista Previa de la Ficha</DialogTitle>
-                 <div className="flex gap-2 pt-2">
-                     <Button onClick={handlePrint}><Download className="mr-2"/>Descargar PDF</Button>
-                    <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
-                </div>
-            </DialogHeader>
-            <div className="overflow-auto flex-1 bg-gray-200 p-4">
-                <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg">
-                    {previewContent}
-                </div>
-            </div>
-        </DialogContent>
-      </Dialog>
+       <PreviewDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen} trigger={null}>
+            {previewContent}
+       </PreviewDialog>
     </>
   );
 }
+
 
