@@ -108,7 +108,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
                             <p className="text-xs font-bold">Objetivos</p>
                             <ul className="text-sm space-y-1 mt-1">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                    <li key={index} className="truncate list-disc list-inside">{obj}</li>
+                                    <li key={index} className="list-disc list-inside">{obj}</li>
                                 ))}
                             </ul>
                         </div>
@@ -332,7 +332,7 @@ export default function EditarSesionPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   
-  const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
+  const [printContent, setPrintContent] = useState<React.ReactNode | null>(null);
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch, reset } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
@@ -448,49 +448,23 @@ export default function EditarSesionPage() {
   };
   const teamNameForPreview = userTeams.find(t => t.id === watchedValues.teamId)?.name || '';
   
-  const handleOpenPreview = (type: 'Básica' | 'Pro') => {
-    const content = type === 'Básica' 
+  useEffect(() => {
+    if (printContent) {
+      const doPrint = async () => {
+        await new Promise(resolve => setTimeout(resolve, 100)); // Allow content to render
+        window.print();
+        setPrintContent(null);
+      };
+      doPrint();
+    }
+  }, [printContent]);
+  
+  const handlePrint = (type: 'Básica' | 'Pro') => {
+     const content = type === 'Básica' 
       ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
       : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
-    setPreviewContent(content);
-  };
-  
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      const ReactDOMServer = require('react-dom/server');
-      const html = ReactDOMServer.renderToString(previewContent as React.ReactElement);
-      
-      const styles = Array.from(document.styleSheets)
-        .map(s => {
-          try {
-            return Array.from(s.cssRules).map(r => r.cssText).join('\n');
-          } catch (e) {
-            return '';
-          }
-        })
-        .join('\n');
-
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Imprimir Sesión</title>
-            <style>${styles}</style>
-          </head>
-          <body class="bg-white">
-            ${html}
-            <script>
-              setTimeout(() => {
-                window.print();
-                window.close();
-              }, 500);
-            </script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-    }
-  };
+    setPrintContent(content);
+  }
 
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
     const exercisesForPhase = selectedExercises[phase];
@@ -536,7 +510,6 @@ export default function EditarSesionPage() {
   };
 
   const isLoading = loadingAuth || loadingSession || loadingExercises || loadingTeams || loadingProfile;
-  const isProUser = userProfile?.subscription === 'Pro';
 
   if (isLoading) {
     return (
@@ -558,11 +531,11 @@ export default function EditarSesionPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 print:hidden">
-      <div className="hidden">
+    <>
+      <div className="print-content">
+        {printContent}
       </div>
-
-      <div className="print-hidden">
+      <div className="container mx-auto px-4 py-8 no-print">
           <Button variant="outline" asChild className="mb-6">
               <a href={`/sesiones/${sessionId}`}><ArrowLeft className="mr-2" />Volver a la Sesión</a>
           </Button>
@@ -694,16 +667,13 @@ export default function EditarSesionPage() {
                   <DialogContent>
                       <DialogHeader>
                           <DialogTitle>Elige el tipo de ficha</DialogTitle>
-                          <DialogDescription>
-                              Sesión de entrenamiento
-                          </DialogDescription>
                       </DialogHeader>
                        <div className="grid grid-cols-2 gap-4 pt-4">
                           <div className="flex flex-col gap-2 items-center">
                               <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                              <Button onClick={() => handleOpenPreview('Básica')} className="w-full">
-                                <Eye className="mr-2" />
-                                Ver Ficha Básica
+                              <Button onClick={() => handlePrint('Básica')} className="w-full">
+                                <Download className="mr-2" />
+                                Descargar Básica
                               </Button>
                           </div>
                            <div className="flex flex-col gap-2 items-center">
@@ -712,9 +682,9 @@ export default function EditarSesionPage() {
                                   <Tooltip>
                                       <TooltipTrigger asChild>
                                           <div className="w-full">
-                                              <Button onClick={() => isProUser && handleOpenPreview('Pro')} className="w-full" disabled={!isProUser}>
-                                                  <Eye className="mr-2" />
-                                                  Ver Ficha Pro
+                                              <Button onClick={() => isProUser && handlePrint('Pro')} className="w-full" disabled={!isProUser}>
+                                                  <Download className="mr-2" />
+                                                  Descargar Pro
                                               </Button>
                                           </div>
                                       </TooltipTrigger>
@@ -737,28 +707,6 @@ export default function EditarSesionPage() {
           </div>
         </form>
       </div>
-
-       <Dialog open={!!previewContent} onOpenChange={() => setPreviewContent(null)}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-            <DialogHeader className="flex-row items-center justify-between">
-                <DialogTitle>Previsualización de Ficha</DialogTitle>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={handlePrint}>
-                        <Printer className="mr-2" /> Imprimir / Guardar PDF
-                    </Button>
-                    <DialogClose asChild>
-                        <Button variant="ghost" size="icon"><X/></Button>
-                    </DialogClose>
-                </div>
-            </DialogHeader>
-            <div className="flex-grow overflow-y-auto bg-gray-200 p-8">
-                 <div className="mx-auto w-[210mm] min-h-[297mm] shadow-lg">
-                    {previewContent}
-                </div>
-            </div>
-        </DialogContent>
-      </Dialog>
-
-    </div>
+    </>
   );
 }

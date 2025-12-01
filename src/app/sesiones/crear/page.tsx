@@ -241,7 +241,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
                             <p className="text-xs font-bold">Objetivos</p>
                             <ul className="text-sm space-y-1 mt-1">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                    <li key={index} className="truncate list-disc list-inside">{obj}</li>
+                                    <li key={index} className="list-disc list-inside">{obj}</li>
                                 ))}
                             </ul>
                         </div>
@@ -381,6 +381,7 @@ export default function CrearSesionPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
+  const [printContent, setPrintContent] = useState<React.ReactNode | null>(null);
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
@@ -491,42 +492,23 @@ export default function CrearSesionPage() {
     setPreviewContent(content);
   };
   
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      const ReactDOMServer = require('react-dom/server');
-      const html = ReactDOMServer.renderToString(previewContent as React.ReactElement);
-      
-      const styles = Array.from(document.styleSheets)
-        .map(s => {
-          try {
-            return Array.from(s.cssRules).map(r => r.cssText).join('\n');
-          } catch (e) {
-            return '';
-          }
-        })
-        .join('\n');
-
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Imprimir Sesión</title>
-            <style>${styles}</style>
-          </head>
-          <body class="bg-white">
-            ${html}
-            <script>
-              setTimeout(() => {
-                window.print();
-                window.close();
-              }, 500);
-            </script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
+  useEffect(() => {
+    if (printContent) {
+      const doPrint = async () => {
+        await new Promise(resolve => setTimeout(resolve, 100)); // Allow content to render
+        window.print();
+        setPrintContent(null);
+      };
+      doPrint();
     }
-  };
+  }, [printContent]);
+  
+  const handlePrint = (type: 'Básica' | 'Pro') => {
+     const content = type === 'Básica' 
+      ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+      : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
+    setPrintContent(content);
+  }
 
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
     const exercisesForPhase = selectedExercises[phase];
@@ -572,201 +554,182 @@ export default function CrearSesionPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8">
-        <div className="text-center">
-            <h1 className="text-3xl md:text-4xl font-bold font-headline">Crear Sesión</h1>
-            <p className="text-base md:text-lg text-muted-foreground mt-2">Planifica tu próximo entrenamiento paso a paso.</p>
-        </div>
+    <>
+      <div className="print-content">
+        {printContent}
+      </div>
+      <div className="container mx-auto px-4 py-8 no-print">
+        <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8">
+          <div className="text-center">
+              <h1 className="text-3xl md:text-4xl font-bold font-headline">Crear Sesión</h1>
+              <p className="text-base md:text-lg text-muted-foreground mt-2">Planifica tu próximo entrenamiento paso a paso.</p>
+          </div>
 
-        <Card>
-          <CardHeader><CardTitle>Detalles de la Sesión</CardTitle></CardHeader>
-          <CardContent className="space-y-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="space-y-2">
-                  <Label htmlFor="teamId">Equipo</Label>
-                  <Controller
-                      name="teamId"
-                      control={control}
-                      render={({ field }) => (
-                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loadingTeams}>
-                              <SelectTrigger><SelectValue placeholder={loadingTeams ? "Cargando..." : "Seleccionar equipo"} /></SelectTrigger>
-                              <SelectContent>
-                                  {userTeams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
-                              </SelectContent>
-                          </Select>
-                      )}
-                  />
-                </div>
+          <Card>
+            <CardHeader><CardTitle>Detalles de la Sesión</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                    <Label htmlFor="session-number">Número de Sesión</Label>
-                    <Input id="session-number" type="number" placeholder="Ej: 1" {...register('sessionNumber')} />
-                    {errors.sessionNumber && <p className="text-sm text-destructive">{errors.sessionNumber.message}</p>}
-                </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="facility">Instalación</Label>
-                <Input id="facility" placeholder="Ej: Polideportivo Municipal" {...register('facility')} />
-                {errors.facility && <p className="text-sm text-destructive">{errors.facility.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="microcycle">Microciclo</Label>
-                <Input id="microcycle" placeholder="Ej: Semana 3 - Competitivo" {...register('microcycle')} />
-                {errors.microcycle && <p className="text-sm text-destructive">{errors.microcycle.message}</p>}
-              </div>
-            </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className="space-y-2">
-                    <Label>Fecha</Label>
+                    <Label htmlFor="teamId">Equipo</Label>
                     <Controller
-                        name="date"
+                        name="teamId"
                         control={control}
                         render={({ field }) => (
-                            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                            <PopoverTrigger asChild>
-                                <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {field.value ? format(field.value, "PPP", { locale: es }) : <span>Selecciona una fecha</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar mode="single" selected={field.value} onSelect={(date) => { field.onChange(date); setIsCalendarOpen(false); }} initialFocus locale={es} weekStartsOn={1} />
-                            </PopoverContent>
-                            </Popover>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loadingTeams}>
+                                <SelectTrigger><SelectValue placeholder={loadingTeams ? "Cargando..." : "Seleccionar equipo"} /></SelectTrigger>
+                                <SelectContent>
+                                    {userTeams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
                         )}
                     />
-                    {errors.date && <p className="text-sm text-destructive">{errors.date.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="session-number">Número de Sesión</Label>
+                      <Input id="session-number" type="number" placeholder="Ej: 1" {...register('sessionNumber')} />
+                      {errors.sessionNumber && <p className="text-sm text-destructive">{errors.sessionNumber.message}</p>}
+                  </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="facility">Instalación</Label>
+                  <Input id="facility" placeholder="Ej: Polideportivo Municipal" {...register('facility')} />
+                  {errors.facility && <p className="text-sm text-destructive">{errors.facility.message}</p>}
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="time">Hora</Label>
-                    <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="time" type="time" className="pl-10" {...register('time')} />
-                    </div>
-                    {errors.time && <p className="text-sm text-destructive">{errors.time.message}</p>}
+                  <Label htmlFor="microcycle">Microciclo</Label>
+                  <Input id="microcycle" placeholder="Ej: Semana 3 - Competitivo" {...register('microcycle')} />
+                  {errors.microcycle && <p className="text-sm text-destructive">{errors.microcycle.message}</p>}
                 </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Objetivos Principales ({watchedValues.objectives?.length || 0}/5)</Label>
-               <div className="p-4 border rounded-lg space-y-4">
-                  {Object.entries(objectivesByCategory).map(([category, objectives]) => (
-                    <Collapsible key={category}>
-                      <CollapsibleTrigger className="flex justify-between items-center w-full font-semibold">
-                        {category}
-                        <ChevronDown className="h-4 w-4" />
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="space-y-2 pt-2">
-                        {objectives.map(objective => (
-                          <div key={objective} className="flex items-start space-x-2 p-2 rounded-md hover:bg-muted">
-                            <Checkbox
-                              id={objective}
-                              checked={(watchedValues.objectives || []).includes(objective)}
-                              onCheckedChange={() => handleObjectiveChange(objective)}
-                            />
-                            <Label htmlFor={objective} className="text-sm font-normal cursor-pointer">
-                              {objective}
-                            </Label>
-                          </div>
-                        ))}
-                      </CollapsibleContent>
-                    </Collapsible>
-                  ))}
-               </div>
-              {watchedValues.objectives && watchedValues.objectives.length > 0 && (
-                <div className="space-y-2 pt-2">
-                    <Label>Objetivos seleccionados:</Label>
-                    <div className="flex flex-wrap gap-2">
-                        {watchedValues.objectives.map(obj => <Badge key={obj} variant="secondary">{obj}</Badge>)}
-                    </div>
-                </div>
-              )}
-              {errors.objectives && <p className="text-sm text-destructive">{errors.objectives.message}</p>}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <PhaseSection phase="initialExercises" title="Fase Inicial (Calentamiento)" subtitle="Ejercicios para preparar al equipo." />
-        <PhaseSection phase="mainExercises" title="Fase Principal" subtitle="El núcleo del entrenamiento, enfocado en los objetivos." />
-        <PhaseSection phase="finalExercises" title="Fase Final (Vuelta a la Calma)" subtitle="Ejercicios de baja intensidad para la recuperación." />
-
-        <Card>
-            <CardContent className="p-6">
-                <div className="flex justify-end items-center gap-4">
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="outline">
-                                <Eye className="mr-2" />
-                                Ver Ficha de Sesión
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Elige el tipo de ficha</DialogTitle>
-                                <DialogDescription>
-                                    Sesión de entrenamiento
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid grid-cols-2 gap-4 pt-4">
-                                <div className="flex flex-col gap-2 items-center">
-                                    <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                    <Button onClick={() => handleOpenPreview('Básica')} className="w-full">
-                                      <Eye className="mr-2" />
-                                      Ver Ficha Básica
-                                    </Button>
-                                </div>
-                                 <div className="flex flex-col gap-2 items-center">
-                                    <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                     <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <div className="w-full">
-                                                    <Button onClick={() => isProUser && handleOpenPreview('Pro')} className="w-full" disabled={!isProUser}>
-                                                        <Eye className="mr-2" />
-                                                        Ver Ficha Pro
-                                                    </Button>
-                                                </div>
-                                            </TooltipTrigger>
-                                            {!isProUser && (
-                                                <TooltipContent>
-                                                    <p>Mejora al Plan Pro para acceder a esta función.</p>
-                                                </TooltipContent>
-                                            )}
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                      <Label>Fecha</Label>
+                      <Controller
+                          name="date"
+                          control={control}
+                          render={({ field }) => (
+                              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                              <PopoverTrigger asChild>
+                                  <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {field.value ? format(field.value, "PPP", { locale: es }) : <span>Selecciona una fecha</span>}
+                                  </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                  <Calendar mode="single" selected={field.value} onSelect={(date) => { field.onChange(date); setIsCalendarOpen(false); }} initialFocus locale={es} weekStartsOn={1} />
+                              </PopoverContent>
+                              </Popover>
+                          )}
+                      />
+                      {errors.date && <p className="text-sm text-destructive">{errors.date.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="time">Hora</Label>
+                      <div className="relative">
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input id="time" type="time" className="pl-10" {...register('time')} />
+                      </div>
+                      {errors.time && <p className="text-sm text-destructive">{errors.time.message}</p>}
+                  </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Objetivos Principales ({watchedValues.objectives?.length || 0}/5)</Label>
+                <div className="p-4 border rounded-lg space-y-4">
+                    {Object.entries(objectivesByCategory).map(([category, objectives]) => (
+                      <Collapsible key={category}>
+                        <CollapsibleTrigger className="flex justify-between items-center w-full font-semibold">
+                          {category}
+                          <ChevronDown className="h-4 w-4" />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="space-y-2 pt-2">
+                          {objectives.map(objective => (
+                            <div key={objective} className="flex items-start space-x-2 p-2 rounded-md hover:bg-muted">
+                              <Checkbox
+                                id={objective}
+                                checked={(watchedValues.objectives || []).includes(objective)}
+                                onCheckedChange={() => handleObjectiveChange(objective)}
+                              />
+                              <Label htmlFor={objective} className="text-sm font-normal cursor-pointer">
+                                {objective}
+                              </Label>
                             </div>
-                        </DialogContent>
-                    </Dialog>
-                    <Button type="submit" size="lg" disabled={isSaving}>
-                        {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
-                        Guardar Sesión
-                    </Button>
+                          ))}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
                 </div>
+                {watchedValues.objectives && watchedValues.objectives.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                      <Label>Objetivos seleccionados:</Label>
+                      <div className="flex flex-wrap gap-2">
+                          {watchedValues.objectives.map(obj => <Badge key={obj} variant="secondary">{obj}</Badge>)}
+                      </div>
+                  </div>
+                )}
+                {errors.objectives && <p className="text-sm text-destructive">{errors.objectives.message}</p>}
+              </div>
             </CardContent>
-        </Card>
-      </form>
+          </Card>
+          
+          <PhaseSection phase="initialExercises" title="Fase Inicial (Calentamiento)" subtitle="Ejercicios para preparar al equipo." />
+          <PhaseSection phase="mainExercises" title="Fase Principal" subtitle="El núcleo del entrenamiento, enfocado en los objetivos." />
+          <PhaseSection phase="finalExercises" title="Fase Final (Vuelta a la Calma)" subtitle="Ejercicios de baja intensidad para la recuperación." />
 
-      <Dialog open={!!previewContent} onOpenChange={() => setPreviewContent(null)}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-            <DialogHeader className="flex-row items-center justify-between">
-                <DialogTitle>Previsualización de Ficha</DialogTitle>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={handlePrint}>
-                        <Printer className="mr-2" /> Imprimir / Guardar PDF
-                    </Button>
-                    <DialogClose asChild>
-                        <Button variant="ghost" size="icon"><X/></Button>
-                    </DialogClose>
-                </div>
-            </DialogHeader>
-            <div className="flex-grow overflow-y-auto bg-gray-200 p-8">
-                 <div className="mx-auto w-[210mm] min-h-[297mm] shadow-lg">
-                    {previewContent}
-                </div>
-            </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+          <Card>
+              <CardContent className="p-6">
+                  <div className="flex justify-end items-center gap-4">
+                      <Dialog>
+                          <DialogTrigger asChild>
+                              <Button variant="outline">
+                                  <Eye className="mr-2" />
+                                  Ver Ficha de Sesión
+                              </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                              <DialogHeader>
+                                  <DialogTitle>Elige el tipo de ficha</DialogTitle>
+                              </DialogHeader>
+                              <div className="grid grid-cols-2 gap-4 pt-4">
+                                  <div className="flex flex-col gap-2 items-center">
+                                      <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
+                                      <Button onClick={() => handlePrint('Básica')} className="w-full">
+                                        <Download className="mr-2" />
+                                        Descargar Básica
+                                      </Button>
+                                  </div>
+                                  <div className="flex flex-col gap-2 items-center">
+                                      <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
+                                      <TooltipProvider>
+                                          <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                  <div className="w-full">
+                                                      <Button onClick={() => isProUser && handlePrint('Pro')} className="w-full" disabled={!isProUser}>
+                                                          <Download className="mr-2" />
+                                                          Descargar Pro
+                                                      </Button>
+                                                  </div>
+                                              </TooltipTrigger>
+                                              {!isProUser && (
+                                                  <TooltipContent>
+                                                      <p>Mejora al Plan Pro para acceder a esta función.</p>
+                                                  </TooltipContent>
+                                              )}
+                                          </Tooltip>
+                                      </TooltipProvider>
+                                  </div>
+                              </div>
+                          </DialogContent>
+                      </Dialog>
+                      <Button type="submit" size="lg" disabled={isSaving}>
+                          {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
+                          Guardar Sesión
+                      </Button>
+                  </div>
+              </CardContent>
+          </Card>
+        </form>
+      </div>
+    </>
   );
 }
