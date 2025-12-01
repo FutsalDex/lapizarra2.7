@@ -49,7 +49,7 @@ const objectivesByCategory = {
     "Perfeccionar el control de balón en espacios reducidos para mayor precisión.",
     "Mejorar pases cortos y largos con ambas piernas para fluidez en el juego.",
     "Desarrollar regates y fintas para superar rivales en uno contra uno.",
-    "Potenciar la finalización variada (tiros, vaselinas, colocados) en situaciones de gol.",
+    "Potenciar la finalización variada en situaciones de gol.",
     "Reforzar el dominio aéreo y el cabezazo ofensivo/defensivo en corners.",
     "Mejorar la recepción orientada para iniciar contraataques rápidos.",
     "Entrenar el toque de primera en pases y centros para velocidad de juego.",
@@ -456,7 +456,7 @@ export default function CrearSesionPage() {
 
     const sessionData = {
         ...data,
-        name: `Sesión ${data.sessionNumber}`,
+        name: `Sesión de entrenamiento`,
         date: Timestamp.fromDate(sessionDate),
         userId: user.uid,
         initialExercises: selectedExercises.initialExercises.map(ex => ex.id),
@@ -704,7 +704,7 @@ export default function CrearSesionPage() {
                             <DialogHeader>
                                 <DialogTitle>Elige el tipo de ficha</DialogTitle>
                                 <DialogDescription>
-                                    Selecciona el formato de ficha que deseas previsualizar y descargar.
+                                    Sesión de entrenamiento
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="grid grid-cols-2 gap-4 pt-4">

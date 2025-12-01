@@ -46,7 +46,7 @@ const phaseLimits: Record<SessionPhase, number> = {
 };
 
 const objectivesByCategory = {
-  Técnicos: ["Perfeccionar el control de balón en espacios reducidos para mayor precisión.","Mejorar pases cortos y largos con ambas piernas para fluidez en el juego.","Desarrollar regates y fintas para superar rivales en uno contra uno.","Potenciar la finalización variada (tiros, vaselinas, colocados) en situaciones de gol.","Reforzar el dominio aéreo y el cabezazo ofensivo/defensivo en corners.","Mejorar la recepción orientada para iniciar contraataques rápidos.","Entrenar el toque de primera en pases y centros para velocidad de juego.","Desarrollar el uso del cuerpo para proteger el balón bajo presión.","Potenciar disparos a portería desde ángulos cerrados.","Reforzar la técnica de volea y media volea en finalizaciones aéreas."],
+  Técnicos: ["Perfeccionar el control de balón en espacios reducidos para mayor precisión.","Mejorar pases cortos y largos con ambas piernas para fluidez en el juego.","Desarrollar regates y fintas para superar rivales en uno contra uno.","Potenciar la finalización variada en situaciones de gol.","Reforzar el dominio aéreo y el cabezazo ofensivo/defensivo en corners.","Mejorar la recepción orientada para iniciar contraataques rápidos.","Entrenar el toque de primera en pases y centros para velocidad de juego.","Desarrollar el uso del cuerpo para proteger el balón bajo presión.","Potenciar disparos a portería desde ángulos cerrados.","Reforzar la técnica de volea y media volea en finalizaciones aéreas."],
   Tácticos: ["Desarrollar patrones de juego posicional para superioridad numérica.","Implementar presión alta y robo de balón en zonas avanzadas.","Optimizar transiciones rápidas de ataque a defensa y viceversa.","Entrenar sistemas defensivos como el 2-2 o pressing zonal.","Fomentar el uso de paredes y triangulaciones para desequilibrar defensas.","Mejorar la construcción desde atrás con el portero como iniciador.","Entrenar la amplitud en ataque para estirar la defensa rival.","Desarrollar bloqueos y pantallas para crear espacios en el área.","Implementar rotaciones posicionales para confundir al pressing.","Optimizar el contraataque en inferioridad numérica temporal."],
   Físicos: ["Aumentar la resistencia aeróbica para mantener intensidad durante todo el partido.","Mejorar la velocidad explosiva en sprints cortos y cambios de dirección.","Desarrollar agilidad y coordinación motora en pista limitada.","Fortalecer el core y las piernas para mayor potencia en disparos y saltos.","Trabajar la recuperación activa para minimizar fatiga entre acciones.","Potenciar la fuerza explosiva en saltos y duelos aéreos.","Mejorar la flexibilidad dinámica para movimientos fluidos.","Entrenar la capacidad anaeróbica para ráfagas de alta intensidad.","Desarrollar el equilibrio en situaciones de contacto.","Fomentar la resistencia a la fatiga muscular en fases finales de partido."],
   Colectivos: ["Fomentar la comunicación verbal y no verbal entre líneas.","Mejorar la coordinación en movimientos sincronizados de equipo.","Desarrollar toma de decisiones colectivas bajo presión temporal.","Promover el apoyo mutuo en ataque y cobertura en defensa.","Cultivar el espíritu de equipo mediante rotaciones y roles intercambiables.","Entrenar la sincronía en el pressing colectivo.","Mejorar la lectura mutua de espacios y apoyos.","Fomentar el liderazgo distribuido en momentos clave.","Desarrollar la empatía en la cobertura de compañeros.","Promover la celebración colectiva para reforzar la cohesión."],
@@ -422,7 +422,7 @@ export default function EditarSesionPage() {
 
     const sessionData = {
         ...data,
-        name: `Sesión ${data.sessionNumber}`,
+        name: `Sesión de entrenamiento`,
         date: Timestamp.fromDate(sessionDate),
         initialExercises: selectedExercises.initialExercises.map(ex => ex.id),
         mainExercises: selectedExercises.mainExercises.map(ex => ex.id),
@@ -695,7 +695,7 @@ export default function EditarSesionPage() {
                       <DialogHeader>
                           <DialogTitle>Elige el tipo de ficha</DialogTitle>
                           <DialogDescription>
-                              Selecciona el formato de ficha que deseas previsualizar y descargar.
+                              Sesión de entrenamiento
                           </DialogDescription>
                       </DialogHeader>
                        <div className="grid grid-cols-2 gap-4 pt-4">
