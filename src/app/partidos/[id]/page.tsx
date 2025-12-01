@@ -34,7 +34,9 @@ type Player = {
 
 type PlayerStat = {
   g: number; a: number; ta: number; tr: number; fouls: number; 
-  paradas: number; gc: number; vs1: number; minutesPlayed: number; name?: string; id?:string; number?: string;
+  paradas: number; gc: number; vs1: number; minutesPlayed: number; 
+  tp: number; tf: number;
+  name?: string; id?:string; number?: string;
 };
 
 export default function PartidoDetallePage() {
@@ -99,7 +101,7 @@ export default function PartidoDetallePage() {
 
     const combinedPlayerStats = () => {
         const combined: Record<string, Partial<PlayerStat>> = {};
-        if (match.playerStats) {
+        if (match.playerStats && teamPlayers.length > 0) {
             ['1H', '2H'].forEach(period => {
                 if (match.playerStats[period]) {
                      Object.entries(match.playerStats[period]).forEach(([playerId, stats]: [string, any]) => {
@@ -107,9 +109,9 @@ export default function PartidoDetallePage() {
                              const playerInfo = teamPlayers.find(p => p.id === playerId);
                              combined[playerId] = { 
                                 id: playerId, 
-                                name: playerInfo?.name || 'Desconocido',
-                                number: playerInfo?.number || '?',
-                                minutesPlayed: 0, g: 0, a: 0, ta: 0, tr: 0, fouls: 0, paradas: 0, gc: 0, vs1: 0 
+                                name: playerInfo?.name,
+                                number: playerInfo?.number,
+                                minutesPlayed: 0, g: 0, a: 0, ta: 0, tr: 0, fouls: 0, paradas: 0, gc: 0, vs1: 0, tp: 0, tf: 0,
                             };
                         }
                         if (combined[playerId]) {
@@ -122,12 +124,14 @@ export default function PartidoDetallePage() {
                             combined[playerId].paradas! += stats.saves || 0;
                             combined[playerId].gc! += stats.goalsConceded || 0;
                             combined[playerId].vs1! += stats.unoVsUno || 0;
+                            combined[playerId].tp! += stats.shotsOnTarget || 0;
+                            combined[playerId].tf! += stats.shotsOffTarget || 0;
                         }
                     });
                 }
             });
         }
-        return Object.values(combined);
+        return Object.values(combined).filter(p => p.name);
     };
 
     return { 
@@ -180,9 +184,11 @@ export default function PartidoDetallePage() {
         acc.paradas += player.paradas || 0;
         acc.gc += player.gc || 0;
         acc.vs1 += player.vs1 || 0;
+        acc.tp += player.tp || 0;
+        acc.tf += player.tf || 0;
         acc.totalSeconds += player.minutesPlayed || 0;
         return acc;
-    }, { g: 0, a: 0, ta: 0, tr: 0, fouls: 0, paradas: 0, gc: 0, vs1: 0, totalSeconds: 0 });
+    }, { g: 0, a: 0, ta: 0, tr: 0, fouls: 0, paradas: 0, gc: 0, vs1: 0, tp: 0, tf: 0, totalSeconds: 0 });
 
     const totalMinutes = Math.floor(totals.totalSeconds / 60);
     const totalSecondsRemaining = totals.totalSeconds % 60;
@@ -254,12 +260,17 @@ export default function PartidoDetallePage() {
                                 const myTeamSide = match.localTeam === myTeamName ? 'local' : 'visitor';
                                 const isMyTeamGoal = goal.team === myTeamSide;
 
+                                let minute = goal.minute;
+                                if (match.playerStats?.['2H'] && minute > (match.matchDuration || 25)) {
+                                     // This logic is simplified; real logic is in the stats page
+                                }
+
                                 return (
                                 <div key={index} className="flex items-center text-sm border-b last:border-none pb-2">
                                     {goal.team === 'local' ? (
                                         <div className="w-1/2 flex justify-between items-center pr-4">
                                             <span className="font-medium truncate">{isMyTeamGoal ? goal.playerName : 'Gol Rival'}</span>
-                                            <span className="text-muted-foreground">{goal.minute}'</span>
+                                            <span className="text-muted-foreground">{minute > 0 ? `${minute}'` : ''}</span>
                                         </div>
                                     ) : <div className="w-1/2 pr-4"></div>}
                                     
@@ -267,8 +278,8 @@ export default function PartidoDetallePage() {
 
                                     {goal.team === 'visitor' ? (
                                         <div className="w-1/2 flex justify-between items-center pl-4">
-                                            <span className="text-muted-foreground">{goal.minute}'</span>
-                                            <span className="font-medium text-right truncate">{isMyTeamGoal ? goal.playerName : 'Gol Rival'}</span>
+                                            <span className="text-muted-foreground">{minute > 0 ? `${minute}'` : ''}</span>
+                                            <span className="font-medium text-right truncate">{!isMyTeamGoal ? 'Gol Rival' : goal.playerName}</span>
                                         </div>
                                     ) : <div className="w-1/2 pl-4"></div>}
                                 </div>
@@ -308,28 +319,32 @@ export default function PartidoDetallePage() {
                                     <TableHead className="text-center">Min.</TableHead>
                                     <TableHead className="text-center">G</TableHead>
                                     <TableHead className="text-center">As</TableHead>
-                                    <TableHead className="text-center">TA</TableHead>
-                                    <TableHead className="text-center">TR</TableHead>
+                                    <TableHead className="text-center">T.P.</TableHead>
+                                    <TableHead className="text-center">T.F.</TableHead>
                                     <TableHead className="text-center">F</TableHead>
                                     <TableHead className="text-center">Par.</TableHead>
                                     <TableHead className="text-center">GC</TableHead>
                                     <TableHead className="text-center">1vs1</TableHead>
+                                    <TableHead className="text-center">TA</TableHead>
+                                    <TableHead className="text-center">TR</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {finalPlayerStats.sort((a, b) => Number(a.number) - Number(b.number)).map((player) => (
                                     <TableRow key={player.id}>
                                         <TableCell className="py-2 px-4 font-medium">{player.number}</TableCell>
-                                        <TableCell className="py-2 px-4 font-medium truncate">{player.name || 'Desconocido'}</TableCell>
+                                        <TableCell className="py-2 px-4 font-medium truncate">{player.name}</TableCell>
                                         <TableCell className="text-center py-2 px-4">{formatTime(player.minutesPlayed || 0)}</TableCell>
                                         <TableCell className="text-center py-2 px-4">{player.g || 0}</TableCell>
                                         <TableCell className="text-center py-2 px-4">{player.a || 0}</TableCell>
-                                        <TableCell className="text-center py-2 px-4">{player.ta || 0}</TableCell>
-                                        <TableCell className="text-center py-2 px-4">{player.tr || 0}</TableCell>
+                                        <TableCell className="text-center py-2 px-4">{player.tp || 0}</TableCell>
+                                        <TableCell className="text-center py-2 px-4">{player.tf || 0}</TableCell>
                                         <TableCell className="text-center py-2 px-4">{player.fouls || 0}</TableCell>
-                                        <TableCell className="text-center py-2 px-4">{player.paradas || 0}</TableCell>
+                                        <TableCell className="text-center py-2 px-4">{player.paradas}</TableCell>
                                         <TableCell className="text-center py-2 px-4">{player.gc || 0}</TableCell>
                                         <TableCell className="text-center py-2 px-4">{player.vs1 || 0}</TableCell>
+                                        <TableCell className="text-center py-2 px-4">{player.ta || 0}</TableCell>
+                                        <TableCell className="text-center py-2 px-4">{player.tr || 0}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -339,12 +354,14 @@ export default function PartidoDetallePage() {
                                     <TableCell className="text-center py-2 px-4">{totalTimeFormatted}</TableCell>
                                     <TableCell className="text-center py-2 px-4">{totals.g}</TableCell>
                                     <TableCell className="text-center py-2 px-4">{totals.a}</TableCell>
-                                    <TableCell className="text-center py-2 px-4">{totals.ta}</TableCell>
-                                    <TableCell className="text-center py-2 px-4">{totals.tr}</TableCell>
+                                    <TableCell className="text-center py-2 px-4">{totals.tp}</TableCell>
+                                    <TableCell className="text-center py-2 px-4">{totals.tf}</TableCell>
                                     <TableCell className="text-center py-2 px-4">{totals.fouls}</TableCell>
                                     <TableCell className="text-center py-2 px-4">{totals.paradas}</TableCell>
                                     <TableCell className="text-center py-2 px-4">{totals.gc}</TableCell>
                                     <TableCell className="text-center py-2 px-4">{totals.vs1}</TableCell>
+                                    <TableCell className="text-center py-2 px-4">{totals.ta}</TableCell>
+                                    <TableCell className="text-center py-2 px-4">{totals.tr}</TableCell>
                                 </TableRow>
                             </TableFooter>
                         </Table>
@@ -356,3 +373,5 @@ export default function PartidoDetallePage() {
     </div>
   );
 }
+
+    
