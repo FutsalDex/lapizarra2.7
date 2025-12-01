@@ -322,6 +322,7 @@ export default function EditarSesionPage() {
   
   const [session, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [userProfile, loadingProfile] = useDocumentData(user ? doc(db, 'users', user.uid) : null);
+  const isProUser = userProfile?.subscription === 'Pro';
   
   const [selectedExercises, setSelectedExercises] = useState<Record<SessionPhase, Exercise[]>>({
     initialExercises: [],
@@ -331,7 +332,7 @@ export default function EditarSesionPage() {
   
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  
+  const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
   const [printContent, setPrintContent] = useState<React.ReactNode | null>(null);
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch, reset } = useForm<SessionFormData>({
@@ -448,23 +449,25 @@ export default function EditarSesionPage() {
   };
   const teamNameForPreview = userTeams.find(t => t.id === watchedValues.teamId)?.name || '';
   
-  useEffect(() => {
-    if (printContent) {
-      const doPrint = async () => {
-        await new Promise(resolve => setTimeout(resolve, 100)); // Allow content to render
-        window.print();
-        setPrintContent(null);
-      };
-      doPrint();
-    }
-  }, [printContent]);
-  
-  const handlePrint = (type: 'Básica' | 'Pro') => {
-     const content = type === 'Básica' 
+  const handlePrint = async (type: 'Básica' | 'Pro') => {
+    const content = type === 'Básica'
       ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
       : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
+    
     setPrintContent(content);
-  }
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    window.print();
+    setPrintContent(null);
+  };
+  
+  const handleOpenPreview = (type: 'Básica' | 'Pro') => {
+    const content = type === 'Básica' 
+      ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+      : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
+    setPreviewContent(content);
+  };
 
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
     const exercisesForPhase = selectedExercises[phase];
@@ -532,9 +535,11 @@ export default function EditarSesionPage() {
 
   return (
     <>
-      <div className="print-content">
-        {printContent}
-      </div>
+      {printContent && (
+        <div className="hidden print:block">
+            {printContent}
+        </div>
+      )}
       <div className="container mx-auto px-4 py-8 no-print">
           <Button variant="outline" asChild className="mb-6">
               <a href={`/sesiones/${sessionId}`}><ArrowLeft className="mr-2" />Volver a la Sesión</a>
@@ -656,57 +661,78 @@ export default function EditarSesionPage() {
           <PhaseSection phase="mainExercises" title="Fase Principal" subtitle="El núcleo del entrenamiento, enfocado en los objetivos." />
           <PhaseSection phase="finalExercises" title="Fase Final (Vuelta a la Calma)" subtitle="Ejercicios de baja intensidad para la recuperación." />
 
-          <div className="flex justify-end items-center gap-4">
-               <Dialog>
-                  <DialogTrigger asChild>
-                      <Button variant="outline">
-                          <Eye className="mr-2" />
-                          Ver Ficha de Sesión
-                      </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                      <DialogHeader>
-                          <DialogTitle>Elige el tipo de ficha</DialogTitle>
-                      </DialogHeader>
-                       <div className="grid grid-cols-2 gap-4 pt-4">
-                          <div className="flex flex-col gap-2 items-center">
-                              <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                              <Button onClick={() => handlePrint('Básica')} className="w-full">
-                                <Download className="mr-2" />
-                                Descargar Básica
-                              </Button>
-                          </div>
-                           <div className="flex flex-col gap-2 items-center">
-                              <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                              <TooltipProvider>
-                                  <Tooltip>
-                                      <TooltipTrigger asChild>
-                                          <div className="w-full">
-                                              <Button onClick={() => isProUser && handlePrint('Pro')} className="w-full" disabled={!isProUser}>
-                                                  <Download className="mr-2" />
-                                                  Descargar Pro
-                                              </Button>
-                                          </div>
-                                      </TooltipTrigger>
-                                      {!isProUser && (
-                                          <TooltipContent>
-                                              <p>Mejora al Plan Pro para acceder a esta función.</p>
-                                          </TooltipContent>
-                                      )}
-                                  </Tooltip>
-                              </TooltipProvider>
-                          </div>
-                      </div>
-                  </DialogContent>
-              </Dialog>
-
-              <Button type="submit" size="lg" disabled={isSaving}>
-                  {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
-                  Guardar Cambios
-              </Button>
-          </div>
+            <Card>
+                <CardContent className="p-6">
+                    <div className="flex justify-end items-center gap-4">
+                        <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="outline">
+                                <Eye className="mr-2" />
+                                Ver Ficha de Sesión
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                             <DialogHeader>
+                                <DialogTitle>Elige el tipo de ficha</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid grid-cols-2 gap-4 pt-4">
+                                <div className="flex flex-col gap-2 items-center">
+                                    <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
+                                    <Button onClick={() => handleOpenPreview('Básica')} className="w-full">
+                                        <Eye className="mr-2" />
+                                        Ver Ficha Básica
+                                    </Button>
+                                </div>
+                                <div className="flex flex-col gap-2 items-center">
+                                    <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="w-full">
+                                                    <Button onClick={() => isProUser && handleOpenPreview('Pro')} className="w-full" disabled={!isProUser}>
+                                                        <Eye className="mr-2" />
+                                                        Ver Ficha Pro
+                                                    </Button>
+                                                </div>
+                                            </TooltipTrigger>
+                                            {!isProUser && (
+                                                <TooltipContent>
+                                                    <p>Mejora al Plan Pro para acceder a esta función.</p>
+                                                </TooltipContent>
+                                            )}
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
+                            </div>
+                        </DialogContent>
+                        </Dialog>
+                        <Button type="submit" size="lg" disabled={isSaving}>
+                            {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
+                            Guardar Cambios
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
         </form>
       </div>
+
+       <Dialog open={!!previewContent} onOpenChange={(open) => !open && setPreviewContent(null)}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>Vista Previa de la Ficha</DialogTitle>
+                 <div className="flex gap-2 pt-2">
+                    <Button onClick={() => handlePrint(previewContent?.props.sessionData.isPro ? 'Pro' : 'Básica')}><Printer className="mr-2"/>Imprimir</Button>
+                    <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
+                </div>
+            </DialogHeader>
+            <div className="overflow-auto flex-1">
+                <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg">
+                    {previewContent}
+                </div>
+            </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
+
