@@ -32,6 +32,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import ReactToPrint from 'react-to-print';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -198,7 +199,7 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
   );
 };
 
-const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData: any, exercises: Exercise[], teamName: string }) => {
+const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any, exercises: Exercise[], teamName: string }>(({ sessionData, exercises, teamName }, ref) => {
     const getExercisesByIds = (ids: string[]) => {
         if (!ids || ids.length === 0) return [];
         return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
@@ -213,7 +214,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
     const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
     return (
-        <div className="bg-white text-gray-900 p-4">
+        <div ref={ref} className="bg-white text-gray-900 p-4">
             <div className="space-y-6">
                 <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4 text-gray-900">
                     <div className="flex w-full space-x-2">
@@ -262,9 +263,11 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
             </div>
         </div>
     );
-};
+});
+SessionBasicPreview.displayName = 'SessionBasicPreview';
 
-const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exercises: Exercise[] }) => {
+
+const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, exercises: Exercise[] }>(({ sessionData, exercises }, ref) => {
     const getExercisesByIds = (ids: string[]) => {
         if (!ids || ids.length === 0) return [];
         return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
@@ -319,7 +322,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
     );
 
     return (
-        <div className="bg-white text-gray-900 p-8">
+        <div ref={ref} className="bg-white text-gray-900 p-8">
             <div className="space-y-6">
                 <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
                     <div className="flex w-full space-x-2">
@@ -364,7 +367,8 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
             </div>
         </div>
     );
-};
+});
+SessionProPreview.displayName = 'SessionProPreview';
 
 
 export default function CrearSesionPage() {
@@ -381,7 +385,9 @@ export default function CrearSesionPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
-  const [printContent, setPrintContent] = useState<React.ReactNode | null>(null);
+  const printRef = useRef(null);
+  const [printableContent, setPrintableContent] = useState<React.ReactNode | null>(null);
+  
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
@@ -487,28 +493,11 @@ export default function CrearSesionPage() {
 
   const handleOpenPreview = (type: 'Básica' | 'Pro') => {
     const content = type === 'Básica' 
-      ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-      : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
+      ? <SessionBasicPreview ref={printRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+      : <SessionProPreview ref={printRef} sessionData={sessionDataForPreview} exercises={allExercises} />;
     setPreviewContent(content);
   };
   
-  useEffect(() => {
-    if (printContent) {
-      const doPrint = async () => {
-        await new Promise(resolve => setTimeout(resolve, 100)); // Allow content to render
-        window.print();
-        setPrintContent(null);
-      };
-      doPrint();
-    }
-  }, [printContent]);
-  
-  const handlePrint = (type: 'Básica' | 'Pro') => {
-     const content = type === 'Básica' 
-      ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-      : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
-    setPrintContent(content);
-  }
 
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
     const exercisesForPhase = selectedExercises[phase];
@@ -555,8 +544,8 @@ export default function CrearSesionPage() {
 
   return (
     <>
-      <div className="print-content">
-        {printContent}
+      <div style={{ display: "none" }}>
+        {printableContent}
       </div>
       <div className="container mx-auto px-4 py-8 no-print">
         <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8">
@@ -693,9 +682,9 @@ export default function CrearSesionPage() {
                               <div className="grid grid-cols-2 gap-4 pt-4">
                                   <div className="flex flex-col gap-2 items-center">
                                       <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                      <Button onClick={() => handlePrint('Básica')} className="w-full">
-                                        <Download className="mr-2" />
-                                        Descargar Básica
+                                      <Button onClick={() => handleOpenPreview('Básica')} className="w-full">
+                                        <Eye className="mr-2" />
+                                        Ver Ficha Básica
                                       </Button>
                                   </div>
                                   <div className="flex flex-col gap-2 items-center">
@@ -704,9 +693,9 @@ export default function CrearSesionPage() {
                                           <Tooltip>
                                               <TooltipTrigger asChild>
                                                   <div className="w-full">
-                                                      <Button onClick={() => isProUser && handlePrint('Pro')} className="w-full" disabled={!isProUser}>
-                                                          <Download className="mr-2" />
-                                                          Descargar Pro
+                                                      <Button onClick={() => isProUser && handleOpenPreview('Pro')} className="w-full" disabled={!isProUser}>
+                                                          <Eye className="mr-2" />
+                                                          Ver Ficha Pro
                                                       </Button>
                                                   </div>
                                               </TooltipTrigger>
@@ -730,6 +719,26 @@ export default function CrearSesionPage() {
           </Card>
         </form>
       </div>
+
+       <Dialog open={!!previewContent} onOpenChange={(open) => !open && setPreviewContent(null)}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>Vista Previa de la Ficha</DialogTitle>
+                 <div className="flex gap-2 pt-2">
+                     <ReactToPrint
+                        trigger={() => <Button><Printer className="mr-2"/>Imprimir</Button>}
+                        content={() => printRef.current}
+                     />
+                    <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
+                </div>
+            </DialogHeader>
+            <div className="overflow-auto flex-1 bg-gray-200 p-4">
+                <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg">
+                    {previewContent}
+                </div>
+            </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

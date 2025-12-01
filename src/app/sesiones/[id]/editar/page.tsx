@@ -33,6 +33,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import ReactToPrint from 'react-to-print';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -65,7 +66,7 @@ const sessionSchema = z.object({
 
 type SessionFormData = z.infer<typeof sessionSchema>;
 
-const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData: any, exercises: Exercise[], teamName: string }) => {
+const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any, exercises: Exercise[], teamName: string }>(({ sessionData, exercises, teamName }, ref) => {
     const getExercisesByIds = (ids: string[]) => {
         if (!ids || ids.length === 0) return [];
         return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
@@ -80,7 +81,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
     const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
     return (
-        <div className="bg-white text-gray-900 p-4">
+        <div ref={ref} className="bg-white text-gray-900 p-4">
             <div className="space-y-6">
                 <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4 text-gray-900">
                     <div className="flex w-full space-x-2">
@@ -129,9 +130,10 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
             </div>
         </div>
     );
-};
+});
+SessionBasicPreview.displayName = "SessionBasicPreview";
 
-const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exercises: Exercise[] }) => {
+const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, exercises: Exercise[] }>(({ sessionData, exercises }, ref) => {
     const getExercisesByIds = (ids: string[]) => {
         if (!ids || ids.length === 0) return [];
         return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
@@ -186,7 +188,7 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
     );
 
     return (
-        <div className="bg-white text-gray-900 p-8">
+        <div ref={ref} className="bg-white text-gray-900 p-8">
             <div className="space-y-6">
                 <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
                     <div className="flex w-full space-x-2">
@@ -231,7 +233,8 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
             </div>
         </div>
     );
-};
+});
+SessionProPreview.displayName = "SessionProPreview";
 
 
 const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, onAddExercise }: {
@@ -333,7 +336,7 @@ export default function EditarSesionPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
-  const [printContent, setPrintContent] = useState<React.ReactNode | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch, reset } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
@@ -449,23 +452,10 @@ export default function EditarSesionPage() {
   };
   const teamNameForPreview = userTeams.find(t => t.id === watchedValues.teamId)?.name || '';
   
-  const handlePrint = async (type: 'Básica' | 'Pro') => {
-    const content = type === 'Básica'
-      ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-      : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
-    
-    setPrintContent(content);
-    
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    window.print();
-    setPrintContent(null);
-  };
-  
   const handleOpenPreview = (type: 'Básica' | 'Pro') => {
     const content = type === 'Básica' 
-      ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-      : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
+      ? <SessionBasicPreview ref={printRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+      : <SessionProPreview ref={printRef} sessionData={sessionDataForPreview} exercises={allExercises} />;
     setPreviewContent(content);
   };
 
@@ -535,12 +525,7 @@ export default function EditarSesionPage() {
 
   return (
     <>
-      {printContent && (
-        <div className="hidden print:block">
-            {printContent}
-        </div>
-      )}
-      <div className="container mx-auto px-4 py-8 no-print">
+      <div className="container mx-auto px-4 py-8">
           <Button variant="outline" asChild className="mb-6">
               <a href={`/sesiones/${sessionId}`}><ArrowLeft className="mr-2" />Volver a la Sesión</a>
           </Button>
@@ -721,11 +706,14 @@ export default function EditarSesionPage() {
             <DialogHeader>
                 <DialogTitle>Vista Previa de la Ficha</DialogTitle>
                  <div className="flex gap-2 pt-2">
-                    <Button onClick={() => handlePrint(previewContent?.props.sessionData.isPro ? 'Pro' : 'Básica')}><Printer className="mr-2"/>Imprimir</Button>
+                    <ReactToPrint
+                        trigger={() => <Button><Printer className="mr-2"/>Imprimir</Button>}
+                        content={() => printRef.current}
+                    />
                     <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
                 </div>
             </DialogHeader>
-            <div className="overflow-auto flex-1">
+            <div className="overflow-auto flex-1 bg-gray-200 p-4">
                 <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg">
                     {previewContent}
                 </div>
