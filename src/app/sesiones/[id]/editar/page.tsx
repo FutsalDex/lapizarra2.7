@@ -336,10 +336,56 @@ export default function EditarSesionPage() {
 
   useEffect(() => {
     if (printContent) {
-      setTimeout(() => {
-        window.print();
+        const previewWindow = window.open('about:blank', '_blank');
+        if (previewWindow) {
+            const sessionData = {
+                ...watchedValues,
+                initialExercises: selectedExercises.initialExercises.map(e => e.id),
+                mainExercises: selectedExercises.mainExercises.map(e => e.id),
+                finalExercises: selectedExercises.finalExercises.map(e => e.id)
+            };
+            const teamName = userTeams.find(t => t.id === watchedValues.teamId)?.name || '';
+
+            const contentToRender = printContent.type === 'Básica' 
+                ? <SessionBasicPreview sessionData={sessionData} exercises={allExercises} teamName={teamName} />
+                : <SessionProPreview sessionData={sessionData} exercises={allExercises} />;
+            
+            const ReactDOMServer = require('react-dom/server');
+            const htmlString = ReactDOMServer.renderToString(contentToRender);
+
+            const tailwindCSS = Array.from(document.styleSheets)
+                .map(sheet => {
+                    try {
+                        return Array.from(sheet.cssRules).map(rule => rule.cssText).join('');
+                    } catch (e) {
+                        return '';
+                    }
+                }).join('');
+
+            previewWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Vista Previa de la Ficha</title>
+                        <style>${tailwindCSS}</style>
+                        <style>
+                            @media print {
+                                body { -webkit-print-color-adjust: exact; }
+                                .no-print { display: none; }
+                            }
+                        </style>
+                    </head>
+                    <body class="bg-white">
+                        <div class="print-container">${htmlString}</div>
+                        <div class="no-print fixed top-4 right-4">
+                           <button onclick="window.print()" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Imprimir</button>
+                           <button onclick="window.close()" style="margin-left: 8px; padding: 8px 16px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cerrar</button>
+                        </div>
+                    </body>
+                </html>
+            `);
+            previewWindow.document.close();
+        }
         setPrintContent(null);
-      }, 100);
     }
   }, [printContent]);
 
@@ -524,21 +570,12 @@ export default function EditarSesionPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="hidden print:block">
-        {printContent?.type === 'Básica' && (
-          <div id="print-basic">
-            <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-          </div>
-        )}
-        {printContent?.type === 'Pro' && (
-          <div id="print-pro">
-            <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />
-          </div>
-        )}
+    <div className="container mx-auto px-4 py-8 print:hidden">
+      <div className="hidden">
+        {/* Contenido para impresión se maneja en el useEffect */}
       </div>
 
-      <div className="print:hidden">
+      <div className="print-hidden">
           <Button variant="outline" asChild className="mb-6">
               <a href={`/sesiones/${sessionId}`}><ArrowLeft className="mr-2" />Volver a la Sesión</a>
           </Button>
@@ -678,8 +715,8 @@ export default function EditarSesionPage() {
                           <div className="flex flex-col gap-2 items-center">
                               <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
                               <Button onClick={() => setPrintContent({type: 'Básica'})} className="w-full">
-                                <Download className="mr-2" />
-                                Descargar Básica
+                                <Eye className="mr-2" />
+                                Ver Ficha Básica
                               </Button>
                           </div>
                            <div className="flex flex-col gap-2 items-center">
@@ -689,8 +726,8 @@ export default function EditarSesionPage() {
                                       <TooltipTrigger asChild>
                                           <div className="w-full">
                                               <Button onClick={() => isProUser && setPrintContent({type: 'Pro'})} className="w-full" disabled={!isProUser}>
-                                                  <Download className="mr-2" />
-                                                  Descargar Pro
+                                                  <Eye className="mr-2" />
+                                                  Ver Ficha Pro
                                               </Button>
                                           </div>
                                       </TooltipTrigger>
