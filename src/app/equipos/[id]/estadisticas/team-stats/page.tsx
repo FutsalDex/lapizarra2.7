@@ -206,6 +206,19 @@ export default function TeamStatsPage() {
         return { teamPerformanceStats: calculatedPerformanceStats, matchSummary: calculatedMatchSummary };
     }, [filteredMatches, team, loadingTeam, loadingMatches]);
     
+    const getResultColor = (match: Match): string => {
+        const teamName = team?.name;
+        if (!teamName) return 'text-foreground';
+
+        const isDraw = match.localScore === match.visitorScore;
+        if (isDraw) return 'text-muted-foreground';
+
+        const myTeamIsLocal = match.localTeam.trim() === teamName.trim();
+        const myTeamWon = myTeamIsLocal ? match.localScore > match.visitorScore : match.visitorScore > match.localScore;
+
+        return myTeamWon ? 'text-primary' : 'text-destructive';
+    };
+
     const isLoading = loadingTeam || loadingMatches || !teamPerformanceStats || !matchSummary;
     
     const SquareIcon = ({ className }: { className?: string }) => (
@@ -347,7 +360,9 @@ export default function TeamStatsPage() {
                                                 </TableCell>
                                                 <TableCell>{match.localTeam}</TableCell>
                                                 <TableCell>{match.visitorTeam}</TableCell>
-                                                <TableCell className="text-right">{match.localScore} - {match.visitorScore}</TableCell>
+                                                <TableCell className={cn("text-right font-bold", getResultColor(match))}>
+                                                    {match.localScore} - {match.visitorScore}
+                                                </TableCell>
                                                 <TableCell className="text-right">
                                                     <Button variant="ghost" size="icon" onClick={() => setSelectedMatch(match)}>
                                                         <Goal className="h-5 w-5 text-muted-foreground" />
@@ -395,6 +410,7 @@ export default function TeamStatsPage() {
         </div>
     );
 }
+
 
 
 
