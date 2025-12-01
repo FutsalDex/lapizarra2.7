@@ -725,7 +725,7 @@ export default function CrearSesionPage() {
             <DialogHeader>
                 <DialogTitle>Vista Previa de la Ficha</DialogTitle>
                  <div className="flex gap-2 pt-2">
-                     <Button onClick={handlePrint}><Printer className="mr-2"/>Imprimir</Button>
+                     <Button onClick={handlePrint}><Download className="mr-2"/>Descargar PDF</Button>
                     <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
                 </div>
             </DialogHeader>
@@ -739,3 +739,4 @@ export default function CrearSesionPage() {
     </>
   );
 }
+
