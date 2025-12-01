@@ -33,7 +33,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import ReactToPrint from 'react-to-print';
+import { useReactToPrint } from 'react-to-print';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -388,7 +388,9 @@ export default function CrearSesionPage() {
   const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
   const printRef = useRef(null);
   
-  
+  const handlePrint = useReactToPrint({
+    content: () => printRef.current,
+  });
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
@@ -723,10 +725,7 @@ export default function CrearSesionPage() {
             <DialogHeader>
                 <DialogTitle>Vista Previa de la Ficha</DialogTitle>
                  <div className="flex gap-2 pt-2">
-                     <ReactToPrint
-                        trigger={() => <Button><Printer className="mr-2"/>Imprimir</Button>}
-                        content={() => printRef.current}
-                     />
+                     <Button onClick={handlePrint}><Printer className="mr-2"/>Imprimir</Button>
                     <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
                 </div>
             </DialogHeader>

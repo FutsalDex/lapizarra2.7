@@ -34,7 +34,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import ReactToPrint from 'react-to-print';
+import { useReactToPrint } from 'react-to-print';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -338,6 +338,10 @@ export default function EditarSesionPage() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+  
+  const handlePrint = useReactToPrint({
+    content: () => printRef.current,
+  });
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch, reset } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
@@ -707,10 +711,7 @@ export default function EditarSesionPage() {
             <DialogHeader>
                 <DialogTitle>Vista Previa de la Ficha</DialogTitle>
                  <div className="flex gap-2 pt-2">
-                    <ReactToPrint
-                        trigger={() => <Button><Printer className="mr-2"/>Imprimir</Button>}
-                        content={() => printRef.current}
-                    />
+                    <Button onClick={handlePrint}><Printer className="mr-2"/>Imprimir</Button>
                     <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
                 </div>
             </DialogHeader>
@@ -724,4 +725,5 @@ export default function EditarSesionPage() {
     </>
   );
 }
+
 
