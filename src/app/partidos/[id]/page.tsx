@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useParams } from 'next/navigation';
@@ -111,15 +112,17 @@ export default function PartidoDetallePage() {
                                 minutesPlayed: 0, g: 0, a: 0, ta: 0, tr: 0, fouls: 0, paradas: 0, gc: 0, vs1: 0 
                             };
                         }
-                        combined[playerId].minutesPlayed! += stats.minutesPlayed || 0;
-                        combined[playerId].g! += stats.goals || 0;
-                        combined[playerId].a! += stats.assists || 0;
-                        combined[playerId].ta! += stats.yellowCards || 0;
-                        combined[playerId].tr! += stats.redCards || 0;
-                        combined[playerId].fouls! += stats.fouls || 0;
-                        combined[playerId].paradas! += stats.saves || 0;
-                        combined[playerId].gc! += stats.goalsConceded || 0;
-                        combined[playerId].vs1! += stats.unoVsUno || 0;
+                        if (combined[playerId]) {
+                            combined[playerId].minutesPlayed! += stats.minutesPlayed || 0;
+                            combined[playerId].g! += stats.goals || 0;
+                            combined[playerId].a! += stats.assists || 0;
+                            combined[playerId].ta! += stats.yellowCards || 0;
+                            combined[playerId].tr! += stats.redCards || 0;
+                            combined[playerId].fouls! += stats.fouls || 0;
+                            combined[playerId].paradas! += stats.saves || 0;
+                            combined[playerId].gc! += stats.goalsConceded || 0;
+                            combined[playerId].vs1! += stats.unoVsUno || 0;
+                        }
                     });
                 }
             });
@@ -195,35 +198,6 @@ export default function PartidoDetallePage() {
     const displayLocalTeam = localTeam;
     const displayVisitorTeam = visitorTeam;
 
-    const adjustedGoals = (events || [])
-        .filter((e: any) => e.type === 'goal')
-        .map((goal: any) => {
-            let minute = goal.minute || 0;
-            // Assuming the half is not stored, we check if the goal belongs to the second half based on minute
-            // This is an approximation. A 'period' field in the event would be better.
-            const playerStats1H = match.playerStats?.['1H']?.[goal.playerId];
-            const playerStats2H = match.playerStats?.['2H']?.[goal.playerId];
-            // Simple heuristic: if a player has stats in 2H but not 1H, goal is likely 2H
-            if(playerStats2H && !playerStats1H) {
-                 minute += 25; // Add first half duration
-            } else if (playerStats1H && playerStats2H && goal.minute > 25) { // If minute is already high, it might be from 2H
-                 // This is tricky. Let's assume for now the minute is absolute if high, or relative if low.
-                 // A better solution needs a 'period' in the event.
-                 // Let's adjust based on total goals if possible
-                 const goals1H = Object.values(match.playerStats?.['1H'] || {}).reduce((sum: number, p: any) => sum + (p.goals || 0), 0);
-                 const totalGoalsSoFar = (events || []).filter((e: any) => e.type === 'goal' && e.minute <= goal.minute).length;
-                 if (totalGoalsSoFar > goals1H) {
-                    minute += 25;
-                 }
-            }
-            // For now, let's hard-code the second half adjustment logic for demo
-            if (goal.period === '2H' || (goal.minute && goal.minute <= 25 && events.filter((e:any) => e.type === 'goal' && e.period === '1H').length < localScore + visitorScore)) {
-                 // A simple way is to check if we are processing 2nd half goals.
-            }
-            return {...goal, minute};
-        })
-        .sort((a:any, b:any) => a.minute - b.minute);
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -267,7 +241,7 @@ export default function PartidoDetallePage() {
         <TabsContent value="datos">
             <Card>
                 <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-4">
+                    <div>
                          <div className="text-center">
                             <h3 className="font-bold text-lg mb-4">Cronología de Goles</h3>
                         </div>
@@ -276,12 +250,16 @@ export default function PartidoDetallePage() {
                             <h4 className="w-1/2 text-right truncate">{displayVisitorTeam}</h4>
                         </div>
                         <div className="space-y-4">
-                            {events.filter((e: any) => e.type === 'goal').sort((a:any, b:any) => a.minute - b.minute).map((goal: any, index: number) => (
+                            {events.filter((e: any) => e.type === 'goal').sort((a:any, b:any) => a.minute - b.minute).map((goal: any, index: number) => {
+                                const myTeamSide = match.localTeam === myTeamName ? 'local' : 'visitor';
+                                const isMyTeamGoal = goal.team === myTeamSide;
+
+                                return (
                                 <div key={index} className="flex items-center text-sm border-b last:border-none pb-2">
                                     {goal.team === 'local' ? (
                                         <div className="w-1/2 flex justify-between items-center pr-4">
-                                            <span className="font-medium truncate">{goal.playerName}</span>
-                                            <span className="text-muted-foreground">{goal.minute + (goal.period === '2H' ? 25 : 0)}'</span>
+                                            <span className="font-medium truncate">{isMyTeamGoal ? goal.playerName : 'Gol Rival'}</span>
+                                            <span className="text-muted-foreground">{goal.minute}'</span>
                                         </div>
                                     ) : <div className="w-1/2 pr-4"></div>}
                                     
@@ -289,12 +267,13 @@ export default function PartidoDetallePage() {
 
                                     {goal.team === 'visitor' ? (
                                         <div className="w-1/2 flex justify-between items-center pl-4">
-                                            <span className="text-muted-foreground">{goal.minute + (goal.period === '2H' ? 25 : 0)}'</span>
-                                            <span className="font-medium text-right truncate">{goal.playerName}</span>
+                                            <span className="text-muted-foreground">{goal.minute}'</span>
+                                            <span className="font-medium text-right truncate">{isMyTeamGoal ? goal.playerName : 'Gol Rival'}</span>
                                         </div>
                                     ) : <div className="w-1/2 pl-4"></div>}
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                      <div className="space-y-4">
@@ -376,3 +355,4 @@ export default function PartidoDetallePage() {
       </Tabs>
     </div>
   );
+}
