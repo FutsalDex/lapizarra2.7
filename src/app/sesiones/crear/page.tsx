@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown, Eye, ListChecks, Shield, Download, Repeat, Layers, Pause } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon, Clock, Search, Save, X, Loader2, ChevronDown, Eye, ListChecks, Shield, Download, Repeat, Layers, Pause, Printer } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -213,7 +213,7 @@ const SessionBasicPreview = ({ sessionData, exercises, teamName }: { sessionData
     const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
     return (
-        <div className="overflow-y-auto px-6">
+        <div className="bg-white text-gray-900 p-4">
             <div className="space-y-6">
                 <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4 text-gray-900">
                     <div className="flex w-full space-x-2">
@@ -319,8 +319,8 @@ const SessionProPreview = ({ sessionData, exercises }: { sessionData: any, exerc
     );
 
     return (
-        <div className="overflow-y-auto">
-            <div className="p-8 bg-white text-gray-900">
+        <div className="bg-white text-gray-900 p-8">
+            <div className="space-y-6">
                 <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
                     <div className="flex w-full space-x-2">
                         <div className="flex flex-col justify-between gap-1 basis-1/5">
@@ -380,63 +380,7 @@ export default function CrearSesionPage() {
   
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [printContent, setPrintContent] = useState<{type: 'Básica' | 'Pro'} | null>(null);
-
-  useEffect(() => {
-    if (printContent) {
-        const previewWindow = window.open('about:blank', '_blank');
-        if (previewWindow) {
-            const sessionData = {
-                ...watchedValues,
-                initialExercises: selectedExercises.initialExercises.map(e => e.id),
-                mainExercises: selectedExercises.mainExercises.map(e => e.id),
-                finalExercises: selectedExercises.finalExercises.map(e => e.id)
-            };
-            const teamName = userTeams.find(t => t.id === watchedValues.teamId)?.name || '';
-
-            const contentToRender = printContent.type === 'Básica' 
-                ? <SessionBasicPreview sessionData={sessionData} exercises={allExercises} teamName={teamName} />
-                : <SessionProPreview sessionData={sessionData} exercises={allExercises} />;
-            
-            const ReactDOMServer = require('react-dom/server');
-            const htmlString = ReactDOMServer.renderToString(contentToRender);
-
-            const tailwindCSS = Array.from(document.styleSheets)
-                .map(sheet => {
-                    try {
-                        return Array.from(sheet.cssRules).map(rule => rule.cssText).join('');
-                    } catch (e) {
-                        return '';
-                    }
-                }).join('');
-
-            previewWindow.document.write(`
-                <html>
-                    <head>
-                        <title>Vista Previa de la Ficha</title>
-                        <style>${tailwindCSS}</style>
-                        <style>
-                            @media print {
-                                body { -webkit-print-color-adjust: exact; }
-                                .no-print { display: none; }
-                            }
-                        </style>
-                    </head>
-                    <body class="bg-white">
-                        <div class="print-container">${htmlString}</div>
-                        <div class="no-print fixed top-4 right-4">
-                           <button onclick="window.print()" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Imprimir</button>
-                           <button onclick="window.close()" style="margin-left: 8px; padding: 8px 16px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cerrar</button>
-                        </div>
-                    </body>
-                </html>
-            `);
-            previewWindow.document.close();
-        }
-        setPrintContent(null);
-    }
-  }, [printContent]);
-
+  const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
@@ -460,7 +404,6 @@ export default function CrearSesionPage() {
   const userTeams = useMemo(() => teamsSnapshot?.docs.map(doc => ({ id: doc.id, name: doc.data().name })) || [], [teamsSnapshot]);
 
   const addExercise = (phase: SessionPhase, exercise: Exercise) => {
-    // Check if exercise already exists in any phase
     const isAlreadySelected = Object.values(selectedExercises).flat().some(ex => ex.id === exercise.id);
 
     if (isAlreadySelected) {
@@ -513,7 +456,7 @@ export default function CrearSesionPage() {
 
     const sessionData = {
         ...data,
-        name: `Sesión ${data.sessionNumber}`, // Adding name for compatibility
+        name: `Sesión ${data.sessionNumber}`,
         date: Timestamp.fromDate(sessionDate),
         userId: user.uid,
         initialExercises: selectedExercises.initialExercises.map(ex => ex.id),
@@ -540,6 +483,50 @@ export default function CrearSesionPage() {
       finalExercises: selectedExercises.finalExercises.map(e => e.id)
   };
   const teamNameForPreview = userTeams.find(t => t.id === watchedValues.teamId)?.name || '';
+
+  const handleOpenPreview = (type: 'Básica' | 'Pro') => {
+    const content = type === 'Básica' 
+      ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+      : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
+    setPreviewContent(content);
+  };
+  
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      const ReactDOMServer = require('react-dom/server');
+      const html = ReactDOMServer.renderToString(previewContent as React.ReactElement);
+      
+      const styles = Array.from(document.styleSheets)
+        .map(s => {
+          try {
+            return Array.from(s.cssRules).map(r => r.cssText).join('\n');
+          } catch (e) {
+            return '';
+          }
+        })
+        .join('\n');
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Imprimir Sesión</title>
+            <style>${styles}</style>
+          </head>
+          <body class="bg-white">
+            ${html}
+            <script>
+              setTimeout(() => {
+                window.print();
+                window.close();
+              }, 500);
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  };
 
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
     const exercisesForPhase = selectedExercises[phase];
@@ -585,12 +572,8 @@ export default function CrearSesionPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 print:hidden">
-      <div className="hidden">
-        {/* Contenido para impresión se maneja en el useEffect */}
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8 print:hidden">
+    <div className="container mx-auto px-4 py-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8">
         <div className="text-center">
             <h1 className="text-3xl md:text-4xl font-bold font-headline">Crear Sesión</h1>
             <p className="text-base md:text-lg text-muted-foreground mt-2">Planifica tu próximo entrenamiento paso a paso.</p>
@@ -721,13 +704,13 @@ export default function CrearSesionPage() {
                             <DialogHeader>
                                 <DialogTitle>Elige el tipo de ficha</DialogTitle>
                                 <DialogDescription>
-                                    Sesión de entrenamiento
+                                    Selecciona el formato de ficha que deseas previsualizar y descargar.
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="grid grid-cols-2 gap-4 pt-4">
                                 <div className="flex flex-col gap-2 items-center">
                                     <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                    <Button onClick={() => setPrintContent({type: 'Básica'})} className="w-full">
+                                    <Button onClick={() => handleOpenPreview('Básica')} className="w-full">
                                       <Eye className="mr-2" />
                                       Ver Ficha Básica
                                     </Button>
@@ -738,7 +721,7 @@ export default function CrearSesionPage() {
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <div className="w-full">
-                                                    <Button onClick={() => isProUser && setPrintContent({type: 'Pro'})} className="w-full" disabled={!isProUser}>
+                                                    <Button onClick={() => isProUser && handleOpenPreview('Pro')} className="w-full" disabled={!isProUser}>
                                                         <Eye className="mr-2" />
                                                         Ver Ficha Pro
                                                     </Button>
@@ -763,6 +746,27 @@ export default function CrearSesionPage() {
             </CardContent>
         </Card>
       </form>
+
+      <Dialog open={!!previewContent} onOpenChange={() => setPreviewContent(null)}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+            <DialogHeader className="flex-row items-center justify-between">
+                <DialogTitle>Previsualización de Ficha</DialogTitle>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={handlePrint}>
+                        <Printer className="mr-2" /> Imprimir / Guardar PDF
+                    </Button>
+                    <DialogClose asChild>
+                        <Button variant="ghost" size="icon"><X/></Button>
+                    </DialogClose>
+                </div>
+            </DialogHeader>
+            <div className="flex-grow overflow-y-auto bg-gray-200 p-8">
+                 <div className="mx-auto w-[210mm] min-h-[297mm] shadow-lg">
+                    {previewContent}
+                </div>
+            </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
