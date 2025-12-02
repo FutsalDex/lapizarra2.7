@@ -69,7 +69,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                 {allSessionExercises.map(ex => (
                     <div key={ex.id} className="border border-gray-400 rounded-lg overflow-hidden break-inside-avoid">
                          <div className="px-1 text-center border-b">
-                            <p className="text-[9px] font-semibold break-words">{ex.Ejercicio}</p>
+                            <p className="text-[8px] font-semibold break-words leading-tight">{ex.Ejercicio}</p>
                         </div>
                         <div className="relative aspect-video w-full bg-muted">
                             <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" unoptimized={true} />
@@ -97,9 +97,9 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
                 </div>
                 {exercises.map(ex => (
                     <Card key={ex.id} className="overflow-hidden">
-                        <CardHeader className="bg-gray-200 dark:bg-gray-700 p-1">
-                             <CardTitle className="text-sm text-center font-bold break-words">{ex['Ejercicio']}</CardTitle>
-                        </CardHeader>
+                        <div className="px-1 text-center border-b">
+                            <p className="text-[9px] font-semibold break-words">{ex.Ejercicio}</p>
+                        </div>
                         <CardContent className="p-2 grid grid-cols-2 gap-2">
                             <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
                                 <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" unoptimized={true} />
@@ -235,9 +235,9 @@ const SessionBasicView = ({ exercises }: { exercises: Exercise[] }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {exercises.map((exercise) => (
                  <Card key={exercise.id} className="overflow-hidden group relative">
-                    <CardHeader className="p-2 text-center border-b bg-card">
-                         <CardTitle className="text-xs font-semibold break-words">{exercise['Ejercicio']}</CardTitle>
-                    </CardHeader>
+                    <div className="px-1 text-center border-b">
+                        <p className="text-[9px] font-semibold break-words">{exercise.Ejercicio}</p>
+                    </div>
                     <div className="relative aspect-video w-full">
                      <Image src={exercise['Imagen']} alt={exercise['Ejercicio']} layout="fill" objectFit="contain" className="p-2" />
                     </div>
