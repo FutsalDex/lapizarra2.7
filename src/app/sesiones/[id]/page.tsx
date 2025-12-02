@@ -17,7 +17,7 @@ import { Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 
 const db = getFirestore(app);
 
@@ -112,6 +112,8 @@ export default function SesionDetallePage() {
   const teamId = sessionSnapshot?.teamId;
   const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
 
+  const printRef = useRef(null);
+
   if (loadingSession || loadingExercises || loadingTeam) {
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -157,7 +159,11 @@ export default function SesionDetallePage() {
   
   const sessionDate = (session.date as Timestamp)?.toDate();
   const teamName = teamSnapshot?.name || session.teamId || 'No especificado';
-  
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   const PrintableContent = () => (
      <div className="space-y-8">
         <Card>
@@ -213,101 +219,43 @@ export default function SesionDetallePage() {
         </div>
     </div>
   );
-  
-  const PrintableContentPrint = () => (
-    <div className="space-y-8 print-page">
-      <div className="p-0">
-        <h1 className="text-2xl font-bold">{session.name}</h1>
-        <p className="text-sm text-muted-foreground">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
-      </div>
-  
-      <div>
-        <div>
-          <strong>Equipo:</strong> {teamName}
-        </div>
-        <div>
-          <strong>Instalación:</strong> {session.facility || '-'}
-        </div>
-        <div>
-          <strong>Microciclo:</strong> {session.microcycle || '-'}
-        </div>
-        <div>
-          <strong>Nº Sesión:</strong> {session.sessionNumber || '-'}
-        </div>
-      </div>
-  
-      <div>
-        <h3 className="font-semibold">Objetivos</h3>
-        {Array.isArray(session.objectives) ? (
-          <ul>
-            {session.objectives.map((o: string, i: number) => <li key={i}>{o}</li>)}
-          </ul>
-        ) : <p>-</p>}
-      </div>
-  
-      <div className="space-y-6">
-        {initialExercises.concat(mainExercises, finalExercises).map((ex) => (
-          <div key={ex.id} className="mb-4">
-            <h4 className="font-bold">{ex['Ejercicio']}</h4>
-            {ex['Imagen'] && (
-              <img src={ex['Imagen']} alt={ex['Ejercicio']} style={{ maxWidth: '100%', height: 'auto', marginTop: 8 }} />
-            )}
-            <p style={{ marginTop: 6 }}>{ex['Descripción de la tarea']}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const handlePrint = () => {
-    setTimeout(() => {
-      window.print();
-    }, 150);
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="non-printable">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-4xl font-bold">{session.name}</h1>
-            <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
-          </div>
-  
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
-            </Button>
-  
-            <Button onClick={handlePrint}>
-              <Download className="mr-2" />
-              Descargar PDF
-            </Button>
-  
-            <Button asChild>
-              <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
-            </Button>
-          </div>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-4xl font-bold">{session.name}</h1>
+          <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
         </div>
-  
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="flex justify-end">
-            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
-                <TabsList>
-                    <TabsTrigger value="pro">Vista Pro</TabsTrigger>
-                    <TabsTrigger value="basic">Vista Básica</TabsTrigger>
-                </TabsList>
-            </Tabs>
-          </div>
-  
-          <PrintableContent />
+
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
+          </Button>
+
+          <Button onClick={handlePrint}>
+            <Download className="mr-2" />
+            Descargar PDF
+          </Button>
+
+          <Button asChild>
+            <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
+          </Button>
         </div>
       </div>
-  
-      <div id="print-area" style={{ display: 'none' }}>
-        <PrintableContentPrint />
+
+      <div className="max-w-4xl mx-auto space-y-8 printable-section" ref={printRef}>
+        <div className="flex justify-end">
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
+              <TabsList>
+                  <TabsTrigger value="pro">Vista Pro</TabsTrigger>
+                  <TabsTrigger value="basic">Vista Básica</TabsTrigger>
+              </TabsList>
+          </Tabs>
+        </div>
+
+        <PrintableContent />
       </div>
     </div>
   );
 }
-
