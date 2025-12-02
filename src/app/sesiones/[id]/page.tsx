@@ -55,19 +55,25 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
   const PhasePrintSection = ({ exercises }: { exercises: Exercise[] }) => {
     if (!exercises || exercises.length === 0) return null;
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {exercises.map(ex => (
-          <div key={ex.id} className="p-2 border border-gray-300 rounded-md" style={{ breakInside: 'avoid' }}>
-            <h4 className="font-semibold text-md mb-1">{ex['Ejercicio']}</h4>
-            <div className="flex gap-2">
+          <div key={ex.id} className="p-3 border border-gray-300 rounded-lg" style={{ breakInside: 'avoid' }}>
+            <h4 className="font-bold text-lg mb-2">{ex['Ejercicio']}</h4>
+            <div className="flex gap-4">
               <div className="w-1/3">
-                <div className="relative aspect-video bg-gray-100 rounded-sm">
+                <div className="relative aspect-video bg-gray-100 rounded-md">
                   <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
                 </div>
               </div>
-              <div className="w-2/3 text-xs">
-                <p><strong>Descripción:</strong> {ex['Descripción de la tarea']}</p>
-                <p className="mt-1"><strong>Duración:</strong> {ex['Duración (min)']} min | <strong>Jugadores:</strong> {ex['Número de jugadores']}</p>
+              <div className="w-2/3 text-sm space-y-2">
+                 <div>
+                  <p className="font-semibold">Descripción:</p>
+                  <p className="text-gray-600" style={{ lineHeight: 1.5, wordSpacing: '0.5px' }}>{ex['Descripción de la tarea']}</p>
+                </div>
+                 <div>
+                  <p className="font-semibold">Detalles:</p>
+                  <p className="text-gray-600">Duración: {ex['Duración (min)']} min | Jugadores: {ex['Número de jugadores']}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -79,31 +85,31 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
   return (
     <div ref={sessionRef} className="bg-white text-black">
       {pages.map((pageExercises, pageIndex) => (
-        <div key={pageIndex} className="p-6" style={{ width: '210mm', minHeight: '297mm', pageBreakAfter: 'always', position: 'relative' }}>
-           {pageIndex === 0 && (
-            <div className="border-b-2 border-black pb-2 mb-4">
-                <div className="flex justify-between items-start">
+        <div key={pageIndex} className="p-8" style={{ width: '210mm', minHeight: '297mm', pageBreakAfter: 'always', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+           <div className="flex-grow">
+            {pageIndex === 0 && (
+                <div className="border-b-2 border-black pb-4 mb-6">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <h1 className="text-3xl font-bold">{session.name}</h1>
+                            <p className="text-lg text-gray-700">{teamName}</p>
+                        </div>
+                        <div className="text-right text-base">
+                            <p>{sessionDate ? format(sessionDate, "d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
+                            <p><span className="font-semibold">Sesión:</span> #{session.sessionNumber}</p>
+                        </div>
+                    </div>
                     <div>
-                        <h1 className="text-2xl font-bold">{session.name}</h1>
-                        <p className="text-sm text-gray-600">{teamName}</p>
-                    </div>
-                    <div className="text-right text-sm">
-                        <p>{sessionDate ? format(sessionDate, "d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
-                        <p>Sesión #{session.sessionNumber}</p>
-                        <p>Microciclo: {session.microcycle || '-'}</p>
-                        <p>Instalación: {session.facility || '-'}</p>
+                        <h2 className="font-bold text-xl mb-2">Objetivos</h2>
+                        <ul className="list-disc pl-5 text-base space-y-1 text-gray-800" style={{ lineHeight: 1.6 }}>
+                            {(session.objectives || []).map((obj: string, i: number) => <li key={i}>{obj}</li>)}
+                        </ul>
                     </div>
                 </div>
-                <div className="mt-4">
-                    <h2 className="font-bold text-lg">Objetivos</h2>
-                    <ul className="list-disc pl-5 text-sm space-y-1 text-gray-700">
-                        {(session.objectives || []).map((obj: string, i: number) => <li key={i}>{obj}</li>)}
-                    </ul>
-                </div>
-            </div>
-          )}
-          <PhasePrintSection exercises={pageExercises} />
-          <div style={{ position: 'absolute', bottom: '1rem', right: '1.5rem', fontSize: '0.75rem', color: '#666' }}>
+            )}
+            <PhasePrintSection exercises={pageExercises} />
+           </div>
+          <div style={{ position: 'absolute', bottom: '1rem', right: '2rem', fontSize: '0.8rem', color: '#666' }}>
             página {pageIndex + 1} de {pages.length}
           </div>
         </div>
@@ -220,7 +226,6 @@ export default function SesionDetallePage() {
   
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
       
       const imgProps = pdf.getImageProperties(canvas);
       const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
@@ -229,13 +234,13 @@ export default function SesionDetallePage() {
       let position = 0;
   
       pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
-      heightLeft -= pdfHeight;
+      heightLeft -= pdf.internal.pageSize.getHeight();
   
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdfHeight;
+        heightLeft -= pdf.internal.pageSize.getHeight();
       }
       
       pdf.save(`sesion-${sessionId}.pdf`);
