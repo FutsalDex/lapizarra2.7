@@ -40,7 +40,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
     ];
 
     return (
-        <div ref={ref} className="bg-white text-gray-900 p-4" style={{ width: '210mm', fontSize: '10px' }}>
+        <div ref={ref} className="bg-white text-gray-900 p-4" style={{ width: '210mm' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
                 <tbody>
                     <tr>
@@ -55,8 +55,8 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                             </table>
                         </td>
                         <td style={{ width: '70%', padding: '8px', verticalAlign: 'top' }}>
-                            <div className="font-bold mb-1">Objetivos</div>
-                            <ul className="list-disc list-inside pl-2 leading-tight">
+                            <div className="font-bold mb-1" style={{ fontSize: '10px' }}>Objetivos</div>
+                            <ul className="list-disc list-inside pl-2 leading-tight" style={{ fontSize: '10px' }}>
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
                                     <li key={index}>{obj}</li>
                                 ))}
@@ -71,7 +71,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                         <div className="px-1 text-center border-b flex-shrink-0">
                             <p className="text-[8px] font-semibold break-words leading-tight">{ex.Ejercicio}</p>
                         </div>
-                        <div className="relative w-full bg-muted flex-grow">
+                        <div className="relative aspect-video w-full bg-muted flex-grow">
                             <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" unoptimized={true} />
                         </div>
                     </div>
@@ -97,7 +97,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
                 </div>
                 {exercises.map(ex => (
                     <Card key={ex.id} className="overflow-hidden">
-                        <div className="px-1 text-center border-b">
+                       <div className="px-1 text-center border-b">
                             <p className="text-[9px] font-semibold break-words">{ex.Ejercicio}</p>
                         </div>
                         <CardContent className="p-2 grid grid-cols-2 gap-2">
