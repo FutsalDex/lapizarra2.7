@@ -74,17 +74,21 @@ body {
 }
 
 @media print {
-  body {
-    visibility: hidden;
+  .no-print {
+    display: none !important;
   }
-  .print-content {
-    visibility: visible;
+  .printable-content {
+    display: block !important;
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
   }
-  .no-print {
-    display: none;
+  body {
+    visibility: hidden;
+    background: white !important;
+  }
+  .printable-content * {
+     visibility: visible;
   }
 }

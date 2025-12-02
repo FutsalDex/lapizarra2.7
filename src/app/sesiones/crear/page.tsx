@@ -1,9 +1,7 @@
-
-
-"use client";
+'use client';
 
 import * as React from 'react';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,7 +31,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useReactToPrint } from 'react-to-print';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -530,18 +527,6 @@ export default function CrearSesionPage() {
     );
   };
 
-  const componentRef = useRef<HTMLDivElement>(null);
-  const proComponentRef = useRef<HTMLDivElement>(null);
-
-  const handlePrintBasic = useReactToPrint({
-    content: () => componentRef.current,
-  });
-
-  const handlePrintPro = useReactToPrint({
-    content: () => proComponentRef.current,
-  });
-
-
   return (
     <>
       <div className="container mx-auto px-4 py-8 no-print">
@@ -679,7 +664,7 @@ export default function CrearSesionPage() {
                               <div className="grid grid-cols-2 gap-4 pt-4">
                                   <div className="flex flex-col gap-2 items-center">
                                       <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                        <Button className="w-full" onClick={handlePrintBasic}>
+                                        <Button className="w-full" onClick={() => window.print()}>
                                             <Download className="mr-2" />
                                             Descargar Básica
                                         </Button>
@@ -690,7 +675,7 @@ export default function CrearSesionPage() {
                                           <Tooltip>
                                               <TooltipTrigger asChild>
                                                     <div className="w-full">
-                                                        <Button className="w-full" disabled={!isProUser} onClick={handlePrintPro}>
+                                                        <Button className="w-full" disabled={!isProUser} onClick={() => window.print()}>
                                                             <Download className="mr-2" />
                                                             Descargar Pro
                                                         </Button>
@@ -716,9 +701,9 @@ export default function CrearSesionPage() {
           </Card>
         </form>
       </div>
-       <div className="hidden">
-        <SessionBasicPreview ref={componentRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-        <SessionProPreview ref={proComponentRef} sessionData={sessionDataForPreview} exercises={allExercises} />
+       <div className="printable-content">
+        <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+        <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />
       </div>
     </>
   );

@@ -32,7 +32,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useReactToPrint } from 'react-to-print';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -494,18 +493,6 @@ export default function EditarSesionPage() {
   };
 
   const isLoading = loadingAuth || loadingSession || loadingExercises || loadingTeams || loadingProfile;
-  
-  const componentRef = useRef<HTMLDivElement>(null);
-  const proComponentRef = useRef<HTMLDivElement>(null);
-
-  const handlePrintBasic = useReactToPrint({
-    content: () => componentRef.current,
-  });
-
-  const handlePrintPro = useReactToPrint({
-    content: () => proComponentRef.current,
-  });
-
 
   if (isLoading) {
     return (
@@ -528,7 +515,7 @@ export default function EditarSesionPage() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 no-print">
           <Button variant="outline" asChild className="mb-6">
               <a href={`/sesiones/${sessionId}`}><ArrowLeft className="mr-2" />Volver a la Sesión</a>
           </Button>
@@ -666,7 +653,7 @@ export default function EditarSesionPage() {
                                 <div className="grid grid-cols-2 gap-4 pt-4">
                                     <div className="flex flex-col gap-2 items-center">
                                         <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                        <Button className="w-full" onClick={handlePrintBasic}>
+                                        <Button className="w-full" onClick={() => window.print()}>
                                             <Download className="mr-2" />
                                             Descargar Básica
                                         </Button>
@@ -677,7 +664,7 @@ export default function EditarSesionPage() {
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <div className="w-full">
-                                                        <Button className="w-full" disabled={!isProUser} onClick={handlePrintPro}>
+                                                        <Button className="w-full" disabled={!isProUser} onClick={() => window.print()}>
                                                             <Download className="mr-2" />
                                                             Descargar Pro
                                                         </Button>
@@ -703,9 +690,9 @@ export default function EditarSesionPage() {
             </Card>
         </form>
       </div>
-      <div className="hidden">
-        <SessionBasicPreview ref={componentRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-        <SessionProPreview ref={proComponentRef} sessionData={sessionDataForPreview} exercises={allExercises} />
+      <div className="printable-content">
+        <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+        <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />
       </div>
     </>
   );
