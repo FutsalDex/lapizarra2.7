@@ -91,7 +91,7 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
         <div key={pageIndex} className="p-8" style={{ width: '210mm', minHeight: '297mm', pageBreakAfter: 'always', position: 'relative', display: 'flex', flexDirection: 'column' }}>
           <div className="flex-grow">
             {pageIndex === 0 && (
-                <div className="border-b-2 border-black pb-4 mb-6">
+                 <div className="border-b-2 border-black pb-4 mb-6">
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <h1 className="text-3xl font-bold" style={{ letterSpacing: '0.5px' }}>{session.name}</h1>
@@ -303,7 +303,7 @@ export default function SesionDetallePage() {
         const canvas = await html2canvas(elementToCapture, {
             scale: 2,
             useCORS: true,
-            backgroundColor: window.getComputedStyle(document.documentElement).getPropertyValue('--background').trim() === '240 4% 12%' ? '#1f2123' : '#ffffff',
+            backgroundColor: window.getComputedStyle(document.documentElement).getPropertyValue('--background').includes('240 4% 12%') ? '#1f2123' : '#ffffff',
         });
         
         const pdf = new jsPDF('p', 'mm', 'a4');
@@ -316,9 +316,9 @@ export default function SesionDetallePage() {
         let canvasPrintWidth = canvas.width;
         let canvasPrintHeight = canvas.height;
         
-        if (canvasAspectRatio > pageAspectRatio) {
+        if (canvasAspectRatio > pageAspectRatio) { // Canvas is wider than page
             canvasPrintHeight = canvas.width / pageAspectRatio;
-        } else {
+        } else { // Page is wider than canvas
             canvasPrintWidth = canvas.height * pageAspectRatio;
         }
 
@@ -473,47 +473,44 @@ export default function SesionDetallePage() {
           <div className="space-y-8">
             <Card>
                 <CardHeader>
-                    <CardTitle>Detalles de la Sesión</CardTitle>
+                    <CardTitle>Detalles y Objetivos de la Sesión</CardTitle>
                 </CardHeader>
                 <CardContent>
-                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                            <p className="font-semibold">Equipo</p>
-                            <p className="text-muted-foreground">{teamName}</p>
+                    <div className="grid grid-cols-10 gap-6">
+                        <div className="col-span-10 md:col-span-3 space-y-4 text-sm">
+                            <div>
+                                <p className="font-semibold">Equipo</p>
+                                <p className="text-muted-foreground">{teamName}</p>
+                            </div>
+                            <div>
+                                <p className="font-semibold">Instalación</p>
+                                <p className="text-muted-foreground">{session.facility}</p>
+                            </div>
+                            <div>
+                                <p className="font-semibold">Microciclo</p>
+                                <p className="text-muted-foreground">{session.microcycle || '-'}</p>
+                            </div>
+                            <div>
+                                <p className="font-semibold">Nº Sesión</p>
+                                <p className="text-muted-foreground">{session.sessionNumber || '-'}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-semibold">Instalación</p>
-                            <p className="text-muted-foreground">{session.facility}</p>
-                        </div>
-                         <div>
-                            <p className="font-semibold">Microciclo</p>
-                            <p className="text-muted-foreground">{session.microcycle || '-'}</p>
-                        </div>
-                         <div>
-                            <p className="font-semibold">Nº Sesión</p>
-                            <p className="text-muted-foreground">{session.sessionNumber || '-'}</p>
+                        <div className="col-span-10 md:col-span-7">
+                            <div className="flex items-center gap-2 mb-2">
+                                <ListChecks className="w-5 h-5 text-primary" />
+                                <h4 className="font-semibold">Objetivos</h4>
+                            </div>
+                            {Array.isArray(session.objectives) && session.objectives.length > 0 ? (
+                                <ul className="space-y-2 list-disc pl-5 text-sm">
+                                    {session.objectives.map((obj: string, index: number) => (
+                                        <li key={index} className="text-muted-foreground">{obj}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-muted-foreground text-sm">No hay objetivos específicos definidos.</p>
+                            )}
                         </div>
                     </div>
-                </CardContent>
-            </Card>
-            
-            <Card>
-                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <ListChecks className="w-5 h-5 text-primary" />
-                      Objetivos de la Sesión
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {Array.isArray(session.objectives) && session.objectives.length > 0 ? (
-                      <ul className="space-y-2 list-disc pl-5">
-                        {session.objectives.map((obj: string, index: number) => (
-                          <li key={index} className="text-muted-foreground">{obj}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-muted-foreground">No hay objetivos específicos definidos para esta sesión.</p>
-                    )}
                 </CardContent>
             </Card>
 
@@ -522,7 +519,7 @@ export default function SesionDetallePage() {
                 <PhaseSection title="Fase Principal" exercises={mainExercises} viewMode={viewMode} />
                 <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} viewMode={viewMode} />
             </div>
-        </div>
+          </div>
         </div>
       </div>
     </>
