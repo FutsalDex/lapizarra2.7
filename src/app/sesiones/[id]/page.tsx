@@ -22,21 +22,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 const db = getFirestore(app);
 
-// helpers para escapar (seguridad básica)
-function escapeHtml(str: string | number) {
-  if (!str) return '';
-  return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-function escapeAttr(s: string) {
-  return escapeHtml(s).replaceAll('"', '&quot;');
-}
-
-
 const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
   if (!exercises || exercises.length === 0) return null;
   
@@ -128,80 +113,6 @@ export default function SesionDetallePage() {
   const teamId = sessionSnapshot?.teamId;
   const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
 
-  const handlePrint = () => {
-    if (!sessionSnapshot || !exercisesSnapshot) return;
-
-    const allExercises = exercisesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Exercise));
-    const getExercisesByIds = (ids: string[] = []) => ids.map(id => allExercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
-    
-    const session = sessionSnapshot;
-    const initial = getExercisesByIds(session.initialExercises || []);
-    const main = getExercisesByIds(session.mainExercises || []);
-    const final = getExercisesByIds(session.finalExercises || []);
-    const sessionDate = (session.date as Timestamp)?.toDate?.();
-    const teamName = teamSnapshot?.name || session.teamId || 'No especificado';
-
-    const exercisesToHtml = (exs: Exercise[]) =>
-      exs.map(ex => `
-        <div style="page-break-inside: avoid; margin-bottom: 1rem; padding: 1rem; border: 1px solid #eee; border-radius: 8px;">
-          <h4 style="margin: 0 0 0.5rem; font-size: 1.1rem; font-weight: bold;">${escapeHtml(ex['Ejercicio'] || '')}</h4>
-          <div style="display: flex; gap: 1rem; align-items: flex-start;">
-            ${ex['Imagen'] ? `<img src="${escapeAttr(ex['Imagen'])}" alt="${escapeAttr(ex['Ejercicio'] || '')}" style="width: 200px; height: auto; object-fit: contain; border: 1px solid #eee;"/>` : ''}
-            <div style="flex: 1;">
-              <p style="margin: 0 0 0.5rem;"><strong>Descripción:</strong> ${escapeHtml(ex['Descripción de la tarea'] || '')}</p>
-              <p style="margin: 0 0 0.5rem;"><strong>Objetivos:</strong> ${escapeHtml(ex['Objetivos'] || '')}</p>
-              <p style="margin: 0;"><strong>Duración:</strong> ${escapeHtml(String(ex['Duración (min)'] || '-'))} min</p>
-            </div>
-          </div>
-        </div>
-      `).join('');
-
-    const printHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Ficha de Sesión</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-            body { font-family: 'Inter', sans-serif; line-height: 1.5; color: #333; }
-            h1, h2, h3, h4 { font-weight: bold; }
-            h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
-            h2 { font-size: 1.5rem; margin-top: 2rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; }
-            ul { padding-left: 20px; }
-            li { margin-bottom: 0.25rem; }
-            .header-info { margin-bottom: 2rem; }
-            @media print {
-              body { -webkit-print-color-adjust: exact; }
-            }
-          </style>
-        </head>
-        <body>
-          <h1>${escapeHtml(session.name || '')}</h1>
-          <div class="header-info">
-            <div>${sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</div>
-            <div><strong>Equipo:</strong> ${escapeHtml(teamName)}</div>
-            <div><strong>Instalación:</strong> ${escapeHtml(session.facility || '-')}</div>
-          </div>
-          <h2>Objetivos</h2>
-          ${Array.isArray(session.objectives) && session.objectives.length > 0 ? `<ul>${session.objectives.map((o:string) => `<li>${escapeHtml(o)}</li>`).join('')}</ul>` : '<p>No definidos.</p>'}
-          
-          <h2>Fase Inicial</h2>
-          ${exercisesToHtml(initial)}
-          <h2>Fase Principal</h2>
-          ${exercisesToHtml(main)}
-          <h2>Fase Final</h2>
-          ${exercisesToHtml(final)}
-        </body>
-      </html>
-    `;
-
-    const printContainer = document.getElementById('print-container-temp');
-    if (printContainer) {
-        printContainer.innerHTML = printHtml;
-        window.print();
-    }
-  };
-  
   const isLoading = loadingSession || loadingExercises || loadingTeam;
 
   if (isLoading) {
@@ -235,7 +146,7 @@ export default function SesionDetallePage() {
     );
   }
   
-  const session = { id: sessionSnapshot.id, ...sessionSnapshot };
+  const session = sessionSnapshot;
   const allExercises = exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [];
 
   const getExercisesByIds = (ids: string[]) => {
@@ -306,6 +217,53 @@ export default function SesionDetallePage() {
     </div>
   );
 
+  const PrintableContentForPrint = () => {
+    const exercisesToHtml = (exs: Exercise[]) =>
+    exs.map(ex => `
+        <div style="page-break-inside: avoid; margin-bottom: 1.5rem; padding:0.75rem; border-radius:6px; border:1px solid #e6e6e6;">
+        <h4 style="margin:0 0 .4rem; font-size:1.05rem; font-weight:bold;">${ex['Ejercicio'] || ''}</h4>
+        <div style="display:flex; gap:1rem; align-items:flex-start;">
+            ${ex['Imagen'] ? `<img src="${ex['Imagen']}" alt="${ex['Ejercicio'] || ''}" style="max-width:200px; width:30%; height:auto; object-fit:contain;"/>` : ''}
+            <div style="flex:1;">
+            <p style="margin:.2rem 0;"><strong>Descripción:</strong> ${ex['Descripción de la tarea'] || ''}</p>
+            <p style="margin:.2rem 0;"><strong>Objetivos:</strong> ${ex['Objetivos'] || ''}</p>
+            <p style="margin:.2rem 0;"><strong>Duración:</strong> ${String(ex['Duración (min)'] || '-')} min</p>
+            </div>
+        </div>
+        </div>
+    `).join('');
+
+    return (
+        <div className="space-y-8 print-page">
+            <div>
+                <h1 className="text-2xl font-bold">{session.name}</h1>
+                <p className="text-sm text-muted-foreground">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
+            </div>
+            <div>
+                <div><strong>Equipo:</strong> {teamName}</div>
+                <div><strong>Instalación:</strong> {session.facility || '-'}</div>
+                <div><strong>Microciclo:</strong> {session.microcycle || '-'}</div>
+                <div><strong>Nº Sesión:</strong> {session.sessionNumber || '-'}</div>
+            </div>
+            <div>
+                <h3 className="font-semibold">Objetivos</h3>
+                {Array.isArray(session.objectives) ? (
+                    <ul>{session.objectives.map((o: string, i: number) => <li key={i}>{o}</li>)}</ul>
+                ) : <p>-</p>}
+            </div>
+            <div className="space-y-6">
+                <h2>Fase Inicial</h2>
+                <div dangerouslySetInnerHTML={{ __html: exercisesToHtml(initialExercises) }} />
+                <h2>Fase Principal</h2>
+                <div dangerouslySetInnerHTML={{ __html: exercisesToHtml(mainExercises) }} />
+                <h2>Fase Final</h2>
+                <div dangerouslySetInnerHTML={{ __html: exercisesToHtml(finalExercises) }} />
+            </div>
+        </div>
+    );
+  };
+
+
   return (
     <>
       <div className="container mx-auto px-4 py-8">
@@ -338,7 +296,7 @@ export default function SesionDetallePage() {
                         <PrintableContent />
                     </ScrollArea>
                     <DialogFooter>
-                         <Button onClick={handlePrint}>
+                         <Button onClick={() => window.print()}>
                             <Download className="mr-2" />
                             Descargar PDF
                         </Button>
@@ -364,14 +322,11 @@ export default function SesionDetallePage() {
           <PrintableContent />
         </div>
       </div>
-      <div
-        id="print-container-temp"
-        style={{
-          position: "absolute",
-          left: "-9999px",
-          top: "0",
-        }}
-      ></div>
+      <div id="print-area" className="hidden">
+        <PrintableContentForPrint />
+      </div>
     </>
   );
 }
+
+    
