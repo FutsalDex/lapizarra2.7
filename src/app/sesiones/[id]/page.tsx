@@ -25,7 +25,6 @@ import html2canvas from 'html2canvas';
 
 const db = getFirestore(app);
 
-// New component for the A4 print preview
 const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { session: any, exercises: Exercise[], teamName: string, sessionRef: React.RefObject<HTMLDivElement> }) => {
   if (!session) return null;
 
@@ -34,66 +33,102 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
   const initialExercises = getExercisesByIds(session.initialExercises);
   const mainExercises = getExercisesByIds(session.mainExercises);
   const finalExercises = getExercisesByIds(session.finalExercises);
-  const allSessionExercises = [...initialExercises, ...mainExercises, ...finalExercises];
+  
   const sessionDate = (session.date as Timestamp)?.toDate();
-
+  
   const pages = useMemo(() => {
-    const pagesContent: Exercise[][] = [];
-    const exercisesCopy = [...allSessionExercises];
-    
-    // First page: max 3 exercises
-    pagesContent.push(exercisesCopy.splice(0, 3));
+    const allPhases = [
+      { title: 'Fase Inicial', exercises: initialExercises },
+      { title: 'Fase Principal', exercises: mainExercises },
+      { title: 'Fase Final', exercises: finalExercises },
+    ];
 
-    // Subsequent pages: max 4 exercises
-    while (exercisesCopy.length > 0) {
-      pagesContent.push(exercisesCopy.splice(0, 4));
+    const pagesContent: { title?: string; exercises: Exercise[] }[] = [];
+    let currentPageExercises: Exercise[] = [];
+    let isFirstPage = true;
+    const exercisesPerPage = () => isFirstPage ? 2 : 3;
+
+    allPhases.forEach(phase => {
+        if (phase.exercises.length === 0) return;
+
+        let phaseTitleAdded = false;
+        let exercisesInPhase = [...phase.exercises];
+
+        while (exercisesInPhase.length > 0) {
+            const spaceOnPage = exercisesPerPage() - currentPageExercises.length;
+            
+            if (spaceOnPage > 0) {
+                if (!phaseTitleAdded) {
+                    // Add phase title if there's room for it and exercises
+                    pagesContent.push({ title: phase.title, exercises: [] });
+                    phaseTitleAdded = true;
+                }
+                const exercisesToAdd = exercisesInPhase.splice(0, spaceOnPage);
+                currentPageExercises.push(...exercisesToAdd);
+            }
+
+            if (currentPageExercises.length >= exercisesPerPage()) {
+                pagesContent.push({ exercises: currentPageExercises });
+                currentPageExercises = [];
+                isFirstPage = false; 
+            }
+        }
+    });
+
+    if (currentPageExercises.length > 0) {
+        pagesContent.push({ exercises: currentPageExercises });
     }
     
-    return pagesContent;
-  }, [allSessionExercises]);
-  
-  const PhasePrintSection = ({ exercises }: { exercises: Exercise[] }) => {
-    if (!exercises || exercises.length === 0) return null;
-    return (
-      <div className="space-y-4">
-        {exercises.map(ex => (
-          <div key={ex.id} className="p-3 border border-gray-300 rounded-lg" style={{ breakInside: 'avoid' }}>
-            <h4 className="font-bold text-lg mb-2">{ex['Ejercicio']}</h4>
-            <div className="flex gap-4">
-              <div className="w-1/3">
-                <div className="relative aspect-video bg-gray-100 rounded-md">
-                  <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
-                </div>
-              </div>
-              <div className="w-2/3 text-sm space-y-2">
-                 <div>
-                  <p className="font-semibold">Descripción:</p>
-                  <p className="text-gray-600" style={{ lineHeight: 1.6, letterSpacing: '0.5px', wordSpacing: '1px' }}>{ex['Descripción de la tarea']}</p>
-                </div>
-                 <div>
-                  <p className="font-semibold">Detalles:</p>
-                  <p className="text-gray-600" style={{ lineHeight: 1.6, letterSpacing: '0.5px', wordSpacing: '1px' }}>Duración: {ex['Duración (min)']} min | Jugadores: {ex['Número de jugadores']}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
+    // Group content into final pages
+    const finalPages: { title?: string, exercises: Exercise[] }[][] = [];
+    let currentPage: { title?: string, exercises: Exercise[] }[] = [];
+    let exerciseCountOnPage = 0;
+    isFirstPage = true;
+
+    for (const item of pagesContent) {
+        if (item.title) {
+            if (currentPage.length > 0) {
+                finalPages.push(currentPage);
+                currentPage = [];
+                exerciseCountOnPage = 0;
+                isFirstPage = false;
+            }
+            currentPage.push(item);
+        } else {
+            const limit = isFirstPage ? 2 : 3;
+            if (exerciseCountOnPage + item.exercises.length > limit) {
+                if (exerciseCountOnPage > 0) {
+                     finalPages.push(currentPage);
+                     isFirstPage = false;
+                }
+                currentPage = [item];
+                exerciseCountOnPage = item.exercises.length;
+            } else {
+                 currentPage.push(item);
+                 exerciseCountOnPage += item.exercises.length;
+            }
+        }
+    }
+    if (currentPage.length > 0) {
+        finalPages.push(currentPage);
+    }
+     return finalPages.map(pageItems => ({ items: pageItems }));
+
+  }, [initialExercises, mainExercises, finalExercises]);
+
 
   return (
     <div ref={sessionRef} className="bg-white text-black">
-      {pages.map((pageExercises, pageIndex) => (
+      {pages.map((page, pageIndex) => (
         <div key={pageIndex} className="p-8" style={{ width: '210mm', minHeight: '297mm', pageBreakAfter: 'always', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-           <div className="flex-grow">
+          <div className="flex-grow">
             {pageIndex === 0 && (
                 <div className="border-b-2 border-black pb-4 mb-6">
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <h1 className="text-3xl font-bold" style={{ letterSpacing: '0.5px' }}>{session.name}</h1>
                             <p className="text-lg text-gray-700" style={{ letterSpacing: '0.5px' }}>{teamName}</p>
-                            <p className="text-md text-gray-600" style={{ letterSpacing: '0.5px' }}>{session.facility || ''}</p>
+                            <p className="text-md text-gray-600" style={{ letterSpacing: '0.5px' }}>{session.facility || 'Instalación no especificada'}</p>
                         </div>
                         <div className="text-right text-base">
                             <p>{sessionDate ? format(sessionDate, "d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
@@ -108,7 +143,34 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
                     </div>
                 </div>
             )}
-            <PhasePrintSection exercises={pageExercises} />
+            
+            {page.items.map((item, itemIndex) => (
+              <div key={itemIndex} className="space-y-4">
+                {item.title && <h3 className="font-bold text-2xl mt-6 border-b-2 border-gray-400 pb-1">{item.title}</h3>}
+                {item.exercises.map(ex => (
+                    <div key={ex.id} className="p-3 border border-gray-300 rounded-lg" style={{ breakInside: 'avoid', marginBottom: '1.5rem' }}>
+                        <h4 className="font-bold text-lg mb-2" style={{ letterSpacing: '0.5px' }}>{ex['Ejercicio']}</h4>
+                        <div className="flex gap-4">
+                        <div className="w-1/3">
+                            <div className="relative aspect-video bg-gray-100 rounded-md">
+                            <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
+                            </div>
+                        </div>
+                        <div className="w-2/3 text-sm space-y-2">
+                            <div>
+                                <p className="font-semibold" style={{ letterSpacing: '0.5px' }}>Descripción:</p>
+                                <p className="text-gray-600" style={{ lineHeight: 1.6, letterSpacing: '0.5px', wordSpacing: '1px' }}>{ex['Descripción de la tarea']}</p>
+                            </div>
+                            <div>
+                                <p className="font-semibold" style={{ letterSpacing: '0.5px' }}>Detalles:</p>
+                                <p className="text-gray-600" style={{ lineHeight: 1.6, letterSpacing: '0.5px', wordSpacing: '1px' }}>Duración: {ex['Duración (min)']} min | Jugadores: {ex['Número de jugadores']}</p>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                ))}
+              </div>
+            ))}
            </div>
           <div style={{ position: 'absolute', bottom: '1rem', right: '2rem', fontSize: '0.8rem', color: '#666' }}>
             página {pageIndex + 1} de {pages.length}
@@ -227,6 +289,7 @@ export default function SesionDetallePage() {
   
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       
       const imgProps = pdf.getImageProperties(canvas);
       const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
@@ -235,13 +298,13 @@ export default function SesionDetallePage() {
       let position = 0;
   
       pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
-      heightLeft -= pdf.internal.pageSize.getHeight();
+      heightLeft -= pdfHeight;
   
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
+        heightLeft -= pdfHeight;
       }
       
       pdf.save(`sesion-${sessionId}.pdf`);
