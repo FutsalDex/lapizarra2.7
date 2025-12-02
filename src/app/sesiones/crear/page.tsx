@@ -532,6 +532,15 @@ export default function CrearSesionPage() {
 
   const componentRef = useRef<HTMLDivElement>(null);
   const proComponentRef = useRef<HTMLDivElement>(null);
+  const basicPrintTriggerRef = useRef<HTMLButtonElement>(null);
+  const proPrintTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handlePrintBasic = () => {
+    basicPrintTriggerRef.current?.click();
+  }
+  const handlePrintPro = () => {
+    proPrintTriggerRef.current?.click();
+  }
 
   return (
     <>
@@ -670,15 +679,10 @@ export default function CrearSesionPage() {
                               <div className="grid grid-cols-2 gap-4 pt-4">
                                   <div className="flex flex-col gap-2 items-center">
                                       <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                        <ReactToPrint
-                                            trigger={() => (
-                                                <Button className="w-full">
-                                                    <Download className="mr-2" />
-                                                    Descargar Básica
-                                                </Button>
-                                            )}
-                                            content={() => componentRef.current}
-                                        />
+                                        <Button className="w-full" onClick={handlePrintBasic}>
+                                            <Download className="mr-2" />
+                                            Descargar Básica
+                                        </Button>
                                   </div>
                                   <div className="flex flex-col gap-2 items-center">
                                       <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
@@ -686,15 +690,10 @@ export default function CrearSesionPage() {
                                           <Tooltip>
                                               <TooltipTrigger asChild>
                                                     <div className="w-full">
-                                                        <ReactToPrint
-                                                            trigger={() => (
-                                                                <Button className="w-full" disabled={!isProUser}>
-                                                                    <Download className="mr-2" />
-                                                                    Descargar Pro
-                                                                </Button>
-                                                            )}
-                                                            content={() => proComponentRef.current}
-                                                        />
+                                                        <Button className="w-full" disabled={!isProUser} onClick={handlePrintPro}>
+                                                            <Download className="mr-2" />
+                                                            Descargar Pro
+                                                        </Button>
                                                     </div>
                                               </TooltipTrigger>
                                               {!isProUser && (
@@ -718,6 +717,14 @@ export default function CrearSesionPage() {
         </form>
       </div>
        <div className="hidden">
+         <ReactToPrint
+            trigger={() => <button ref={basicPrintTriggerRef}>Print Basic</button>}
+            content={() => componentRef.current}
+         />
+         <ReactToPrint
+            trigger={() => <button ref={proPrintTriggerRef}>Print Pro</button>}
+            content={() => proComponentRef.current}
+         />
          <SessionBasicPreview ref={componentRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
          <SessionProPreview ref={proComponentRef} sessionData={sessionDataForPreview} exercises={allExercises} />
       </div>

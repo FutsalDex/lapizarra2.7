@@ -1,6 +1,4 @@
-
-
-"use client";
+'use client';
 
 import * as React from 'react';
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -316,26 +314,6 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
   );
 };
 
-const PreviewDialog = ({ open, onOpenChange, children }: { open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode }) => {
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>Vista Previa de la Ficha</DialogTitle>
-                </DialogHeader>
-                <div className="overflow-auto flex-1 bg-gray-200 p-4">
-                    <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg">
-                        {children}
-                    </div>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
 
 export default function EditarSesionPage() {
   const router = useRouter();
@@ -356,9 +334,7 @@ export default function EditarSesionPage() {
   
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [previewContent, setPreviewContent] = useState<React.ReactNode | null>(null);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
+  
   const { register, handleSubmit, control, formState: { errors }, setValue, watch, reset } = useForm<SessionFormData>({
     resolver: zodResolver(sessionSchema),
   });
@@ -473,14 +449,6 @@ export default function EditarSesionPage() {
       finalExercises: selectedExercises.finalExercises.map(e => e.id)
   };
   const teamNameForPreview = userTeams.find(t => t.id === watchedValues.teamId)?.name || '';
-  
-  const handleOpenPreview = (type: 'Básica' | 'Pro') => {
-    const content = type === 'Básica' 
-      ? <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-      : <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />;
-    setPreviewContent(content);
-    setIsPreviewOpen(true);
-  };
 
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
     const exercisesForPhase = selectedExercises[phase];
@@ -529,6 +497,15 @@ export default function EditarSesionPage() {
   
   const componentRef = useRef<HTMLDivElement>(null);
   const proComponentRef = useRef<HTMLDivElement>(null);
+  const basicPrintTriggerRef = useRef<HTMLButtonElement>(null);
+  const proPrintTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handlePrintBasic = () => {
+    basicPrintTriggerRef.current?.click();
+  }
+  const handlePrintPro = () => {
+    proPrintTriggerRef.current?.click();
+  }
 
   if (isLoading) {
     return (
@@ -689,15 +666,10 @@ export default function EditarSesionPage() {
                                 <div className="grid grid-cols-2 gap-4 pt-4">
                                     <div className="flex flex-col gap-2 items-center">
                                         <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                        <ReactToPrint
-                                            trigger={() => (
-                                                <Button className="w-full">
-                                                    <Download className="mr-2" />
-                                                    Descargar Básica
-                                                </Button>
-                                            )}
-                                            content={() => componentRef.current}
-                                        />
+                                        <Button className="w-full" onClick={handlePrintBasic}>
+                                            <Download className="mr-2" />
+                                            Descargar Básica
+                                        </Button>
                                     </div>
                                     <div className="flex flex-col gap-2 items-center">
                                         <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
@@ -705,15 +677,10 @@ export default function EditarSesionPage() {
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <div className="w-full">
-                                                        <ReactToPrint
-                                                            trigger={() => (
-                                                                <Button className="w-full" disabled={!isProUser}>
-                                                                    <Download className="mr-2" />
-                                                                    Descargar Pro
-                                                                </Button>
-                                                            )}
-                                                            content={() => proComponentRef.current}
-                                                        />
+                                                        <Button className="w-full" disabled={!isProUser} onClick={handlePrintPro}>
+                                                            <Download className="mr-2" />
+                                                            Descargar Pro
+                                                        </Button>
                                                     </div>
                                                 </TooltipTrigger>
                                                 {!isProUser && (
@@ -737,8 +704,16 @@ export default function EditarSesionPage() {
         </form>
       </div>
       <div className="hidden">
-         <SessionBasicPreview ref={componentRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-         <SessionProPreview ref={proComponentRef} sessionData={sessionDataForPreview} exercises={allExercises} />
+        <ReactToPrint
+          trigger={() => <button ref={basicPrintTriggerRef}>Print Basic</button>}
+          content={() => componentRef.current}
+        />
+        <ReactToPrint
+          trigger={() => <button ref={proPrintTriggerRef}>Print Pro</button>}
+          content={() => proComponentRef.current}
+        />
+        <SessionBasicPreview ref={componentRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+        <SessionProPreview ref={proComponentRef} sessionData={sessionDataForPreview} exercises={allExercises} />
       </div>
     </>
   );
