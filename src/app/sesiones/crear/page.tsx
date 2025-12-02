@@ -372,9 +372,9 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
 SessionProPreview.displayName = 'SessionProPreview';
 
 const PreviewDialog = ({ open, onOpenChange, children }: { open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode }) => {
-    const printRef = useRef<HTMLDivElement>(null);
+    const printRef = React.useRef(null);
     const handlePrint = useReactToPrint({
-        content: () => printRef.current,
+      content: () => printRef.current,
     });
 
     return (

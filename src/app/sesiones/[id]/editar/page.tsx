@@ -317,9 +317,9 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
 };
 
 const PreviewDialog = ({ open, onOpenChange, children }: { open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode }) => {
-    const printRef = useRef<HTMLDivElement>(null);
+    const printRef = React.useRef(null);
     const handlePrint = useReactToPrint({
-        content: () => printRef.current,
+      content: () => printRef.current,
     });
 
     return (
@@ -352,7 +352,6 @@ export default function EditarSesionPage() {
   
   const [session, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [userProfile, loadingProfile] = useDocumentData(user ? doc(db, 'users', user.uid) : null);
-  const isProUser = userProfile?.subscription === 'Pro';
   
   const [selectedExercises, setSelectedExercises] = useState<Record<SessionPhase, Exercise[]>>({
     initialExercises: [],
@@ -377,6 +376,7 @@ export default function EditarSesionPage() {
   const teamsQuery = user ? query(collection(db, 'teams'), or(where('ownerId', '==', user.uid), where('memberIds', 'array-contains', user.uid))) : null;
   const [teamsSnapshot, loadingTeams] = useCollection(teamsQuery);
   const userTeams = useMemo(() => teamsSnapshot?.docs.map(doc => ({ id: doc.id, name: doc.data().name })) || [], [teamsSnapshot]);
+  const isProUser = userProfile?.subscription === 'Pro';
 
   useEffect(() => {
     if (session && allExercises.length > 0) {
