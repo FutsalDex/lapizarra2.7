@@ -219,8 +219,8 @@ export default function SesionDetallePage() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8 non-printable">
-        <div className="flex justify-between items-center mb-6">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6 non-printable">
           <div>
             <h1 className="text-4xl font-bold font-headline">{session.name}</h1>
             <p className="text-lg text-muted-foreground mt-1">
@@ -247,7 +247,7 @@ export default function SesionDetallePage() {
           </div>
         </div>
       
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-8 non-printable">
             <div className="flex justify-end">
               <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
                   <TabsList>
