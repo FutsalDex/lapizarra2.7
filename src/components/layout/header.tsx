@@ -47,29 +47,29 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, loadingAuth] = useAuthState(auth);
-  const isLoggedIn = !!user;
   
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  const isLoggedIn = !!user;
   const isAdmin = isLoggedIn && user.email === 'futsaldex@gmail.com'; 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const [usersSnapshot, loadingUsers] = useCollection(
-    isAdmin ? query(collection(db, 'users'), where('subscription', '==', null)) : null
+    isClient && isAdmin ? query(collection(db, 'users'), where('subscription', '==', null)) : null
   );
   const pendingUsers = usersSnapshot?.docs.length || 0;
 
   const [invitationsSnapshot, loadingInvitations] = useCollection(
-    isAdmin ? query(collection(db, 'invitations'), where('status', '==', 'completed'), where('isApproved', '!=', true)) : null
+    isClient && isAdmin ? query(collection(db, 'invitations'), where('status', '==', 'completed'), where('isApproved', '!=', true)) : null
   );
   const pendingInvitations = invitationsSnapshot?.docs.length || 0;
 
   
-  const visibleNavLinks = navLinks;
-  const visibleAdminNavLinks = adminNavLinks.filter(link => !link.auth || isAdmin);
+  const visibleNavLinks = isClient ? navLinks.filter(link => !link.auth || isLoggedIn) : [];
+  const visibleAdminNavLinks = isClient && isAdmin ? adminNavLinks : [];
 
   const handleLinkClick = () => {
     setIsSheetOpen(false);
@@ -92,7 +92,22 @@ export function Header() {
             </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            {visibleNavLinks.map((link) => (
+            {navLinks.filter(l => !l.auth).map((link) => (
+               <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "transition-colors hover:text-white flex items-center gap-2",
+                  pathname === link.href
+                    ? "text-white"
+                    : "text-primary-foreground/80"
+                )}
+              >
+                {link.icon}
+                {link.label}
+              </Link>
+            ))}
+            {visibleNavLinks.filter(l => l.auth).map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -107,7 +122,7 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
-             {isClient && isAdmin && visibleAdminNavLinks.map((link) => (
+             {visibleAdminNavLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -142,7 +157,7 @@ export function Header() {
             <SheetContent side="right">
               <SheetTitle className="sr-only">Menú</SheetTitle>
               <nav className="grid gap-6 text-lg font-medium mt-8">
-                {isClient && [...visibleNavLinks, ...(isAdmin ? visibleAdminNavLinks : [])].map((link) => (
+                {isClient && [...visibleNavLinks, ...visibleAdminNavLinks].map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
@@ -185,86 +200,90 @@ export function Header() {
           </Sheet>
         </div>
         <div className="hidden md:flex flex-1 items-center justify-end space-x-2">
-            {isClient && isLoggedIn ? (
+            {isClient && (
               <>
-                {isAdmin && (
-                    <>
-                        <Button variant="ghost" size="icon" className="relative hover:bg-primary/80" asChild>
-                            <Link href="https://console.firebase.google.com/project/lapizarra-95eqd" target="_blank">
-                                <FirebaseLogo />
-                                <span className="sr-only">Proyecto de Firebase</span>
+                {isLoggedIn ? (
+                <>
+                  {isAdmin && (
+                      <>
+                          <Button variant="ghost" size="icon" className="relative hover:bg-primary/80" asChild>
+                              <Link href="https://console.firebase.google.com/project/lapizarra-95eqd" target="_blank">
+                                  <FirebaseLogo />
+                                  <span className="sr-only">Proyecto de Firebase</span>
+                              </Link>
+                          </Button>
+                          <Button variant="ghost" size="icon" className="relative hover:bg-primary/80" asChild>
+                            <Link href="/admin/invitations">
+                              <Gift className="h-5 w-5" />
+                              {pendingInvitations > 0 && (
+                                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                                      {pendingInvitations}
+                                  </span>
+                              )}
+                              <span className="sr-only">Invitaciones pendientes</span>
                             </Link>
-                        </Button>
-                        <Button variant="ghost" size="icon" className="relative hover:bg-primary/80" asChild>
-                           <Link href="/admin/invitations">
-                             <Gift className="h-5 w-5" />
-                             {pendingInvitations > 0 && (
-                                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                                    {pendingInvitations}
-                                </span>
-                             )}
-                             <span className="sr-only">Invitaciones pendientes</span>
-                           </Link>
-                        </Button>
-                        <Button variant="ghost" size="icon" className="relative hover:bg-primary/80" asChild>
-                            <Link href="/admin/users">
-                                <Users className="h-5 w-5" />
-                                {pendingUsers > 0 && (
-                                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                                        {pendingUsers}
-                                    </span>
-                                )}
-                                <span className="sr-only">Usuarios pendientes</span>
-                            </Link>
-                        </Button>
-                    </>
-                )}
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
-                            <User className="h-5 w-5" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end" forceMount>
-                        <DropdownMenuLabel className="font-normal">
-                        <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none text-foreground">{user.displayName || 'Usuario'}</p>
-                            <p className="text-xs leading-none text-muted-foreground">
-                            {user.email}
-                            </p>
-                        </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                            <Link href="/perfil">
-                                <User className="mr-2 h-4 w-4" />
-                                <span>Mi Perfil</span>
-                            </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <Link href="/suscripcion">
-                                <Star className="mr-2 h-4 w-4" />
-                                <span>Suscripción y Puntos</span>
-                            </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleLogout}>
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Cerrar Sesión</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : isClient ? (
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" asChild>
-                    <Link href="/login">Iniciar Sesión</Link>
-                </Button>
-                <Button variant="default" size="sm" asChild>
-                    <Link href="/registro">Registrarse</Link>
-                </Button>
-              </div>
-            ) : null}
+                          </Button>
+                          <Button variant="ghost" size="icon" className="relative hover:bg-primary/80" asChild>
+                              <Link href="/admin/users">
+                                  <Users className="h-5 w-5" />
+                                  {pendingUsers > 0 && (
+                                      <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                                          {pendingUsers}
+                                      </span>
+                                  )}
+                                  <span className="sr-only">Usuarios pendientes</span>
+                              </Link>
+                          </Button>
+                      </>
+                  )}
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
+                              <User className="h-5 w-5" />
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56" align="end" forceMount>
+                          <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                              <p className="text-sm font-medium leading-none text-foreground">{user.displayName || 'Usuario'}</p>
+                              <p className="text-xs leading-none text-muted-foreground">
+                              {user.email}
+                              </p>
+                          </div>
+                          </DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                              <Link href="/perfil">
+                                  <User className="mr-2 h-4 w-4" />
+                                  <span>Mi Perfil</span>
+                              </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                              <Link href="/suscripcion">
+                                  <Star className="mr-2 h-4 w-4" />
+                                  <span>Suscripción y Puntos</span>
+                              </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={handleLogout}>
+                              <LogOut className="mr-2 h-4 w-4" />
+                              <span>Cerrar Sesión</span>
+                          </DropdownMenuItem>
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button variant="secondary" size="sm" asChild>
+                      <Link href="/login">Iniciar Sesión</Link>
+                  </Button>
+                  <Button variant="default" size="sm" asChild>
+                      <Link href="/registro">Registrarse</Link>
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </header>
