@@ -33,7 +33,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import ReactToPrint from 'react-to-print';
+import { useReactToPrint } from 'react-to-print';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -532,15 +532,15 @@ export default function CrearSesionPage() {
 
   const componentRef = useRef<HTMLDivElement>(null);
   const proComponentRef = useRef<HTMLDivElement>(null);
-  const basicPrintTriggerRef = useRef<HTMLButtonElement>(null);
-  const proPrintTriggerRef = useRef<HTMLButtonElement>(null);
 
-  const handlePrintBasic = () => {
-    basicPrintTriggerRef.current?.click();
-  }
-  const handlePrintPro = () => {
-    proPrintTriggerRef.current?.click();
-  }
+  const handlePrintBasic = useReactToPrint({
+    content: () => componentRef.current,
+  });
+
+  const handlePrintPro = useReactToPrint({
+    content: () => proComponentRef.current,
+  });
+
 
   return (
     <>
@@ -717,16 +717,8 @@ export default function CrearSesionPage() {
         </form>
       </div>
        <div className="hidden">
-         <ReactToPrint
-            trigger={() => <button ref={basicPrintTriggerRef}>Print Basic</button>}
-            content={() => componentRef.current}
-         />
-         <ReactToPrint
-            trigger={() => <button ref={proPrintTriggerRef}>Print Pro</button>}
-            content={() => proComponentRef.current}
-         />
-         <SessionBasicPreview ref={componentRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-         <SessionProPreview ref={proComponentRef} sessionData={sessionDataForPreview} exercises={allExercises} />
+        <SessionBasicPreview ref={componentRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+        <SessionProPreview ref={proComponentRef} sessionData={sessionDataForPreview} exercises={allExercises} />
       </div>
     </>
   );
