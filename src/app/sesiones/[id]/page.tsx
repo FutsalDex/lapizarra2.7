@@ -25,6 +25,83 @@ import html2canvas from 'html2canvas';
 
 const db = getFirestore(app);
 
+// Componente oculto para la impresión de la página completa
+const SessionPageForPrint = ({ session, exercises, teamName, printRef }: { session: any; exercises: Exercise[]; teamName: string; printRef: React.RefObject<HTMLDivElement> }) => {
+    if (!session) return null;
+    const sessionDate = (session.date as Timestamp)?.toDate();
+
+    const getExercisesByIds = (ids: string[] = []) => ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+
+    const initialExercises = getExercisesByIds(session.initialExercises);
+    const mainExercises = getExercisesByIds(session.mainExercises);
+    const finalExercises = getExercisesByIds(session.finalExercises);
+    
+    return (
+        <div ref={printRef} className="bg-white text-black p-8" style={{ width: '210mm' }}>
+             <div className="space-y-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Detalles y Objetivos de la Sesión</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-10 gap-6">
+                            <div className="col-span-3 space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="font-semibold">Equipo:</span>
+                                    <span className="text-gray-600 text-right">{teamName}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="font-semibold">Instalación:</span>
+                                    <span className="text-gray-600 text-right">{session.facility}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="font-semibold">Microciclo:</span>
+                                    <span className="text-gray-600 text-right">{session.microcycle || '-'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="font-semibold">Nº Sesión:</span>
+                                    <span className="text-gray-600 text-right">{session.sessionNumber || '-'}</span>
+                                </div>
+                            </div>
+                            <div className="col-span-7">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <ListChecks className="w-5 h-5 text-primary" />
+                                    <h4 className="font-semibold">Objetivos</h4>
+                                </div>
+                                <ul className="space-y-2 list-disc pl-5 text-sm">
+                                    {(session.objectives || []).map((obj: string, i: number) => (
+                                        <li key={i} className="text-gray-600">{obj}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {initialExercises.length > 0 && (
+                    <div>
+                        <h2 className="text-2xl font-bold font-headline text-primary mb-4">Fase Inicial (Calentamiento)</h2>
+                        <SessionProView exercises={initialExercises} />
+                    </div>
+                )}
+                {mainExercises.length > 0 && (
+                    <div>
+                        <h2 className="text-2xl font-bold font-headline text-primary mb-4">Fase Principal</h2>
+                        <SessionProView exercises={mainExercises} />
+                    </div>
+                )}
+                {finalExercises.length > 0 && (
+                    <div>
+                        <h2 className="text-2xl font-bold font-headline text-primary mb-4">Fase Final (Vuelta a la Calma)</h2>
+                        <SessionProView exercises={finalExercises} />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
 const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { session: any, exercises: Exercise[], teamName: string, sessionRef: React.RefObject<HTMLDivElement> }) => {
   if (!session) return null;
 
@@ -46,6 +123,7 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
     const pagesContent: { title?: string; exercises: Exercise[] }[][] = [];
     let currentPageContent: { title?: string; exercises: Exercise[] }[] = [];
     let exerciseCountOnPage = 0;
+    
     const exercisesPerPage = (isFirstPage: boolean) => isFirstPage ? 2 : 3;
 
     allPhases.forEach(phase => {
@@ -67,11 +145,11 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
             currentPageContent.push({ exercises: exercisesToAdd });
             exerciseCountOnPage += exercisesToAdd.length;
 
-            if (exerciseCountOnPage >= limit) {
+            if (exerciseCountOnPage >= limit && exercisesInPhase.length > 0) {
                 pagesContent.push(currentPageContent);
                 currentPageContent = [];
                 exerciseCountOnPage = 0;
-                phaseTitleAdded = false; // Reset for next page
+                phaseTitleAdded = false;
             }
         }
     });
@@ -235,7 +313,7 @@ export default function SesionDetallePage() {
   const sessionId = params.id as string;
   const [viewMode, setViewMode] = useState<'pro' | 'basic'>('pro');
   const { toast } = useToast();
-  const printRef = useRef<HTMLDivElement>(null);
+  const fichaPrintRef = useRef<HTMLDivElement>(null);
   const pagePrintRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPageDownloading, setIsPageDownloading] = useState(false);
@@ -249,10 +327,10 @@ export default function SesionDetallePage() {
   const isLoading = loadingSession || loadingExercises || loadingTeam;
 
   const handleDownloadPdf = async () => {
-    if (!printRef.current) return;
+    if (!fichaPrintRef.current) return;
     setIsDownloading(true);
     try {
-      const canvas = await html2canvas(printRef.current, {
+      const canvas = await html2canvas(fichaPrintRef.current, {
         scale: 2,
         useCORS: true,
       });
@@ -303,7 +381,7 @@ export default function SesionDetallePage() {
         const canvas = await html2canvas(elementToCapture, {
             scale: 2,
             useCORS: true,
-            backgroundColor: window.getComputedStyle(document.documentElement).getPropertyValue('--background').includes('240 4% 12%') ? '#1f2123' : '#ffffff',
+            backgroundColor: window.getComputedStyle(document.body).getPropertyValue('background-color'),
         });
         
         const pdf = new jsPDF('p', 'mm', 'a4');
@@ -311,25 +389,20 @@ export default function SesionDetallePage() {
         const pdfHeight = pdf.internal.pageSize.getHeight();
         
         const canvasAspectRatio = canvas.width / canvas.height;
-        const pageAspectRatio = pdfWidth / pdfHeight;
-        
-        let canvasPrintWidth = canvas.width;
-        let canvasPrintHeight = canvas.height;
-        
-        if (canvasAspectRatio > pageAspectRatio) { // Canvas is wider than page
-            canvasPrintHeight = canvas.width / pageAspectRatio;
-        } else { // Page is wider than canvas
-            canvasPrintWidth = canvas.height * pageAspectRatio;
-        }
+        let imgWidth = pdfWidth;
+        let imgHeight = pdfWidth / canvasAspectRatio;
 
-        const totalPages = Math.ceil(canvas.height / canvasPrintHeight);
+        let heightLeft = imgHeight;
+        let position = 0;
 
-        for (let i = 0; i < totalPages; i++) {
-            if (i > 0) {
-                pdf.addPage();
-            }
-            const y = -i * canvasPrintHeight;
-            pdf.addImage(canvas, 'PNG', 0, y, canvasPrintWidth, canvas.height, undefined, 'FAST');
+        pdf.addImage(canvas, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+            position = -pdfHeight;
+            pdf.addPage();
+            pdf.addImage(canvas, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pdfHeight;
         }
         
         pdf.save(`pagina-sesion-${sessionId}.pdf`);
@@ -428,7 +501,7 @@ export default function SesionDetallePage() {
                     <ScrollArea className="h-[70vh] p-4 border rounded-md bg-gray-100">
                         <div className="flex justify-center">
                            <div style={{ display: 'none' }}>
-                                <SessionPrintPreview session={session} exercises={allExercises} teamName={teamName} sessionRef={printRef} />
+                                <SessionPrintPreview session={session} exercises={allExercises} teamName={teamName} sessionRef={fichaPrintRef} />
                             </div>
                              <p>Vista previa no disponible en este modo.</p>
                         </div>
@@ -461,7 +534,7 @@ export default function SesionDetallePage() {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto space-y-8" ref={pagePrintRef}>
+        <div className="max-w-4xl mx-auto space-y-8">
           <div className="flex justify-end">
             <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
                 <TabsList>
@@ -477,22 +550,22 @@ export default function SesionDetallePage() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-10 gap-6">
-                        <div className="col-span-10 md:col-span-3 space-y-4 text-sm">
-                            <div>
-                                <p className="font-semibold">Equipo</p>
-                                <p className="text-muted-foreground">{teamName}</p>
+                        <div className="col-span-10 md:col-span-3 space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="font-semibold">Equipo:</span>
+                                <span className="text-muted-foreground text-right">{teamName}</span>
                             </div>
-                            <div>
-                                <p className="font-semibold">Instalación</p>
-                                <p className="text-muted-foreground">{session.facility}</p>
+                            <div className="flex justify-between">
+                                <span className="font-semibold">Instalación:</span>
+                                <span className="text-muted-foreground text-right">{session.facility}</span>
                             </div>
-                            <div>
-                                <p className="font-semibold">Microciclo</p>
-                                <p className="text-muted-foreground">{session.microcycle || '-'}</p>
+                             <div className="flex justify-between">
+                                <span className="font-semibold">Microciclo:</span>
+                                <span className="text-muted-foreground text-right">{session.microcycle || '-'}</span>
                             </div>
-                            <div>
-                                <p className="font-semibold">Nº Sesión</p>
-                                <p className="text-muted-foreground">{session.sessionNumber || '-'}</p>
+                            <div className="flex justify-between">
+                                <span className="font-semibold">Nº Sesión:</span>
+                                <span className="text-muted-foreground text-right">{session.sessionNumber || '-'}</span>
                             </div>
                         </div>
                         <div className="col-span-10 md:col-span-7">
@@ -522,6 +595,11 @@ export default function SesionDetallePage() {
           </div>
         </div>
       </div>
+      <div style={{ position: 'absolute', left: '-9999px', top: '0' }}>
+         <SessionPageForPrint session={session} exercises={allExercises} teamName={teamName} printRef={pagePrintRef} />
+      </div>
     </>
   );
 }
+
+    
