@@ -217,110 +217,96 @@ export default function SesionDetallePage() {
     </div>
   );
 
-  // VERSIÓN para imprimir (usa img normal, no next/image)
-const PrintableContentPrint = () => (
-  <div className="space-y-8 print-page">
-    <div className="p-0">
-      <h1 className="text-2xl font-bold">{session.name}</h1>
-      <p className="text-sm text-muted-foreground">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
-    </div>
-
-    <div>
-      <div>
-        <strong>Equipo:</strong> {teamName}
+  const PrintableContentPrint = () => (
+    <div className="space-y-8 print-page">
+      <div className="p-0">
+        <h1 className="text-2xl font-bold">{session.name}</h1>
+        <p className="text-sm text-muted-foreground">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
       </div>
+
       <div>
-        <strong>Instalación:</strong> {session.facility || '-'}
-      </div>
-      <div>
-        <strong>Microciclo:</strong> {session.microcycle || '-'}
-      </div>
-      <div>
-        <strong>Nº Sesión:</strong> {session.sessionNumber || '-'}
-      </div>
-    </div>
-
-    <div>
-      <h3 className="font-semibold">Objetivos</h3>
-      {Array.isArray(session.objectives) ? (
-        <ul>
-          {session.objectives.map((o: string, i: number) => <li key={i}>{o}</li>)}
-        </ul>
-      ) : <p>-</p>}
-    </div>
-
-    {/* Ejercicios: versión para imprimir (simplificada) */}
-    <div className="space-y-6">
-      {initialExercises.concat(mainExercises, finalExercises).map((ex) => (
-        <div key={ex.id} className="mb-4">
-          <h4 className="font-bold">{ex['Ejercicio']}</h4>
-          {/* usa <img> para impresión */}
-          {ex['Imagen'] && (
-            // añade width al img para forzar carga y evitar CSS next/image wrappers
-            <img src={ex['Imagen']} alt={ex['Ejercicio']} style={{ maxWidth: '100%', height: 'auto', marginTop: 8 }} />
-          )}
-          <p style={{ marginTop: 6 }}>{ex['Descripción de la tarea']}</p>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-
-// handler para imprimir: espera 150ms para que navegador pinte la versión de impresión
-const handlePrint = () => {
-  // opcional: forzar reflow del print area
-  setTimeout(() => {
-    window.print();
-  }, 150);
-};
-
-return (
-  <div className="container mx-auto px-4 py-8">
-    <div className="non-printable">
-      {/* HEADER, botones, tabs... */}
-      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-4xl font-bold">{session.name}</h1>
-          <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
+          <strong>Equipo:</strong> {teamName}
         </div>
-
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
-          </Button>
-
-          <Button onClick={handlePrint}>
-            <Download className="mr-2" />
-            Descargar PDF
-          </Button>
-
-          <Button asChild>
-            <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
-          </Button>
+        <div>
+          <strong>Instalación:</strong> {session.facility || '-'}
+        </div>
+        <div>
+          <strong>Microciclo:</strong> {session.microcycle || '-'}
+        </div>
+        <div>
+          <strong>Nº Sesión:</strong> {session.sessionNumber || '-'}
         </div>
       </div>
 
-      {/* contenido normal (pantalla) */}
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex justify-end">
-          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
-            <TabsList>
-                <TabsTrigger value="pro">Vista Pro</TabsTrigger>
-                <TabsTrigger value="basic">Vista Básica</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+      <div>
+        <h3 className="font-semibold">Objetivos</h3>
+        {Array.isArray(session.objectives) ? (
+          <ul>
+            {session.objectives.map((o: string, i: number) => <li key={i}>{o}</li>)}
+          </ul>
+        ) : <p>-</p>}
+      </div>
 
-        <PrintableContent /> {/* versión normal con next/image */}
+      <div className="space-y-6">
+        {initialExercises.concat(mainExercises, finalExercises).map((ex) => (
+          <div key={ex.id} className="mb-4">
+            <h4 className="font-bold">{ex['Ejercicio']}</h4>
+            {ex['Imagen'] && (
+              <img src={ex['Imagen']} alt={ex['Ejercicio']} style={{ maxWidth: '100%', height: 'auto', marginTop: 8 }} />
+            )}
+            <p style={{ marginTop: 6 }}>{ex['Descripción de la tarea']}</p>
+          </div>
+        ))}
       </div>
     </div>
+  );
 
-    {/* ZONA IMPRIMIBLE (oculta en pantalla, mostrada solo en @media print) */}
-    <div id="print-area" style={{ display: 'none' }}>
-      <PrintableContentPrint />
+  const handlePrint = () => {
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="non-printable">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-4xl font-bold">{session.name}</h1>
+            <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
+            </Button>
+            <Button onClick={handlePrint}>
+              <Download className="mr-2" />
+              Descargar PDF
+            </Button>
+            <Button asChild>
+              <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
+            </Button>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="flex justify-end">
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
+              <TabsList>
+                  <TabsTrigger value="pro">Vista Pro</TabsTrigger>
+                  <TabsTrigger value="basic">Vista Básica</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          <PrintableContent />
+        </div>
+      </div>
+      
+      <div id="print-area">
+        <PrintableContentPrint />
+      </div>
     </div>
-  </div>
-);
-
+  );
 }
