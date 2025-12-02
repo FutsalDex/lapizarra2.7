@@ -5,7 +5,7 @@
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowLeft, Download, Users, Clock, Target, Loader2, ListChecks, Edit } from 'lucide-react';
+import { ArrowLeft, Download, Users, Clock, Target, Loader2, ListChecks, Edit, Printer } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDocumentData, useCollection } from 'react-firebase-hooks/firestore';
@@ -112,8 +112,6 @@ export default function SesionDetallePage() {
   const teamId = sessionSnapshot?.teamId;
   const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
 
-  const printRef = useRef(null);
-
   if (loadingSession || loadingExercises || loadingTeam) {
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -159,10 +157,6 @@ export default function SesionDetallePage() {
   
   const sessionDate = (session.date as Timestamp)?.toDate();
   const teamName = teamSnapshot?.name || session.teamId || 'No especificado';
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   const PrintableContent = () => (
      <div className="space-y-8">
@@ -233,9 +227,11 @@ export default function SesionDetallePage() {
             <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
           </Button>
 
-          <Button onClick={handlePrint}>
-            <Download className="mr-2" />
-            Descargar PDF
+          <Button asChild>
+             <Link href={`/sesiones/${sessionId}/print`} target="_blank">
+                <Printer className="mr-2" />
+                Imprimir Ficha
+            </Link>
           </Button>
 
           <Button asChild>
@@ -244,7 +240,7 @@ export default function SesionDetallePage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto space-y-8 printable-section" ref={printRef}>
+      <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex justify-end">
           <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
               <TabsList>
@@ -253,7 +249,6 @@ export default function SesionDetallePage() {
               </TabsList>
           </Tabs>
         </div>
-
         <PrintableContent />
       </div>
     </div>
