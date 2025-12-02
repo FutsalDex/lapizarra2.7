@@ -45,10 +45,10 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                 <tbody>
                     <tr>
                         <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
-                            <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
+                             <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                                 <tbody>
                                     <tr><td style={{ padding: '4px' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                                    <tr><td style={{ padding: '4px' }}><span className="font-bold">Instalación:</span> <span className="truncate">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
+                                    <tr><td style={{ padding: '4px' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
                                     <tr><td style={{ padding: '4px' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
                                     <tr><td style={{ padding: '4px' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
                                 </tbody>
@@ -68,9 +68,9 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
             <div className="grid grid-cols-2 gap-4">
                 {allSessionExercises.map(ex => (
                     <div key={ex.id} className="border border-gray-400 rounded-lg overflow-hidden break-inside-avoid">
-                         <div className="p-1 text-center border-b">
-                            <p className="text-[9px] font-semibold truncate px-1">{ex.Ejercicio}</p>
-                        </div>
+                        <CardHeader className="p-1 text-center border-b">
+                            <p className="text-[9px] font-semibold px-1 break-words">{ex.Ejercicio}</p>
+                        </CardHeader>
                         <div className="relative aspect-video w-full bg-muted">
                             <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" unoptimized={true} />
                         </div>
@@ -98,7 +98,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
                 {exercises.map(ex => (
                     <Card key={ex.id} className="overflow-hidden">
                         <CardHeader className="bg-gray-200 dark:bg-gray-700 p-2">
-                             <CardTitle className="text-sm text-center font-bold">{ex['Ejercicio']}</CardTitle>
+                             <CardTitle className="text-sm text-center font-bold break-words">{ex['Ejercicio']}</CardTitle>
                         </CardHeader>
                         <CardContent className="p-2 grid grid-cols-2 gap-2">
                             <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
@@ -147,7 +147,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
                                 <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                                     <tbody>
                                         <tr><td style={{ padding: '4px' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                                        <tr><td style={{ padding: '4px' }}><span className="font-bold">Instalación:</span> <span className="truncate">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
+                                        <tr><td style={{ padding: '4px' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
                                         <tr><td style={{ padding: '4px' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
                                         <tr><td style={{ padding: '4px' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
                                     </tbody>
@@ -187,7 +187,7 @@ const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
         <Card key={exercise.id} className="overflow-hidden">
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
                 <div className="md:col-span-1 space-y-4">
-                    <h3 className="text-xl font-bold font-headline text-center">{exercise['Ejercicio']}</h3>
+                     <h3 className="text-xl font-bold font-headline text-center break-words">{exercise['Ejercicio']}</h3>
                     <div className="relative min-h-[200px] bg-muted rounded-md aspect-video">
                         <Image
                         src={exercise['Imagen']}
@@ -236,7 +236,7 @@ const SessionBasicView = ({ exercises }: { exercises: Exercise[] }) => {
             {exercises.map((exercise) => (
                  <Card key={exercise.id} className="overflow-hidden group relative">
                     <CardHeader className="p-2 text-center border-b bg-card">
-                         <CardTitle className="text-xs font-semibold truncate">{exercise['Ejercicio']}</CardTitle>
+                         <CardTitle className="text-xs font-semibold break-words">{exercise['Ejercicio']}</CardTitle>
                     </CardHeader>
                     <div className="relative aspect-video w-full">
                      <Image src={exercise['Imagen']} alt={exercise['Ejercicio']} layout="fill" objectFit="contain" className="p-2" />
@@ -493,6 +493,7 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
 
 
