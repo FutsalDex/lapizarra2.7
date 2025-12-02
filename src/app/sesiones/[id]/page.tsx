@@ -25,6 +25,78 @@ import html2canvas from 'html2canvas';
 
 const db = getFirestore(app);
 
+// New component for the A3 print preview
+const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { session: any, exercises: Exercise[], teamName: string, sessionRef: React.RefObject<HTMLDivElement> }) => {
+  if (!session) return null;
+
+  const getExercisesByIds = (ids: string[] = []) => ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+
+  const initialExercises = getExercisesByIds(session.initialExercises);
+  const mainExercises = getExercisesByIds(session.mainExercises);
+  const finalExercises = getExercisesByIds(session.finalExercises);
+  const sessionDate = (session.date as Timestamp)?.toDate();
+  
+  const PhasePrintSection = ({ title, exercises }: { title: string, exercises: Exercise[] }) => {
+    if (!exercises || exercises.length === 0) return null;
+    return (
+      <div className="mb-4" style={{ breakInside: 'avoid' }}>
+        <h3 className="font-bold text-lg mb-2 text-center bg-gray-200 p-1">{title}</h3>
+        <div className="space-y-3">
+          {exercises.map(ex => (
+            <div key={ex.id} className="p-2 border border-gray-300 rounded-md" style={{ breakInside: 'avoid' }}>
+              <h4 className="font-semibold text-md mb-1">{ex['Ejercicio']}</h4>
+              <div className="flex gap-2">
+                <div className="w-1/3">
+                  <div className="relative aspect-video bg-gray-100 rounded-sm">
+                    <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
+                  </div>
+                </div>
+                <div className="w-2/3 text-xs">
+                  <p><strong>Descripción:</strong> {ex['Descripción de la tarea']}</p>
+                  <p className="mt-1"><strong>Duración:</strong> {ex['Duración (min)']} min | <strong>Jugadores:</strong> {ex['Número de jugadores']}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+
+  return (
+    <div ref={sessionRef} className="bg-white text-black p-6" style={{ width: '842px' /* A3 width at 72dpi, approx */ }}>
+      {/* Header */}
+      <div className="flex justify-between items-center border-b-2 border-black pb-2 mb-4">
+        <div>
+          <h1 className="text-2xl font-bold">{session.name}</h1>
+          <p className="text-sm">{teamName}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm">{sessionDate ? format(sessionDate, "d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
+          <p className="text-sm">Sesión #{session.sessionNumber}</p>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="grid grid-cols-12 gap-4">
+        <div className="col-span-4 border-r pr-4">
+          <h2 className="font-bold text-lg mb-2">Objetivos</h2>
+          <ul className="list-disc pl-5 text-sm space-y-1">
+            {(session.objectives || []).map((obj: string, i: number) => <li key={i}>{obj}</li>)}
+          </ul>
+        </div>
+        <div className="col-span-8">
+            <PhasePrintSection title="FASE INICIAL" exercises={initialExercises} />
+            <PhasePrintSection title="FASE PRINCIPAL" exercises={mainExercises} />
+            <PhasePrintSection title="FASE FINAL" exercises={finalExercises} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
   if (!exercises || exercises.length === 0) return null;
   
@@ -127,29 +199,40 @@ export default function SesionDetallePage() {
     setIsDownloading(true);
 
     try {
-      // Temporarily make body background white for capture if in dark mode
-      const originalBodyColor = document.body.style.backgroundColor;
-      if (document.body.classList.contains('dark')) {
-          document.body.style.backgroundColor = 'white';
-      }
-
       const canvas = await html2canvas(sessionRef.current, {
-        scale: 2,
+        scale: 2, // Aumenta la resolución
         useCORS: true,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#ffffff', // Fondo blanco para el PDF
       });
-
-      // Restore original body color
-      document.body.style.backgroundColor = originalBodyColor;
-
+      
       const imgData = canvas.toDataURL('image/png');
+      
+      // DIN A3: 297mm x 420mm. En puntos (pt) es 841.89 x 1190.55
       const pdf = new jsPDF({
         orientation: 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height],
+        unit: 'pt',
+        format: 'a3',
       });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const canvasAspectRatio = canvasWidth / canvasHeight;
+      const pdfAspectRatio = pdfWidth / pdfHeight;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      let finalCanvasWidth, finalCanvasHeight;
+
+      // Ajustar el canvas al tamaño del PDF manteniendo la proporción
+      if (canvasAspectRatio > pdfAspectRatio) {
+        finalCanvasWidth = pdfWidth;
+        finalCanvasHeight = pdfWidth / canvasAspectRatio;
+      } else {
+        finalCanvasHeight = pdfHeight;
+        finalCanvasWidth = pdfHeight * canvasAspectRatio;
+      }
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, finalCanvasWidth, finalCanvasHeight);
       pdf.save(`sesion-${sessionId}.pdf`);
 
       toast({
@@ -199,7 +282,7 @@ export default function SesionDetallePage() {
     );
   }
   
-  const session = sessionSnapshot;
+  const session = { id: sessionId, ...sessionSnapshot };
   const allExercises = exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [];
 
   const getExercisesByIds = (ids: string[]) => {
@@ -295,12 +378,12 @@ export default function SesionDetallePage() {
                     <DialogHeader>
                         <DialogTitle>Vista Previa de la Ficha de Sesión</DialogTitle>
                         <DialogDescription>
-                            Revisa la sesión antes de guardarla como PDF.
+                            Revisa la sesión antes de guardarla como PDF. El diseño está optimizado para un formato A3.
                         </DialogDescription>
                     </DialogHeader>
-                    <ScrollArea className="h-[70vh] p-4 border rounded-md">
-                        <div ref={sessionRef}>
-                          <PrintableContent />
+                    <ScrollArea className="h-[70vh] p-4 border rounded-md bg-gray-100">
+                        <div className="flex justify-center">
+                            <SessionPrintPreview session={session} exercises={allExercises} teamName={teamName} sessionRef={sessionRef} />
                         </div>
                     </ScrollArea>
                     <DialogFooter>
