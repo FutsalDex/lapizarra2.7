@@ -371,7 +371,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
 });
 SessionProPreview.displayName = 'SessionProPreview';
 
-const PreviewDialog = ({ open, onOpenChange, children, trigger }: { open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode, trigger: React.ReactNode }) => {
+const PreviewDialog = ({ open, onOpenChange, children }: { open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode }) => {
     const printRef = useRef<HTMLDivElement>(null);
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
@@ -379,7 +379,6 @@ const PreviewDialog = ({ open, onOpenChange, children, trigger }: { open: boolea
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            {trigger}
             <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Vista Previa de la Ficha</DialogTitle>
@@ -390,7 +389,7 @@ const PreviewDialog = ({ open, onOpenChange, children, trigger }: { open: boolea
                 </DialogHeader>
                 <div className="overflow-auto flex-1 bg-gray-200 p-4">
                     <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg">
-                        {React.cloneElement(children as React.ReactElement, { ref: printRef })}
+                       {children && React.cloneElement(children as React.ReactElement, { ref: printRef })}
                     </div>
                 </div>
             </DialogContent>
@@ -743,11 +742,9 @@ export default function CrearSesionPage() {
         </form>
       </div>
 
-       <PreviewDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen} trigger={null}>
+       <PreviewDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
             {previewContent}
        </PreviewDialog>
     </>
   );
 }
-
-
