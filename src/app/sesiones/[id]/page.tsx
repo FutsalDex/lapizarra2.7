@@ -43,7 +43,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
 
     return (
         <div ref={ref} className="bg-white text-gray-900 p-4" style={{ width: '210mm' }}>
-             <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
                 <tbody>
                     <tr>
                         <td style={{ width: '30%', padding: '8px', verticalAlign: 'top' }}>
@@ -74,7 +74,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                         </td>
                         <td style={{ width: '70%', padding: '8px', border: '1px solid black', verticalAlign: 'top' }}>
                             <div className="text-[10px] font-bold mb-1">Objetivos</div>
-                            <ul className="text-[9px] space-y-0 leading-tight list-disc list-inside pl-2">
+                             <ul className="text-[9px] leading-tight list-disc list-inside pl-2">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
                                     <li key={index}>{obj}</li>
                                 ))}
@@ -215,42 +215,41 @@ const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
     <div className="space-y-6">
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-            <div className="md:col-span-1 space-y-4">
-              <div className="relative min-h-[200px] bg-muted rounded-md aspect-video">
-                <Image
-                  src={exercise['Imagen']}
-                  alt={`Táctica para ${exercise['Ejercicio']}`}
-                  fill
-                  className="object-contain p-2"
-                />
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                <div className="md:col-span-1 space-y-4">
+                    <div className="relative min-h-[200px] bg-muted rounded-md aspect-video">
+                        <Image
+                        src={exercise['Imagen']}
+                        alt={`Táctica para ${exercise['Ejercicio']}`}
+                        fill
+                        className="object-contain p-2"
+                        />
+                    </div>
+                    <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-muted-foreground" />
+                            <span><span className="font-semibold">Jugadores:</span> {exercise['Número de jugadores']}</span>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                    <span><span className="font-semibold">Jugadores:</span> {exercise['Número de jugadores']}</span>
+                <div className="md:col-span-2 space-y-4">
+                    <div>
+                        <h3 className="text-xl font-bold font-headline">{exercise['Ejercicio']}</h3>
+                        <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
+                    </div>
+                    <div className="pt-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Target className="w-4 h-4 text-primary" />
+                            <h4 className="font-semibold">Objetivos del Ejercicio</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{exercise['Objetivos']}</p>
+                    </div>
                 </div>
-              </div>
             </div>
-
-            <div className="md:col-span-2 space-y-4">
-                <div>
-                  <h3 className="text-xl font-bold font-headline">{exercise['Ejercicio']}</h3>
-                  <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
-                </div>
-                <div className="pt-4">
-                  <div className="flex items-center gap-2 mb-2">
-                      <Target className="w-4 h-4 text-primary" />
-                      <h4 className="font-semibold">Objetivos del Ejercicio</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{exercise['Objetivos']}</p>
-                </div>
-            </div>
-          </div>
         </Card>
       ))}
     </div>
@@ -523,4 +522,3 @@ export default function SesionDetallePage() {
     </>
   );
 }
-
