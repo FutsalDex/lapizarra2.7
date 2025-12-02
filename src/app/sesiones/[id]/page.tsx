@@ -4,7 +4,7 @@
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowLeft, Edit, Printer, Users, Clock, Target, ListChecks, Download } from 'lucide-react';
+import { ArrowLeft, Edit, Printer, Users, Clock, Target, ListChecks, Download, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDocumentData, useCollection } from 'react-firebase-hooks/firestore';
@@ -16,9 +16,12 @@ import { Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const db = getFirestore(app);
 
@@ -106,6 +109,9 @@ export default function SesionDetallePage() {
   const params = useParams();
   const sessionId = params.id as string;
   const [viewMode, setViewMode] = useState<'pro' | 'basic'>('pro');
+  const { toast } = useToast();
+  const sessionRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   
   const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
@@ -114,6 +120,53 @@ export default function SesionDetallePage() {
   const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
+
+  const handleDownloadPdf = async () => {
+    if (!sessionRef.current) return;
+
+    setIsDownloading(true);
+
+    try {
+      // Temporarily make body background white for capture if in dark mode
+      const originalBodyColor = document.body.style.backgroundColor;
+      if (document.body.classList.contains('dark')) {
+          document.body.style.backgroundColor = 'white';
+      }
+
+      const canvas = await html2canvas(sessionRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+
+      // Restore original body color
+      document.body.style.backgroundColor = originalBodyColor;
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height],
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save(`sesion-${sessionId}.pdf`);
+
+      toast({
+        title: 'Descarga Completa',
+        description: 'Tu PDF ha sido descargado con éxito.',
+      });
+    } catch (error) {
+      console.error('Error al generar el PDF:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Fallo en la Descarga',
+        description: 'Hubo un problema al generar el PDF. Por favor, inténtalo de nuevo.',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -217,53 +270,6 @@ export default function SesionDetallePage() {
     </div>
   );
 
-  const PrintableContentForPrint = () => {
-    const exercisesToHtml = (exs: Exercise[]) =>
-    exs.map(ex => `
-        <div style="page-break-inside: avoid; margin-bottom: 1.5rem; padding:0.75rem; border-radius:6px; border:1px solid #e6e6e6;">
-        <h4 style="margin:0 0 .4rem; font-size:1.05rem; font-weight:bold;">${ex['Ejercicio'] || ''}</h4>
-        <div style="display:flex; gap:1rem; align-items:flex-start;">
-            ${ex['Imagen'] ? `<img src="${ex['Imagen']}" alt="${ex['Ejercicio'] || ''}" style="max-width:200px; width:30%; height:auto; object-fit:contain;"/>` : ''}
-            <div style="flex:1;">
-            <p style="margin:.2rem 0;"><strong>Descripción:</strong> ${ex['Descripción de la tarea'] || ''}</p>
-            <p style="margin:.2rem 0;"><strong>Objetivos:</strong> ${ex['Objetivos'] || ''}</p>
-            <p style="margin:.2rem 0;"><strong>Duración:</strong> ${String(ex['Duración (min)'] || '-')} min</p>
-            </div>
-        </div>
-        </div>
-    `).join('');
-
-    return (
-        <div className="space-y-8 print-page">
-            <div>
-                <h1 className="text-2xl font-bold">{session.name}</h1>
-                <p className="text-sm text-muted-foreground">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
-            </div>
-            <div>
-                <div><strong>Equipo:</strong> {teamName}</div>
-                <div><strong>Instalación:</strong> {session.facility || '-'}</div>
-                <div><strong>Microciclo:</strong> {session.microcycle || '-'}</div>
-                <div><strong>Nº Sesión:</strong> {session.sessionNumber || '-'}</div>
-            </div>
-            <div>
-                <h3 className="font-semibold">Objetivos</h3>
-                {Array.isArray(session.objectives) ? (
-                    <ul>{session.objectives.map((o: string, i: number) => <li key={i}>{o}</li>)}</ul>
-                ) : <p>-</p>}
-            </div>
-            <div className="space-y-6">
-                <h2>Fase Inicial</h2>
-                <div dangerouslySetInnerHTML={{ __html: exercisesToHtml(initialExercises) }} />
-                <h2>Fase Principal</h2>
-                <div dangerouslySetInnerHTML={{ __html: exercisesToHtml(mainExercises) }} />
-                <h2>Fase Final</h2>
-                <div dangerouslySetInnerHTML={{ __html: exercisesToHtml(finalExercises) }} />
-            </div>
-        </div>
-    );
-  };
-
-
   return (
     <>
       <div className="container mx-auto px-4 py-8">
@@ -289,16 +295,27 @@ export default function SesionDetallePage() {
                     <DialogHeader>
                         <DialogTitle>Vista Previa de la Ficha de Sesión</DialogTitle>
                         <DialogDescription>
-                            Revisa la sesión antes de imprimirla o guardarla como PDF.
+                            Revisa la sesión antes de guardarla como PDF.
                         </DialogDescription>
                     </DialogHeader>
-                    <ScrollArea className="h-[70vh] p-6 border rounded-md">
-                        <PrintableContent />
+                    <ScrollArea className="h-[70vh] p-4 border rounded-md">
+                        <div ref={sessionRef}>
+                          <PrintableContent />
+                        </div>
                     </ScrollArea>
                     <DialogFooter>
-                         <Button onClick={() => window.print()}>
-                            <Download className="mr-2" />
-                            Descargar PDF
+                         <Button onClick={handleDownloadPdf} disabled={isDownloading}>
+                            {isDownloading ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Descargando...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="mr-2" />
+                                Descargar PDF
+                              </>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -322,11 +339,6 @@ export default function SesionDetallePage() {
           <PrintableContent />
         </div>
       </div>
-      <div id="print-area" className="hidden">
-        <PrintableContentForPrint />
-      </div>
     </>
   );
 }
-
-    

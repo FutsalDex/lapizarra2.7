@@ -72,29 +72,3 @@ body {
     -webkit-text-size-adjust: 100%;
   }
 }
-
-/* --- PRINT STYLES: mostrar solo #print-area --- */
-@media print {
-  body * {
-    visibility: hidden !important;
-  }
-
-  #print-area, #print-area * {
-    visibility: visible !important;
-  }
-
-  #print-area {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    display: block !important;
-  }
-
-  /* Evitar que shadcn modals bloqueen la impresión */
-  .modal, .dialog, .sheet {
-    display: none !important;
-  }
-}
-
-    
