@@ -8,7 +8,7 @@ import { ArrowLeft, Edit, Printer, Users, Clock, Target, ListChecks, Download } 
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDocumentData, useCollection } from 'react-firebase-hooks/firestore';
-import { doc, collection, getFirestore, DocumentSnapshot } from 'firebase/firestore';
+import { doc, collection, getFirestore } from 'firebase/firestore';
 import { app } from '@/firebase/config';
 import { Exercise } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,7 +16,7 @@ import { Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -35,6 +35,7 @@ function escapeHtml(str: string | number) {
 function escapeAttr(s: string) {
   return escapeHtml(s).replaceAll('"', '&quot;');
 }
+
 
 const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
   if (!exercises || exercises.length === 0) return null;
@@ -121,18 +122,19 @@ export default function SesionDetallePage() {
   const sessionId = params.id as string;
   const [viewMode, setViewMode] = useState<'pro' | 'basic'>('pro');
   
-  const [session, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
+  const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
   
-  const teamId = session?.teamId;
+  const teamId = sessionSnapshot?.teamId;
   const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
 
   const handlePrint = () => {
-    if (!session || !exercisesSnapshot) return;
+    if (!sessionSnapshot || !exercisesSnapshot) return;
 
     const allExercises = exercisesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Exercise));
     const getExercisesByIds = (ids: string[] = []) => ids.map(id => allExercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
     
+    const session = sessionSnapshot;
     const initial = getExercisesByIds(session.initialExercises || []);
     const main = getExercisesByIds(session.mainExercises || []);
     const final = getExercisesByIds(session.finalExercises || []);
@@ -197,7 +199,6 @@ export default function SesionDetallePage() {
     if (printContainer) {
         printContainer.innerHTML = printHtml;
         window.print();
-        printContainer.innerHTML = '';
     }
   };
   
@@ -219,7 +220,7 @@ export default function SesionDetallePage() {
     );
   }
 
-  if (errorSession || !session) {
+  if (errorSession || !sessionSnapshot) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold">Sesión no encontrada</h1>
@@ -234,6 +235,7 @@ export default function SesionDetallePage() {
     );
   }
   
+  const session = { id: sessionSnapshot.id, ...sessionSnapshot };
   const allExercises = exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [];
 
   const getExercisesByIds = (ids: string[]) => {
@@ -362,7 +364,14 @@ export default function SesionDetallePage() {
           <PrintableContent />
         </div>
       </div>
-      <div id="print-container-temp" style={{ display: 'none' }}></div>
+      <div
+        id="print-container-temp"
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: "0",
+        }}
+      ></div>
     </>
   );
 }
