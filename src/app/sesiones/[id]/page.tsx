@@ -16,14 +16,14 @@ import { Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const db = getFirestore(app);
 
 // helpers para escapar (seguridad básica)
-function escapeHtml(str: string) {
+function escapeHtml(str: string | number) {
   if (!str) return '';
   return String(str)
     .replaceAll('&', '&amp;')
@@ -121,52 +121,53 @@ export default function SesionDetallePage() {
   const sessionId = params.id as string;
   const [viewMode, setViewMode] = useState<'pro' | 'basic'>('pro');
   
-  const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
+  const [session, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
   
-  const teamId = sessionSnapshot?.teamId;
+  const teamId = session?.teamId;
   const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
 
-  const handlePrint = async () => {
-      if (!sessionSnapshot || !exercisesSnapshot) return;
+  const handlePrint = () => {
+    if (!session || !exercisesSnapshot) return;
 
-      const allExercises = exercisesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Exercise));
-      const getExercisesByIds = (ids: string[] = []) => ids.map(id => allExercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
-      
-      const session = { id: sessionSnapshot.id, ...sessionSnapshot };
-      const initial = getExercisesByIds(session.initialExercises || []);
-      const main = getExercisesByIds(session.mainExercises || []);
-      const final = getExercisesByIds(session.finalExercises || []);
-      const sessionDate = (session.date as Timestamp)?.toDate?.();
-      const teamName = teamSnapshot?.name || session.teamId || 'No especificado';
+    const allExercises = exercisesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Exercise));
+    const getExercisesByIds = (ids: string[] = []) => ids.map(id => allExercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+    
+    const initial = getExercisesByIds(session.initialExercises || []);
+    const main = getExercisesByIds(session.mainExercises || []);
+    const final = getExercisesByIds(session.finalExercises || []);
+    const sessionDate = (session.date as Timestamp)?.toDate?.();
+    const teamName = teamSnapshot?.name || session.teamId || 'No especificado';
 
-      const exercisesToHtml = (exs: Exercise[]) =>
-        exs.map(ex => `
-          <div style="page-break-inside: avoid; margin-bottom: 1.5rem; padding:0.75rem; border-radius:6px; border:1px solid #e6e6e6;">
-            <h4 style="margin:0 0 .4rem; font-size:1.05rem">${escapeHtml(ex['Ejercicio'] || '')}</h4>
-            <div style="display:flex; gap:1rem; align-items:flex-start;">
-              ${ex['Imagen'] ? `<img src="${escapeAttr(ex['Imagen'])}" alt="${escapeAttr(ex['Ejercicio'] || '')}" style="max-width:200px; width:30%; height:auto; object-fit:contain;"/>` : ''}
-              <div style="flex:1;">
-                <p style="margin:.2rem 0;"><strong>Descripción:</strong> ${escapeHtml(ex['Descripción de la tarea'] || '')}</p>
-                <p style="margin:.2rem 0;"><strong>Objetivos:</strong> ${escapeHtml(ex['Objetivos'] || '')}</p>
-                <p style="margin:.2rem 0;"><strong>Duración:</strong> ${escapeHtml(String(ex['Duración (min)'] || '-'))} min</p>
-              </div>
+    const exercisesToHtml = (exs: Exercise[]) =>
+      exs.map(ex => `
+        <div style="page-break-inside: avoid; margin-bottom: 1rem; padding: 1rem; border: 1px solid #eee; border-radius: 8px;">
+          <h4 style="margin: 0 0 0.5rem; font-size: 1.1rem; font-weight: bold;">${escapeHtml(ex['Ejercicio'] || '')}</h4>
+          <div style="display: flex; gap: 1rem; align-items: flex-start;">
+            ${ex['Imagen'] ? `<img src="${escapeAttr(ex['Imagen'])}" alt="${escapeAttr(ex['Ejercicio'] || '')}" style="width: 200px; height: auto; object-fit: contain; border: 1px solid #eee;"/>` : ''}
+            <div style="flex: 1;">
+              <p style="margin: 0 0 0.5rem;"><strong>Descripción:</strong> ${escapeHtml(ex['Descripción de la tarea'] || '')}</p>
+              <p style="margin: 0 0 0.5rem;"><strong>Objetivos:</strong> ${escapeHtml(ex['Objetivos'] || '')}</p>
+              <p style="margin: 0;"><strong>Duración:</strong> ${escapeHtml(String(ex['Duración (min)'] || '-'))} min</p>
             </div>
           </div>
-        `).join('');
+        </div>
+      `).join('');
 
-      const printHtml = `
-      <!doctype html>
+    const printHtml = `
+      <!DOCTYPE html>
       <html>
         <head>
-          <meta charset="utf-8" />
-          <title>Ficha - ${escapeHtml(session.name || '')}</title>
-          <meta name="viewport" content="width=device-width,initial-scale=1" />
+          <title>Ficha de Sesión</title>
           <style>
-            body { font-family: Arial, Helvetica, sans-serif; color:#111; padding:16px; }
-            h1 { font-size:20px; margin:0 0 8px; }
-            h2 { margin-top:16px; }
-            img { max-width:100%; height:auto; display:block; }
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+            body { font-family: 'Inter', sans-serif; line-height: 1.5; color: #333; }
+            h1, h2, h3, h4 { font-weight: bold; }
+            h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+            h2 { font-size: 1.5rem; margin-top: 2rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; }
+            ul { padding-left: 20px; }
+            li { margin-bottom: 0.25rem; }
+            .header-info { margin-bottom: 2rem; }
             @media print {
               body { -webkit-print-color-adjust: exact; }
             }
@@ -174,88 +175,31 @@ export default function SesionDetallePage() {
         </head>
         <body>
           <h1>${escapeHtml(session.name || '')}</h1>
-          <div style="margin:.5rem 0 .75rem; color:#555;">${sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</div>
-          <div style="margin-bottom: .75rem;">
+          <div class="header-info">
+            <div>${sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</div>
             <div><strong>Equipo:</strong> ${escapeHtml(teamName)}</div>
             <div><strong>Instalación:</strong> ${escapeHtml(session.facility || '-')}</div>
           </div>
-
           <h2>Objetivos</h2>
-          <div>${Array.isArray(session.objectives) ? `<ul>${session.objectives.map((o:string) => `<li>${escapeHtml(o)}</li>`).join('')}</ul>` : '<p>-</p>'}</div>
-
+          ${Array.isArray(session.objectives) && session.objectives.length > 0 ? `<ul>${session.objectives.map((o:string) => `<li>${escapeHtml(o)}</li>`).join('')}</ul>` : '<p>No definidos.</p>'}
+          
           <h2>Fase Inicial</h2>
           ${exercisesToHtml(initial)}
-
           <h2>Fase Principal</h2>
           ${exercisesToHtml(main)}
-
           <h2>Fase Final</h2>
           ${exercisesToHtml(final)}
         </body>
-      </html>`;
+      </html>
+    `;
 
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      iframe.style.visibility = 'hidden';
-      document.body.appendChild(iframe);
-
-      const waitForImages = (win: Window, timeout = 3000) => {
-        return new Promise<void>((resolve) => {
-          try {
-            const imgs = Array.from(win.document.images || []);
-            if (imgs.length === 0) return resolve();
-            let loaded = 0;
-            const done = () => { if (++loaded >= imgs.length) resolve(); };
-            const timer = setTimeout(() => resolve(), timeout);
-            imgs.forEach(img => {
-              if (img.complete) done();
-              else {
-                img.addEventListener('load', done, { once: true });
-                img.addEventListener('error', done, { once: true });
-              }
-            });
-          } catch (e) {
-            setTimeout(() => resolve(), 300);
-          }
-        });
-      };
-
-      iframe.onload = async () => {
-        try {
-          const win = iframe.contentWindow!;
-          await waitForImages(win, 4000);
-          win.focus();
-          setTimeout(() => {
-            try {
-              win.print();
-            } catch (err) {
-              console.error('Print error:', err);
-            } finally {
-              setTimeout(() => {
-                try { document.body.removeChild(iframe); } catch (e) {}
-              }, 500);
-            }
-          }, 200);
-        } catch (err) {
-          console.error('Error en onload iframe:', err);
-          setTimeout(() => { try { document.body.removeChild(iframe); } catch (e) {} }, 500);
-        }
-      };
-
-      if ('srcdoc' in iframe) {
-        (iframe as HTMLIFrameElement).srcdoc = printHtml;
-      } else {
-        const doc = iframe.contentWindow?.document;
-        doc?.open();
-        doc?.write(printHtml);
-        doc?.close();
-      }
-    };
+    const printContainer = document.getElementById('print-container-temp');
+    if (printContainer) {
+        printContainer.innerHTML = printHtml;
+        window.print();
+        printContainer.innerHTML = '';
+    }
+  };
   
   const isLoading = loadingSession || loadingExercises || loadingTeam;
 
@@ -275,7 +219,7 @@ export default function SesionDetallePage() {
     );
   }
 
-  if (errorSession || !sessionSnapshot) {
+  if (errorSession || !session) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold">Sesión no encontrada</h1>
@@ -290,7 +234,6 @@ export default function SesionDetallePage() {
     );
   }
   
-  const session = { id: sessionSnapshot.id, ...sessionSnapshot };
   const allExercises = exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [];
 
   const getExercisesByIds = (ids: string[]) => {
@@ -363,69 +306,63 @@ export default function SesionDetallePage() {
 
   return (
     <>
-      <div className="non-printable">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h1 className="text-4xl font-bold">{session.name}</h1>
-                <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
-              </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-4xl font-bold">{session.name}</h1>
+            <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
+          </div>
 
-              <div className="flex gap-2">
-                <Button variant="outline" asChild>
-                  <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
-                </Button>
-                
-                 <Dialog>
-                    <DialogTrigger asChild>
-                        <Button>
-                          <Printer className="mr-2" />
-                          Imprimir Ficha
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
+            </Button>
+            
+             <Dialog>
+                <DialogTrigger asChild>
+                    <Button>
+                      <Printer className="mr-2" />
+                      Imprimir Ficha
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>Vista Previa de la Ficha de Sesión</DialogTitle>
+                        <DialogDescription>
+                            Revisa la sesión antes de imprimirla o guardarla como PDF.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="h-[70vh] p-6 border rounded-md">
+                        <PrintableContent />
+                    </ScrollArea>
+                    <DialogFooter>
+                         <Button onClick={handlePrint}>
+                            <Download className="mr-2" />
+                            Descargar PDF
                         </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                        <DialogHeader>
-                            <DialogTitle>Vista Previa de la Ficha de Sesión</DialogTitle>
-                            <DialogDescription>
-                                Revisa la sesión antes de imprimirla o guardarla como PDF.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="h-[70vh] p-6 border rounded-md">
-                            <PrintableContent />
-                        </ScrollArea>
-                        <DialogFooter>
-                             <Button onClick={handlePrint}>
-                                <Download className="mr-2" />
-                                Descargar PDF
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-                <Button asChild>
-                  <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
-                </Button>
-              </div>
-            </div>
+            <Button asChild>
+              <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
+            </Button>
+          </div>
+        </div>
 
-            <div className="max-w-4xl mx-auto space-y-8">
-              <div className="flex justify-end">
-                <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
-                    <TabsList>
-                        <TabsTrigger value="pro">Vista Pro</TabsTrigger>
-                        <TabsTrigger value="basic">Vista Básica</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-              </div>
-              <PrintableContent />
-            </div>
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="flex justify-end">
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
+                <TabsList>
+                    <TabsTrigger value="pro">Vista Pro</TabsTrigger>
+                    <TabsTrigger value="basic">Vista Básica</TabsTrigger>
+                </TabsList>
+            </Tabs>
           </div>
+          <PrintableContent />
+        </div>
       </div>
-      <div className="printable-content">
-          <div className="p-8">
-            <PrintableContent />
-          </div>
-      </div>
+      <div id="print-container-temp" style={{ display: 'none' }}></div>
     </>
   );
 }
