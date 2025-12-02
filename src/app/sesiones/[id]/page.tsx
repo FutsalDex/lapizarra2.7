@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from 'react';
@@ -68,7 +67,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
             <div className="grid grid-cols-2 gap-4">
                 {allSessionExercises.map(ex => (
                     <div key={ex.id} className="border border-gray-400 rounded-lg overflow-hidden break-inside-avoid">
-                        <CardHeader className="p-1 text-center border-b">
+                        <CardHeader className="px-1 text-center border-b">
                             <p className="text-[9px] font-semibold px-1 break-words">{ex.Ejercicio}</p>
                         </CardHeader>
                         <div className="relative aspect-video w-full bg-muted">
@@ -493,6 +492,7 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
 
 
