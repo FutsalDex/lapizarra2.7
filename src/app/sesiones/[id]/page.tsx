@@ -105,12 +105,79 @@ export default function SesionDetallePage() {
   const params = useParams();
   const sessionId = params.id as string;
   const [viewMode, setViewMode] = useState<'pro' | 'basic'>('pro');
+  const printIframeRef = useRef<HTMLIFrameElement>(null);
   
   const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
   
   const teamId = sessionSnapshot?.teamId;
   const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
+
+  const handlePrint = () => {
+    const session = sessionSnapshot;
+    if (!session || !exercisesSnapshot || !printIframeRef.current) return;
+
+    const allExercises = exercisesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [];
+    const getExercisesByIds = (ids: string[]) => ids.map(id => allExercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+
+    const initial = getExercisesByIds(session.initialExercises || []);
+    const main = getExercisesByIds(session.mainExercises || []);
+    const final = getExercisesByIds(session.finalExercises || []);
+    const sessionDate = (session.date as Timestamp)?.toDate();
+    const teamName = teamSnapshot?.name || session.teamId || 'No especificado';
+    
+    const exercisesToHtml = (exs: Exercise[]) => exs.map(ex => `
+      <div style="page-break-inside: avoid; margin-bottom: 2rem; border: 1px solid #eee; padding: 1rem; border-radius: 0.5rem;">
+        <h4 style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.5rem;">${ex['Ejercicio']}</h4>
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+          <img src="${ex['Imagen']}" alt="${ex['Ejercicio']}" style="max-width: 100%; height: auto; object-fit: contain;" />
+          <div>
+            <p><strong>Descripción:</strong> ${ex['Descripción de la tarea']}</p>
+            <p><strong>Objetivos:</strong> ${ex['Objetivos']}</p>
+            <p><strong>Duración:</strong> ${ex['Duración (min)']} min</p>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    const printHtml = `
+      <html>
+        <head>
+          <title>Ficha de Sesión - ${session.name}</title>
+          <style>
+            body { font-family: sans-serif; }
+            h1, h2, h3, h4 { margin: 0; }
+          </style>
+        </head>
+        <body>
+          <h1>${session.name}</h1>
+          <p>${sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
+          <hr />
+          <p><strong>Equipo:</strong> ${teamName}</p>
+          <p><strong>Instalación:</strong> ${session.facility || '-'}</p>
+          <h3>Objetivos:</h3>
+          <ul>${(session.objectives || []).map((o: string) => `<li>${o}</li>`).join('')}</ul>
+          <hr />
+          <h2>Fase Inicial</h2>
+          ${exercisesToHtml(initial)}
+          <h2>Fase Principal</h2>
+          ${exercisesToHtml(main)}
+          <h2>Fase Final</h2>
+          ${exercisesToHtml(final)}
+        </body>
+      </html>
+    `;
+
+    const iframe = printIframeRef.current;
+    iframe.contentWindow?.document.open();
+    iframe.contentWindow?.document.write(printHtml);
+    iframe.contentWindow?.document.close();
+
+    iframe.onload = () => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+    };
+  };
 
   if (loadingSession || loadingExercises || loadingTeam) {
     return (
@@ -214,29 +281,6 @@ export default function SesionDetallePage() {
     </div>
   );
 
-  const PrintableView = () => (
-    <div className="print-page">
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>{session.name}</h1>
-      <p>{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
-      <hr style={{ margin: '1rem 0' }} />
-      <div><strong>Equipo:</strong> {teamName}</div>
-      <div><strong>Instalación:</strong> {session.facility || '-'}</div>
-      <div><strong>Microciclo:</strong> {session.microcycle || '-'}</div>
-      <div><strong>Nº Sesión:</strong> {session.sessionNumber || '-'}</div>
-      <hr style={{ margin: '1rem 0' }} />
-      <h3 style={{ fontWeight: 'bold' }}>Objetivos:</h3>
-      <ul>{session.objectives?.map((o: string, i: number) => <li key={i}>{o}</li>)}</ul>
-      <hr style={{ margin: '1rem 0' }} />
-      <h3 style={{ fontWeight: 'bold' }}>Ejercicios</h3>
-      {[...initialExercises, ...mainExercises, ...finalExercises].map(ex => (
-        <div key={ex.id} style={{ marginBottom: '1rem', pageBreakInside: 'avoid' }}>
-          <h4>{ex['Ejercicio']}</h4>
-          <img src={ex['Imagen']} alt={ex['Ejercicio']} style={{ maxWidth: '300px', height: 'auto' }} />
-        </div>
-      ))}
-    </div>
-  );
-
   return (
     <>
       <div className="container mx-auto px-4 py-8">
@@ -251,7 +295,7 @@ export default function SesionDetallePage() {
               <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
             </Button>
 
-            <Button onClick={() => window.print()}>
+            <Button onClick={handlePrint}>
               <Printer className="mr-2" />
               Imprimir Ficha
             </Button>
@@ -274,9 +318,7 @@ export default function SesionDetallePage() {
           <PrintableContent />
         </div>
       </div>
-      <div id="print-area">
-        <PrintableView />
-      </div>
+      <iframe ref={printIframeRef} style={{ display: 'none' }} title="Print Content"></iframe>
     </>
   );
 }
