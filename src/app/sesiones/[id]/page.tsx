@@ -36,6 +36,55 @@ const SessionPageForPrint = ({ session, exercises, teamName, printRef }: { sessi
     const mainExercises = getExercisesByIds(session.mainExercises);
     const finalExercises = getExercisesByIds(session.finalExercises);
     
+    const SessionProViewForPrint = ({ exercises }: { exercises: Exercise[] }) => {
+        if (!exercises || exercises.length === 0) return null;
+        
+        return (
+            <div className="space-y-6">
+            {exercises.map((exercise) => (
+                <Card key={exercise.id} className="overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                    <div className="md:col-span-1 space-y-4">
+                    <div className="relative aspect-video bg-muted rounded-md">
+                        <Image
+                        src={exercise['Imagen']}
+                        alt={`Táctica para ${exercise['Ejercicio']}`}
+                        fill
+                        className="object-contain p-2"
+                        />
+                    </div>
+                    <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-muted-foreground" />
+                            <span><span className="font-semibold">Jugadores:</span> {exercise['Número de jugadores']}</span>
+                        </div>
+                    </div>
+                    </div>
+
+                    <div className="md:col-span-2 space-y-4">
+                        <div>
+                        <h3 className="text-xl font-bold font-headline">{exercise['Ejercicio']}</h3>
+                        <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
+                        </div>
+                        <div className="pt-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Target className="w-4 h-4 text-primary" />
+                            <h4 className="font-semibold">Objetivos del Ejercicio</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{exercise['Objetivos']}</p>
+                        </div>
+                    </div>
+                </div>
+                </Card>
+            ))}
+            </div>
+        );
+    };
+    
     return (
         <div ref={printRef} className="bg-white text-black p-8" style={{ width: '210mm' }}>
              <div className="space-y-8">
@@ -81,19 +130,19 @@ const SessionPageForPrint = ({ session, exercises, teamName, printRef }: { sessi
                 {initialExercises.length > 0 && (
                     <div>
                         <h2 className="text-2xl font-bold font-headline text-primary mb-4">Fase Inicial (Calentamiento)</h2>
-                        <SessionProView exercises={initialExercises} />
+                        <SessionProViewForPrint exercises={initialExercises} />
                     </div>
                 )}
                 {mainExercises.length > 0 && (
                     <div>
                         <h2 className="text-2xl font-bold font-headline text-primary mb-4">Fase Principal</h2>
-                        <SessionProView exercises={mainExercises} />
+                        <SessionProViewForPrint exercises={mainExercises} />
                     </div>
                 )}
                 {finalExercises.length > 0 && (
                     <div>
                         <h2 className="text-2xl font-bold font-headline text-primary mb-4">Fase Final (Vuelta a la Calma)</h2>
-                        <SessionProView exercises={finalExercises} />
+                        <SessionProViewForPrint exercises={finalExercises} />
                     </div>
                 )}
             </div>
@@ -555,7 +604,7 @@ export default function SesionDetallePage() {
                                 <span className="font-semibold">Equipo:</span>
                                 <span className="text-muted-foreground">{teamName}</span>
                             </div>
-                            <div className="flex gap-2">
+                             <div className="flex gap-2">
                                 <span className="font-semibold">Instalación:</span>
                                 <span className="text-muted-foreground">{session.facility}</span>
                             </div>
