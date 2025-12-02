@@ -1,11 +1,10 @@
 
-
 "use client";
 
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowLeft, Edit, Printer, Users, Clock, Target, ListChecks } from 'lucide-react';
+import { ArrowLeft, Edit, Printer, Users, Clock, Target, ListChecks, Download } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDocumentData, useCollection } from 'react-firebase-hooks/firestore';
@@ -17,7 +16,9 @@ import { Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const db = getFirestore(app);
 
@@ -34,6 +35,7 @@ function escapeHtml(str: string) {
 function escapeAttr(s: string) {
   return escapeHtml(s).replaceAll('"', '&quot;');
 }
+
 
 const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
   if (!exercises || exercises.length === 0) return null;
@@ -264,7 +266,9 @@ export default function SesionDetallePage() {
     }
   };
 
-  if (loadingSession || loadingExercises || loadingTeam) {
+  const isLoading = loadingSession || loadingExercises || loadingTeam;
+
+  if (isLoading) {
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <div className="flex justify-between items-center mb-6">
@@ -295,7 +299,7 @@ export default function SesionDetallePage() {
     );
   }
   
-  const session = { id: sessionSnapshot.id, ...sessionSnapshot };
+  const session = { id: sessionSnapshot.id, ...sessionSnapshot.data() };
   const allExercises = exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [];
 
   const getExercisesByIds = (ids: string[]) => {
@@ -379,11 +383,32 @@ export default function SesionDetallePage() {
             <Button variant="outline" asChild>
               <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
             </Button>
-
-            <Button onClick={handlePrint}>
-              <Printer className="mr-2" />
-              Imprimir Ficha
-            </Button>
+            
+            <Dialog>
+                <DialogTrigger asChild>
+                    <Button>
+                      <Printer className="mr-2" />
+                      Imprimir Ficha
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>Vista Previa de la Ficha de Sesión</DialogTitle>
+                        <DialogDescription>
+                            Revisa la sesión antes de imprimirla o guardarla como PDF.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="h-[70vh] p-6 border rounded-md">
+                        <PrintableContent />
+                    </ScrollArea>
+                    <DialogFooter>
+                         <Button onClick={handlePrint}>
+                            <Download className="mr-2" />
+                            Descargar PDF
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <Button asChild>
               <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
