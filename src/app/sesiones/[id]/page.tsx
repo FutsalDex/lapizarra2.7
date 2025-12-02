@@ -214,43 +214,69 @@ export default function SesionDetallePage() {
     </div>
   );
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-4xl font-bold">{session.name}</h1>
-          <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
+  const PrintableView = () => (
+    <div className="print-page">
+      <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>{session.name}</h1>
+      <p>{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
+      <hr style={{ margin: '1rem 0' }} />
+      <div><strong>Equipo:</strong> {teamName}</div>
+      <div><strong>Instalación:</strong> {session.facility || '-'}</div>
+      <div><strong>Microciclo:</strong> {session.microcycle || '-'}</div>
+      <div><strong>Nº Sesión:</strong> {session.sessionNumber || '-'}</div>
+      <hr style={{ margin: '1rem 0' }} />
+      <h3 style={{ fontWeight: 'bold' }}>Objetivos:</h3>
+      <ul>{session.objectives?.map((o: string, i: number) => <li key={i}>{o}</li>)}</ul>
+      <hr style={{ margin: '1rem 0' }} />
+      <h3 style={{ fontWeight: 'bold' }}>Ejercicios</h3>
+      {[...initialExercises, ...mainExercises, ...finalExercises].map(ex => (
+        <div key={ex.id} style={{ marginBottom: '1rem', pageBreakInside: 'avoid' }}>
+          <h4>{ex['Ejercicio']}</h4>
+          <img src={ex['Imagen']} alt={ex['Ejercicio']} style={{ maxWidth: '300px', height: 'auto' }} />
         </div>
-
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
-          </Button>
-
-          <Button asChild>
-             <Link href={`/sesiones/${sessionId}/print`} target="_blank">
-                <Printer className="mr-2" />
-                Imprimir Ficha
-            </Link>
-          </Button>
-
-          <Button asChild>
-            <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex justify-end">
-          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
-              <TabsList>
-                  <TabsTrigger value="pro">Vista Pro</TabsTrigger>
-                  <TabsTrigger value="basic">Vista Básica</TabsTrigger>
-              </TabsList>
-          </Tabs>
-        </div>
-        <PrintableContent />
-      </div>
+      ))}
     </div>
+  );
+
+  return (
+    <>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-4xl font-bold">{session.name}</h1>
+            <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
+            </Button>
+
+            <Button onClick={() => window.print()}>
+              <Printer className="mr-2" />
+              Imprimir Ficha
+            </Button>
+
+            <Button asChild>
+              <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
+            </Button>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="flex justify-end">
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
+                <TabsList>
+                    <TabsTrigger value="pro">Vista Pro</TabsTrigger>
+                    <TabsTrigger value="basic">Vista Básica</TabsTrigger>
+                </TabsList>
+            </Tabs>
+          </div>
+          <PrintableContent />
+        </div>
+      </div>
+      <div id="print-area">
+        <PrintableView />
+      </div>
+    </>
   );
 }
