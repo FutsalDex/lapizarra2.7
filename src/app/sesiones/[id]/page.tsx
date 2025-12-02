@@ -43,83 +43,50 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
       { title: 'Fase Final', exercises: finalExercises },
     ];
 
-    const pagesContent: { title?: string; exercises: Exercise[] }[] = [];
-    let currentPageExercises: Exercise[] = [];
-    let isFirstPage = true;
-    const exercisesPerPage = () => isFirstPage ? 2 : 3;
+    const pagesContent: { title?: string; exercises: Exercise[] }[][] = [];
+    let currentPageContent: { title?: string; exercises: Exercise[] }[] = [];
+    let exerciseCountOnPage = 0;
+    const exercisesPerPage = (isFirstPage: boolean) => isFirstPage ? 2 : 3;
 
     allPhases.forEach(phase => {
         if (phase.exercises.length === 0) return;
 
         let phaseTitleAdded = false;
         let exercisesInPhase = [...phase.exercises];
-
-        while (exercisesInPhase.length > 0) {
-            const spaceOnPage = exercisesPerPage() - currentPageExercises.length;
+        
+        while(exercisesInPhase.length > 0) {
+            const limit = exercisesPerPage(pagesContent.length === 0);
             
-            if (spaceOnPage > 0) {
-                if (!phaseTitleAdded) {
-                    // Add phase title if there's room for it and exercises
-                    pagesContent.push({ title: phase.title, exercises: [] });
-                    phaseTitleAdded = true;
-                }
-                const exercisesToAdd = exercisesInPhase.splice(0, spaceOnPage);
-                currentPageExercises.push(...exercisesToAdd);
+            if (!phaseTitleAdded) {
+                currentPageContent.push({ title: phase.title, exercises: [] });
+                phaseTitleAdded = true;
             }
 
-            if (currentPageExercises.length >= exercisesPerPage()) {
-                pagesContent.push({ exercises: currentPageExercises });
-                currentPageExercises = [];
-                isFirstPage = false; 
+            const spaceOnPage = limit - exerciseCountOnPage;
+            const exercisesToAdd = exercisesInPhase.splice(0, spaceOnPage);
+            currentPageContent.push({ exercises: exercisesToAdd });
+            exerciseCountOnPage += exercisesToAdd.length;
+
+            if (exerciseCountOnPage >= limit) {
+                pagesContent.push(currentPageContent);
+                currentPageContent = [];
+                exerciseCountOnPage = 0;
             }
         }
     });
 
-    if (currentPageExercises.length > 0) {
-        pagesContent.push({ exercises: currentPageExercises });
+    if (currentPageContent.length > 0) {
+        pagesContent.push(currentPageContent);
     }
     
-    // Group content into final pages
-    const finalPages: { title?: string, exercises: Exercise[] }[][] = [];
-    let currentPage: { title?: string, exercises: Exercise[] }[] = [];
-    let exerciseCountOnPage = 0;
-    isFirstPage = true;
-
-    for (const item of pagesContent) {
-        if (item.title) {
-            if (currentPage.length > 0) {
-                finalPages.push(currentPage);
-                currentPage = [];
-                exerciseCountOnPage = 0;
-                isFirstPage = false;
-            }
-            currentPage.push(item);
-        } else {
-            const limit = isFirstPage ? 2 : 3;
-            if (exerciseCountOnPage + item.exercises.length > limit) {
-                if (exerciseCountOnPage > 0) {
-                     finalPages.push(currentPage);
-                     isFirstPage = false;
-                }
-                currentPage = [item];
-                exerciseCountOnPage = item.exercises.length;
-            } else {
-                 currentPage.push(item);
-                 exerciseCountOnPage += item.exercises.length;
-            }
-        }
-    }
-    if (currentPage.length > 0) {
-        finalPages.push(currentPage);
-    }
-     return finalPages.map(pageItems => ({ items: pageItems }));
+    return pagesContent;
 
   }, [initialExercises, mainExercises, finalExercises]);
 
 
   return (
     <div ref={sessionRef} className="bg-white text-black">
-      {pages.map((page, pageIndex) => (
+      {pages.map((pageItems, pageIndex) => (
         <div key={pageIndex} className="p-8" style={{ width: '210mm', minHeight: '297mm', pageBreakAfter: 'always', position: 'relative', display: 'flex', flexDirection: 'column' }}>
           <div className="flex-grow">
             {pageIndex === 0 && (
@@ -144,7 +111,7 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
                 </div>
             )}
             
-            {page.items.map((item, itemIndex) => (
+            {pageItems.map((item, itemIndex) => (
               <div key={itemIndex} className="space-y-4">
                 {item.title && <h3 className="font-bold text-2xl mt-6 border-b-2 border-gray-400 pb-1">{item.title}</h3>}
                 {item.exercises.map(ex => (
@@ -267,8 +234,10 @@ export default function SesionDetallePage() {
   const sessionId = params.id as string;
   const [viewMode, setViewMode] = useState<'pro' | 'basic'>('pro');
   const { toast } = useToast();
-  const sessionRef = useRef<HTMLDivElement>(null);
+  const printRef = useRef<HTMLDivElement>(null);
+  const pagePrintRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPageDownloading, setIsPageDownloading] = useState(false);
   
   const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
@@ -279,10 +248,10 @@ export default function SesionDetallePage() {
   const isLoading = loadingSession || loadingExercises || loadingTeam;
 
   const handleDownloadPdf = async () => {
-    if (!sessionRef.current) return;
+    if (!printRef.current) return;
     setIsDownloading(true);
     try {
-      const canvas = await html2canvas(sessionRef.current, {
+      const canvas = await html2canvas(printRef.current, {
         scale: 2,
         useCORS: true,
       });
@@ -321,6 +290,59 @@ export default function SesionDetallePage() {
       });
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadPageAsPdf = async () => {
+    if (!pagePrintRef.current) return;
+    setIsPageDownloading(true);
+    try {
+        const canvas = await html2canvas(pagePrintRef.current, { 
+            scale: 2,
+            useCORS: true,
+            // Opcional: para fondos oscuros
+            backgroundColor: window.getComputedStyle(document.body).getPropertyValue('background-color')
+        });
+        
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        
+        const ratio = canvasHeight / canvasWidth;
+        const imgHeight = pdfWidth * ratio;
+        
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(canvas, 'PNG', 0, 0, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+        
+        while (heightLeft > 0) {
+            position -= pdfHeight;
+            pdf.addPage();
+            pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+        }
+        
+        pdf.save(`pagina-sesion-${sessionId}.pdf`);
+
+        toast({
+            title: "Descarga de página completa",
+            description: "La captura de la página se ha descargado como PDF."
+        });
+
+    } catch (error) {
+        console.error("Error al generar PDF de la página:", error);
+        toast({
+            variant: "destructive",
+            title: "Fallo en la descarga",
+            description: "Hubo un problema al generar el PDF de la página."
+        });
+    } finally {
+        setIsPageDownloading(false);
     }
   };
 
@@ -400,7 +422,10 @@ export default function SesionDetallePage() {
                     </DialogHeader>
                     <ScrollArea className="h-[70vh] p-4 border rounded-md bg-gray-100">
                         <div className="flex justify-center">
-                            <SessionPrintPreview session={session} exercises={allExercises} teamName={teamName} sessionRef={sessionRef} />
+                           <div style={{ display: 'none' }}>
+                                <SessionPrintPreview session={session} exercises={allExercises} teamName={teamName} sessionRef={printRef} />
+                            </div>
+                            <p>Vista previa no disponible en este modo.</p>
                         </div>
                     </ScrollArea>
                     <DialogFooter>
@@ -420,6 +445,10 @@ export default function SesionDetallePage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            <Button onClick={handleDownloadPageAsPdf} disabled={isPageDownloading}>
+                {isPageDownloading ? <Loader2 className="mr-2 animate-spin" /> : <Download className="mr-2" />}
+                Prueba PDF
+            </Button>
 
             <Button asChild>
               <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
@@ -427,7 +456,7 @@ export default function SesionDetallePage() {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-8" ref={pagePrintRef}>
           <div className="flex justify-end">
             <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
                 <TabsList>
@@ -494,3 +523,5 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
+    
