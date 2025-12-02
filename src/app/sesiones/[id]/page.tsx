@@ -46,21 +46,21 @@ const SessionPageForPrint = ({ session, exercises, teamName, printRef }: { sessi
                     <CardContent>
                         <div className="grid grid-cols-10 gap-6">
                             <div className="col-span-3 space-y-2 text-sm">
-                                <div className="flex justify-between">
+                                <div className="flex gap-2">
                                     <span className="font-semibold">Equipo:</span>
-                                    <span className="text-gray-600 text-right">{teamName}</span>
+                                    <span className="text-gray-600">{teamName}</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex gap-2">
                                     <span className="font-semibold">Instalación:</span>
-                                    <span className="text-gray-600 text-right">{session.facility}</span>
+                                    <span className="text-gray-600">{session.facility}</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex gap-2">
                                     <span className="font-semibold">Microciclo:</span>
-                                    <span className="text-gray-600 text-right">{session.microcycle || '-'}</span>
+                                    <span className="text-gray-600">{session.microcycle || '-'}</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex gap-2">
                                     <span className="font-semibold">Nº Sesión:</span>
-                                    <span className="text-gray-600 text-right">{session.sessionNumber || '-'}</span>
+                                    <span className="text-gray-600">{session.sessionNumber || '-'}</span>
                                 </div>
                             </div>
                             <div className="col-span-7">
@@ -399,7 +399,7 @@ export default function SesionDetallePage() {
         heightLeft -= pdfHeight;
 
         while (heightLeft > 0) {
-            position = -pdfHeight;
+            position -= pdfHeight;
             pdf.addPage();
             pdf.addImage(canvas, 'PNG', 0, position, imgWidth, imgHeight);
             heightLeft -= pdfHeight;
@@ -551,21 +551,21 @@ export default function SesionDetallePage() {
                 <CardContent>
                     <div className="grid grid-cols-10 gap-6">
                         <div className="col-span-10 md:col-span-3 space-y-2 text-sm">
-                            <div className="flex justify-between">
+                            <div className="flex gap-2">
                                 <span className="font-semibold">Equipo:</span>
-                                <span className="text-muted-foreground text-right">{teamName}</span>
+                                <span className="text-muted-foreground">{teamName}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex gap-2">
                                 <span className="font-semibold">Instalación:</span>
-                                <span className="text-muted-foreground text-right">{session.facility}</span>
+                                <span className="text-muted-foreground">{session.facility}</span>
                             </div>
-                             <div className="flex justify-between">
+                             <div className="flex gap-2">
                                 <span className="font-semibold">Microciclo:</span>
-                                <span className="text-muted-foreground text-right">{session.microcycle || '-'}</span>
+                                <span className="text-muted-foreground">{session.microcycle || '-'}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex gap-2">
                                 <span className="font-semibold">Nº Sesión:</span>
-                                <span className="text-muted-foreground text-right">{session.sessionNumber || '-'}</span>
+                                <span className="text-muted-foreground">{session.sessionNumber || '-'}</span>
                             </div>
                         </div>
                         <div className="col-span-10 md:col-span-7">
@@ -601,5 +601,3 @@ export default function SesionDetallePage() {
     </>
   );
 }
-
-    
