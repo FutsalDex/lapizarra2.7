@@ -47,10 +47,10 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                         <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
                              <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                                 <tbody>
-                                    <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                                    <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
-                                    <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
-                                    <tr><td style={{ padding: '4px' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
+                                    <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
+                                    <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
+                                    <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
+                                    <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
                                 </tbody>
                             </table>
                         </td>
@@ -146,10 +146,10 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
                             <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
                                 <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                                     <tbody>
-                                        <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                                        <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
-                                        <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
-                                        <tr><td style={{ padding: '4px' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
+                                        <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
+                                        <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
+                                        <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
+                                        <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
                                     </tbody>
                                 </table>
                             </td>
@@ -493,6 +493,7 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
 
 
