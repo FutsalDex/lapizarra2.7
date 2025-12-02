@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import app from "@/firebase/config";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { signOut, getAuth } from "firebase/auth";
@@ -49,16 +49,19 @@ export function Header() {
   const [user, loadingAuth] = useAuthState(auth);
   const isLoggedIn = !!user;
   
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const isAdmin = isLoggedIn && user.email === 'futsaldex@gmail.com'; 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // Fetch pending users (users without a subscription)
   const [usersSnapshot, loadingUsers] = useCollection(
     isAdmin ? query(collection(db, 'users'), where('subscription', '==', null)) : null
   );
   const pendingUsers = usersSnapshot?.docs.length || 0;
 
-  // Fetch pending invitations (completed but not approved)
   const [invitationsSnapshot, loadingInvitations] = useCollection(
     isAdmin ? query(collection(db, 'invitations'), where('status', '==', 'completed'), where('isApproved', '!=', true)) : null
   );
@@ -104,7 +107,7 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
-             {isAdmin && visibleAdminNavLinks.map((link) => (
+             {isClient && isAdmin && visibleAdminNavLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -139,7 +142,7 @@ export function Header() {
             <SheetContent side="right">
               <SheetTitle className="sr-only">Menú</SheetTitle>
               <nav className="grid gap-6 text-lg font-medium mt-8">
-                {[...visibleNavLinks, ...(isAdmin ? visibleAdminNavLinks : [])].map((link) => (
+                {isClient && [...visibleNavLinks, ...(isAdmin ? visibleAdminNavLinks : [])].map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
@@ -157,12 +160,12 @@ export function Header() {
                 ))}
               </nav>
                 <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-2">
-                  {isLoggedIn ? (
+                  {isClient && isLoggedIn ? (
                      <Button variant="outline" onClick={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         Cerrar Sesión
                     </Button>
-                  ) : (
+                  ) : isClient ? (
                     <>
                         <Button asChild>
                             <Link href="/login" onClick={handleLinkClick}>
@@ -176,13 +179,13 @@ export function Header() {
                             </Link>
                         </Button>
                     </>
-                  )}
+                  ) : null}
               </div>
             </SheetContent>
           </Sheet>
         </div>
         <div className="hidden md:flex flex-1 items-center justify-end space-x-2">
-            {isLoggedIn ? (
+            {isClient && isLoggedIn ? (
               <>
                 {isAdmin && (
                     <>
@@ -252,7 +255,7 @@ export function Header() {
                     </DropdownMenuContent>
                 </DropdownMenu>
               </>
-            ) : (
+            ) : isClient ? (
               <div className="flex items-center gap-2">
                 <Button variant="secondary" size="sm" asChild>
                     <Link href="/login">Iniciar Sesión</Link>
@@ -261,7 +264,7 @@ export function Header() {
                     <Link href="/registro">Registrarse</Link>
                 </Button>
               </div>
-            )}
+            ) : null}
         </div>
       </div>
     </header>
