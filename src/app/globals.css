@@ -79,21 +79,19 @@ body {
 
 
 @media print {
-  .no-print {
-    display: none !important;
+  body * {
+    visibility: hidden;
+  }
+  .printable-content, .printable-content * {
+    visibility: visible;
   }
   .printable-content {
-    display: block !important;
     position: absolute;
-    top: 0;
     left: 0;
+    top: 0;
     width: 100%;
   }
-  body {
-    visibility: hidden;
-    background: white !important;
-  }
-  .printable-content * {
-     visibility: visible;
+  .no-print {
+    display: none !important;
   }
 }

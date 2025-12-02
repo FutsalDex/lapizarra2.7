@@ -153,7 +153,7 @@ export default function SesionDetallePage() {
         </div>
       </div>
       
-      <div className="max-w-4xl mx-auto space-y-8 printable-content">
+      <div className="max-w-4xl mx-auto space-y-8 non-printable">
         <Card>
             <CardHeader>
                 <CardTitle>Detalles de la Sesión</CardTitle>
