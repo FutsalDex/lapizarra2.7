@@ -41,52 +41,59 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
     const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date.seconds * 1000), 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
     return (
-        <div ref={ref} className="bg-white text-gray-900 p-4">
-            <div className="space-y-6">
-                <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4 text-gray-900">
-                    <div className="flex w-full space-x-2">
-                        <div className="flex flex-col gap-1 basis-1/5">
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Microciclo</p>
-                                <p className="text-[10px]">{sessionData.microcycle || 'N/A'}</p>
-                            </div>
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Fecha</p>
-                                <p className="text-[10px]">{sessionDateFormatted}</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col gap-1 basis-1/5">
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Sesión</p>
-                                <p className="text-[10px]">{sessionData.sessionNumber || 'N/A'}</p>
-                            </div>
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Instalación</p>
-                                <p className="text-[10px] truncate">{sessionData.facility || 'N/A'}</p>
-                            </div>
-                        </div>
-                        <div className="border border-gray-800 text-left p-1 flex-grow">
-                            <p className="text-xs font-bold">Objetivos</p>
-                            <ul className="text-[9px] space-y-0.5 mt-1 leading-tight">
+        <div ref={ref} className="bg-white text-gray-900 p-4" style={{ width: '210mm' }}>
+             <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
+                <tbody>
+                    <tr>
+                        <td style={{ width: '30%', padding: '8px', verticalAlign: 'top' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
+                                            <div className="text-xs font-bold">Microciclo</div>
+                                            <div className="text-[10px]">{sessionData.microcycle || 'N/A'}</div>
+                                        </td>
+                                        <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
+                                            <div className="text-xs font-bold">Sesión</div>
+                                            <div className="text-[10px]">{sessionData.sessionNumber || 'N/A'}</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
+                                            <div className="text-xs font-bold">Fecha</div>
+                                            <div className="text-[10px]">{sessionDateFormatted}</div>
+                                        </td>
+                                        <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
+                                            <div className="text-xs font-bold">Instalación</div>
+                                            <div className="text-[10px] truncate">{sessionData.facility || 'N/A'}</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                        <td style={{ width: '70%', padding: '8px', border: '1px solid black', verticalAlign: 'top' }}>
+                            <div className="text-xs font-bold mb-1">Objetivos</div>
+                            <ul className="text-[9px] space-y-0 leading-tight list-disc list-inside">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                    <li key={index} className="list-disc list-inside">{obj}</li>
+                                    <li key={index}>{obj}</li>
                                 ))}
                             </ul>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div className="grid grid-cols-2 gap-4">
+                {allSessionExercises.map(ex => (
+                    <div key={ex.id} className="border border-gray-400 rounded-lg overflow-hidden break-inside-avoid">
+                        <div className="relative aspect-video w-full bg-muted">
+                            <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" unoptimized={true} />
+                        </div>
+                        <div className="p-1 text-center border-t">
+                            <p className="text-[9px] font-semibold truncate">{ex.Ejercicio}</p>
                         </div>
                     </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 pt-0">
-                    {allSessionExercises.map(ex => (
-                        <Card key={ex.id} className="overflow-hidden">
-                            <div className="relative aspect-video w-full bg-muted">
-                                <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" unoptimized={true} />
-                            </div>
-                            <CardFooter className="p-2 bg-card border-t">
-                                <p className="text-[10px] font-semibold truncate text-center w-full">{ex.Ejercicio}</p>
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </div>
+                ))}
             </div>
         </div>
     );
@@ -399,7 +406,7 @@ export default function SesionDetallePage() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-4xl font-bold">{session.name}</h1>
+            <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
             <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
           </div>
 
@@ -508,7 +515,7 @@ export default function SesionDetallePage() {
           </div>
         </div>
       </div>
-      <div style={{ position: 'absolute', left: '-9999px', top: '0', width: '210mm' }}>
+      <div style={{ position: 'absolute', left: '-9999px', top: '0' }}>
          <SessionBasicPreview ref={basicPrintRef} sessionData={session} exercises={allExercises} teamName={teamName} />
          <SessionProPreview ref={proPrintRef} sessionData={session} exercises={allExercises} />
       </div>
