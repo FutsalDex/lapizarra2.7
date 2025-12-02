@@ -5,7 +5,7 @@
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowLeft, Download, Users, Clock, Target, Loader2, ListChecks, Edit, Printer } from 'lucide-react';
+import { ArrowLeft, Edit, Printer, Users, Clock, Target, ListChecks } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDocumentData, useCollection } from 'react-firebase-hooks/firestore';
@@ -20,6 +20,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState, useRef, useMemo } from 'react';
 
 const db = getFirestore(app);
+
+// helpers para escapar (seguridad básica)
+function escapeHtml(str: string) {
+  if (!str) return '';
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+function escapeAttr(s: string) {
+  return escapeHtml(s).replaceAll('"', '&quot;');
+}
 
 const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
   if (!exercises || exercises.length === 0) return null;
@@ -105,7 +119,6 @@ export default function SesionDetallePage() {
   const params = useParams();
   const sessionId = params.id as string;
   const [viewMode, setViewMode] = useState<'pro' | 'basic'>('pro');
-  const printIframeRef = useRef<HTMLIFrameElement>(null);
   
   const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
@@ -113,70 +126,142 @@ export default function SesionDetallePage() {
   const teamId = sessionSnapshot?.teamId;
   const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const session = sessionSnapshot;
-    if (!session || !exercisesSnapshot || !printIframeRef.current) return;
-
-    const allExercises = exercisesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [];
-    const getExercisesByIds = (ids: string[]) => ids.map(id => allExercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
-
+    if (!session || !exercisesSnapshot) return;
+  
+    const allExercises = exercisesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Exercise));
+    const getExercisesByIds = (ids: string[] = []) => ids.map(id => allExercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+  
     const initial = getExercisesByIds(session.initialExercises || []);
     const main = getExercisesByIds(session.mainExercises || []);
     const final = getExercisesByIds(session.finalExercises || []);
-    const sessionDate = (session.date as Timestamp)?.toDate();
+    const sessionDate = (session.date as Timestamp)?.toDate?.();
     const teamName = teamSnapshot?.name || session.teamId || 'No especificado';
-    
-    const exercisesToHtml = (exs: Exercise[]) => exs.map(ex => `
-      <div style="page-break-inside: avoid; margin-bottom: 2rem; border: 1px solid #eee; padding: 1rem; border-radius: 0.5rem;">
-        <h4 style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.5rem;">${ex['Ejercicio']}</h4>
-        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
-          <img src="${ex['Imagen']}" alt="${ex['Ejercicio']}" style="max-width: 100%; height: auto; object-fit: contain;" />
-          <div>
-            <p><strong>Descripción:</strong> ${ex['Descripción de la tarea']}</p>
-            <p><strong>Objetivos:</strong> ${ex['Objetivos']}</p>
-            <p><strong>Duración:</strong> ${ex['Duración (min)']} min</p>
+  
+    const exercisesToHtml = (exs: Exercise[]) =>
+      exs.map(ex => `
+        <div style="page-break-inside: avoid; margin-bottom: 1.5rem; padding:0.75rem; border-radius:6px; border:1px solid #e6e6e6;">
+          <h4 style="margin:0 0 .4rem; font-size:1.05rem">${escapeHtml(ex['Ejercicio'] || '')}</h4>
+          <div style="display:flex; gap:1rem; align-items:flex-start;">
+            ${ex['Imagen'] ? `<img src="${escapeAttr(ex['Imagen'])}" alt="${escapeAttr(ex['Ejercicio'] || '')}" style="max-width:200px; width:30%; height:auto; object-fit:contain;"/>` : ''}
+            <div style="flex:1;">
+              <p style="margin:.2rem 0;"><strong>Descripción:</strong> ${escapeHtml(ex['Descripción de la tarea'] || '')}</p>
+              <p style="margin:.2rem 0;"><strong>Objetivos:</strong> ${escapeHtml(ex['Objetivos'] || '')}</p>
+              <p style="margin:.2rem 0;"><strong>Duración:</strong> ${escapeHtml(String(ex['Duración (min)'] || '-'))} min</p>
+            </div>
           </div>
         </div>
-      </div>
-    `).join('');
-
+      `).join('');
+  
     const printHtml = `
-      <html>
-        <head>
-          <title>Ficha de Sesión - ${session.name}</title>
-          <style>
-            body { font-family: sans-serif; }
-            h1, h2, h3, h4 { margin: 0; }
-          </style>
-        </head>
-        <body>
-          <h1>${session.name}</h1>
-          <p>${sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
-          <hr />
-          <p><strong>Equipo:</strong> ${teamName}</p>
-          <p><strong>Instalación:</strong> ${session.facility || '-'}</p>
-          <h3>Objetivos:</h3>
-          <ul>${(session.objectives || []).map((o: string) => `<li>${o}</li>`).join('')}</ul>
-          <hr />
-          <h2>Fase Inicial</h2>
-          ${exercisesToHtml(initial)}
-          <h2>Fase Principal</h2>
-          ${exercisesToHtml(main)}
-          <h2>Fase Final</h2>
-          ${exercisesToHtml(final)}
-        </body>
-      </html>
-    `;
-
-    const iframe = printIframeRef.current;
-    iframe.contentWindow?.document.open();
-    iframe.contentWindow?.document.write(printHtml);
-    iframe.contentWindow?.document.close();
-
-    iframe.onload = () => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Ficha - ${escapeHtml(session.name || '')}</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <style>
+          body { font-family: Arial, Helvetica, sans-serif; color:#111; padding:16px; }
+          h1 { font-size:20px; margin:0 0 8px; }
+          h2 { margin-top:16px; }
+          img { max-width:100%; height:auto; display:block; }
+          @media print {
+            body { -webkit-print-color-adjust: exact; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtml(session.name || '')}</h1>
+        <div style="margin:.5rem 0 .75rem; color:#555;">${sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</div>
+        <div style="margin-bottom: .75rem;">
+          <div><strong>Equipo:</strong> ${escapeHtml(teamName)}</div>
+          <div><strong>Instalación:</strong> ${escapeHtml(session.facility || '-')}</div>
+        </div>
+  
+        <h2>Objetivos</h2>
+        <div>${Array.isArray(session.objectives) ? `<ul>${session.objectives.map((o:string) => `<li>${escapeHtml(o)}</li>`).join('')}</ul>` : '<p>-</p>'}</div>
+  
+        <h2>Fase Inicial</h2>
+        ${exercisesToHtml(initial)}
+  
+        <h2>Fase Principal</h2>
+        ${exercisesToHtml(main)}
+  
+        <h2>Fase Final</h2>
+        ${exercisesToHtml(final)}
+      </body>
+    </html>`;
+  
+    // crea iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
+  
+    // helper para esperar imágenes del iframe
+    const waitForImages = (win: Window, timeout = 3000) => {
+      return new Promise<void>((resolve) => {
+        try {
+          const imgs = Array.from(win.document.images || []);
+          if (imgs.length === 0) return resolve();
+          let loaded = 0;
+          const done = () => { if (++loaded >= imgs.length) resolve(); };
+          const timer = setTimeout(() => resolve(), timeout);
+          imgs.forEach(img => {
+            if (img.complete) done();
+            else {
+              img.addEventListener('load', done, { once: true });
+              img.addEventListener('error', done, { once: true });
+            }
+          });
+        } catch (e) {
+          // si acceso cross-origin falla, solo espera corto
+          setTimeout(() => resolve(), 300);
+        }
+      });
     };
+  
+    // asigna onload antes de escribir (mejor compatibilidad)
+    iframe.onload = async () => {
+      try {
+        const win = iframe.contentWindow!;
+        await waitForImages(win, 4000); // espera a imágenes (o timeout)
+        win.focus();
+        // small delay para asegurar render
+        setTimeout(() => {
+          try {
+            win.print();
+          } catch (err) {
+            console.error('Print error:', err);
+          } finally {
+            // eliminar iframe después de un pequeño delay (permite al dialogo abrir)
+            setTimeout(() => {
+              try { document.body.removeChild(iframe); } catch (e) {}
+            }, 500);
+          }
+        }, 200);
+      } catch (err) {
+        console.error('Error en onload iframe:', err);
+        // cleanup
+        setTimeout(() => { try { document.body.removeChild(iframe); } catch (e) {} }, 500);
+      }
+    };
+  
+    // prefer srcdoc si está disponible
+    if ('srcdoc' in iframe) {
+      (iframe as HTMLIFrameElement).srcdoc = printHtml;
+    } else {
+      const doc = iframe.contentWindow?.document;
+      doc?.open();
+      doc?.write(printHtml);
+      doc?.close();
+    }
   };
 
   if (loadingSession || loadingExercises || loadingTeam) {
@@ -318,7 +403,6 @@ export default function SesionDetallePage() {
           <PrintableContent />
         </div>
       </div>
-      <iframe ref={printIframeRef} style={{ display: 'none' }} title="Print Content"></iframe>
     </>
   );
 }
