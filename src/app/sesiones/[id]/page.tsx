@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -506,8 +507,8 @@ export default function SesionDetallePage() {
         </div>
       </div>
       <div style={{ position: 'absolute', left: '-9999px', top: '0' }}>
-         <SessionBasicPreview sessionData={session} exercises={allExercises} teamName={teamName} printRef={basicPrintRef} />
-         <SessionProPreview sessionData={session} exercises={allExercises} printRef={proPrintRef} />
+         <SessionBasicPreview ref={basicPrintRef} sessionData={session} exercises={allExercises} teamName={teamName} />
+         <SessionProPreview ref={proPrintRef} sessionData={session} exercises={allExercises} />
       </div>
     </>
   );
