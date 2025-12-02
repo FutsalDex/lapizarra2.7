@@ -25,7 +25,7 @@ import html2canvas from 'html2canvas';
 
 const db = getFirestore(app);
 
-// New component for the A3 print preview
+// New component for the A4 print preview
 const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { session: any, exercises: Exercise[], teamName: string, sessionRef: React.RefObject<HTMLDivElement> }) => {
   if (!session) return null;
 
@@ -63,34 +63,35 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
     );
   };
 
-
   return (
-    <div ref={sessionRef} className="bg-white text-black p-6" style={{ width: '842px' /* A3 width at 72dpi, approx */ }}>
+    <div ref={sessionRef} className="bg-white text-black p-6" style={{ width: '210mm' }}>
       {/* Header */}
-      <div className="flex justify-between items-center border-b-2 border-black pb-2 mb-4">
-        <div>
-          <h1 className="text-2xl font-bold">{session.name}</h1>
-          <p className="text-sm">{teamName}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm">{sessionDate ? format(sessionDate, "d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
-          <p className="text-sm">Sesión #{session.sessionNumber}</p>
-        </div>
-      </div>
+       <div className="border-b-2 border-black pb-2 mb-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold">{session.name}</h1>
+              <p className="text-sm text-gray-600">{teamName}</p>
+            </div>
+            <div className="text-right text-sm">
+              <p>{sessionDate ? format(sessionDate, "d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
+              <p>Sesión #{session.sessionNumber}</p>
+              <p>Microciclo: {session.microcycle || '-'}</p>
+              <p>Instalación: {session.facility || '-'}</p>
+            </div>
+          </div>
+          <div className="mt-4">
+             <h2 className="font-bold text-lg">Objetivos</h2>
+             <ul className="list-disc pl-5 text-sm space-y-1 text-gray-700">
+                {(session.objectives || []).map((obj: string, i: number) => <li key={i}>{obj}</li>)}
+             </ul>
+          </div>
+       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-4 border-r pr-4">
-          <h2 className="font-bold text-lg mb-2">Objetivos</h2>
-          <ul className="list-disc pl-5 text-sm space-y-1">
-            {(session.objectives || []).map((obj: string, i: number) => <li key={i}>{obj}</li>)}
-          </ul>
-        </div>
-        <div className="col-span-8">
-            <PhasePrintSection title="FASE INICIAL" exercises={initialExercises} />
-            <PhasePrintSection title="FASE PRINCIPAL" exercises={mainExercises} />
-            <PhasePrintSection title="FASE FINAL" exercises={finalExercises} />
-        </div>
+      <div>
+        <PhasePrintSection title="FASE INICIAL" exercises={initialExercises} />
+        <PhasePrintSection title="FASE PRINCIPAL" exercises={mainExercises} />
+        <PhasePrintSection title="FASE FINAL" exercises={finalExercises} />
       </div>
     </div>
   );
@@ -195,46 +196,34 @@ export default function SesionDetallePage() {
 
   const handleDownloadPdf = async () => {
     if (!sessionRef.current) return;
-
     setIsDownloading(true);
-
     try {
       const canvas = await html2canvas(sessionRef.current, {
-        scale: 2, // Aumenta la resolución
+        scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff', // Fondo blanco para el PDF
+        windowWidth: sessionRef.current.scrollWidth,
+        windowHeight: sessionRef.current.scrollHeight,
       });
-      
+
       const imgData = canvas.toDataURL('image/png');
-      
-      // DIN A3: 297mm x 420mm. En puntos (pt) es 841.89 x 1190.55
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'pt',
-        format: 'a3',
-      });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const canvasAspectRatio = canvasWidth / canvasHeight;
-      const pdfAspectRatio = pdfWidth / pdfHeight;
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
 
-      let finalCanvasWidth, finalCanvasHeight;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
 
-      // Ajustar el canvas al tamaño del PDF manteniendo la proporción
-      if (canvasAspectRatio > pdfAspectRatio) {
-        finalCanvasWidth = pdfWidth;
-        finalCanvasHeight = pdfWidth / canvasAspectRatio;
-      } else {
-        finalCanvasHeight = pdfHeight;
-        finalCanvasWidth = pdfHeight * canvasAspectRatio;
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
       }
       
-      pdf.addImage(imgData, 'PNG', 0, 0, finalCanvasWidth, finalCanvasHeight);
       pdf.save(`sesion-${sessionId}.pdf`);
-
       toast({
         title: 'Descarga Completa',
         description: 'Tu PDF ha sido descargado con éxito.',
@@ -244,7 +233,7 @@ export default function SesionDetallePage() {
       toast({
         variant: 'destructive',
         title: 'Fallo en la Descarga',
-        description: 'Hubo un problema al generar el PDF. Por favor, inténtalo de nuevo.',
+        description: 'Hubo un problema al generar el PDF.',
       });
     } finally {
       setIsDownloading(false);
@@ -378,7 +367,7 @@ export default function SesionDetallePage() {
                     <DialogHeader>
                         <DialogTitle>Vista Previa de la Ficha de Sesión</DialogTitle>
                         <DialogDescription>
-                            Revisa la sesión antes de guardarla como PDF. El diseño está optimizado para un formato A3.
+                            Revisa la sesión antes de guardarla como PDF. El diseño está optimizado para un formato A4.
                         </DialogDescription>
                     </DialogHeader>
                     <ScrollArea className="h-[70vh] p-4 border rounded-md bg-gray-100">
