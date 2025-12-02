@@ -47,9 +47,9 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                         <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
                              <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                                 <tbody>
-                                    <tr><td style={{ padding: '4px' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                                    <tr><td style={{ padding: '4px' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
-                                    <tr><td style={{ padding: '4px' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
+                                    <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
+                                    <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
+                                    <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
                                     <tr><td style={{ padding: '4px' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
                                 </tbody>
                             </table>
@@ -97,7 +97,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
                 </div>
                 {exercises.map(ex => (
                     <Card key={ex.id} className="overflow-hidden">
-                        <CardHeader className="bg-gray-200 dark:bg-gray-700 p-2">
+                        <CardHeader className="bg-gray-200 dark:bg-gray-700 p-1">
                              <CardTitle className="text-sm text-center font-bold break-words">{ex['Ejercicio']}</CardTitle>
                         </CardHeader>
                         <CardContent className="p-2 grid grid-cols-2 gap-2">
@@ -140,15 +140,15 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
     return (
          <div ref={ref} className="bg-white text-gray-900 p-8" style={{ width: '210mm', fontSize: '10px' }}>
             <div className="space-y-6">
-                <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
+                 <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
                     <tbody>
                         <tr>
-                           <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
+                            <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
                                 <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                                     <tbody>
-                                        <tr><td style={{ padding: '4px' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                                        <tr><td style={{ padding: '4px' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
-                                        <tr><td style={{ padding: '4px' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
+                                        <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
+                                        <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
+                                        <tr><td style={{ padding: '4px', borderBottom: '2px solid black' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
                                         <tr><td style={{ padding: '4px' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
                                     </tbody>
                                 </table>
@@ -493,6 +493,7 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
 
 
