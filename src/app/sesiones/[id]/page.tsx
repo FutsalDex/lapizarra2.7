@@ -68,11 +68,11 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
               <div className="w-2/3 text-sm space-y-2">
                  <div>
                   <p className="font-semibold">Descripción:</p>
-                  <p className="text-gray-600" style={{ lineHeight: 1.5, wordSpacing: '0.5px' }}>{ex['Descripción de la tarea']}</p>
+                  <p className="text-gray-600" style={{ lineHeight: 1.6, letterSpacing: '0.5px', wordSpacing: '1px' }}>{ex['Descripción de la tarea']}</p>
                 </div>
                  <div>
                   <p className="font-semibold">Detalles:</p>
-                  <p className="text-gray-600">Duración: {ex['Duración (min)']} min | Jugadores: {ex['Número de jugadores']}</p>
+                  <p className="text-gray-600" style={{ lineHeight: 1.6, letterSpacing: '0.5px', wordSpacing: '1px' }}>Duración: {ex['Duración (min)']} min | Jugadores: {ex['Número de jugadores']}</p>
                 </div>
               </div>
             </div>
@@ -91,8 +91,9 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
                 <div className="border-b-2 border-black pb-4 mb-6">
                     <div className="flex justify-between items-start mb-4">
                         <div>
-                            <h1 className="text-3xl font-bold">{session.name}</h1>
-                            <p className="text-lg text-gray-700">{teamName}</p>
+                            <h1 className="text-3xl font-bold" style={{ letterSpacing: '0.5px' }}>{session.name}</h1>
+                            <p className="text-lg text-gray-700" style={{ letterSpacing: '0.5px' }}>{teamName}</p>
+                            <p className="text-md text-gray-600" style={{ letterSpacing: '0.5px' }}>{session.facility || ''}</p>
                         </div>
                         <div className="text-right text-base">
                             <p>{sessionDate ? format(sessionDate, "d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
@@ -101,7 +102,7 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
                     </div>
                     <div>
                         <h2 className="font-bold text-xl mb-2">Objetivos</h2>
-                        <ul className="list-disc pl-5 text-base space-y-1 text-gray-800" style={{ lineHeight: 1.6 }}>
+                        <ul className="list-disc pl-5 text-base space-y-1 text-gray-800" style={{ lineHeight: 1.6, letterSpacing: '0.5px', wordSpacing: '1px' }}>
                             {(session.objectives || []).map((obj: string, i: number) => <li key={i}>{obj}</li>)}
                         </ul>
                     </div>
