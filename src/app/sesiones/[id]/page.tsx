@@ -25,256 +25,178 @@ import html2canvas from 'html2canvas';
 
 const db = getFirestore(app);
 
-// Componente oculto para la impresión de la página completa
-const SessionPageForPrint = ({ session, exercises, teamName, printRef }: { session: any; exercises: Exercise[]; teamName: string; printRef: React.RefObject<HTMLDivElement> }) => {
-    if (!session) return null;
-    const sessionDate = (session.date as Timestamp)?.toDate();
-
-    const getExercisesByIds = (ids: string[] = []) => ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
-
-    const initialExercises = getExercisesByIds(session.initialExercises);
-    const mainExercises = getExercisesByIds(session.mainExercises);
-    const finalExercises = getExercisesByIds(session.finalExercises);
+const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any, exercises: Exercise[], teamName: string }>(({ sessionData, exercises, teamName }, ref) => {
+    const getExercisesByIds = (ids: string[]) => {
+        if (!ids || ids.length === 0) return [];
+        return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+    };
     
-    const SessionProViewForPrint = ({ exercises }: { exercises: Exercise[] }) => {
-        if (!exercises || exercises.length === 0) return null;
-        
-        return (
-            <div className="space-y-6">
-            {exercises.map((exercise) => (
-                <Card key={exercise.id} className="overflow-hidden">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-                    <div className="md:col-span-1 space-y-4">
-                    <div className="relative aspect-video bg-muted rounded-md">
-                        <Image
-                        src={exercise['Imagen']}
-                        alt={`Táctica para ${exercise['Ejercicio']}`}
-                        fill
-                        className="object-contain p-2"
-                        />
-                    </div>
-                    <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-muted-foreground" />
-                            <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-muted-foreground" />
-                            <span><span className="font-semibold">Jugadores:</span> {exercise['Número de jugadores']}</span>
-                        </div>
-                    </div>
-                    </div>
+    const allSessionExercises = [
+        ...getExercisesByIds(sessionData.initialExercises),
+        ...getExercisesByIds(sessionData.mainExercises),
+        ...getExercisesByIds(sessionData.finalExercises)
+    ];
 
-                    <div className="md:col-span-2 space-y-4">
-                        <div>
-                        <h3 className="text-xl font-bold font-headline">{exercise['Ejercicio']}</h3>
-                        <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
+    const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date.seconds * 1000), 'dd/MM/yyyy', { locale: es }) : 'N/A';
+
+    return (
+        <div ref={ref} className="bg-white text-gray-900 p-4">
+            <div className="space-y-6">
+                <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4 text-gray-900">
+                    <div className="flex w-full space-x-2">
+                        <div className="flex flex-col gap-1 basis-1/5">
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Microciclo</p>
+                                <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
+                            </div>
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Fecha</p>
+                                <p className="text-sm">{sessionDateFormatted}</p>
+                            </div>
                         </div>
-                        <div className="pt-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Target className="w-4 h-4 text-primary" />
-                            <h4 className="font-semibold">Objetivos del Ejercicio</h4>
+                        <div className="flex flex-col gap-1 basis-1/5">
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Sesión</p>
+                                <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
+                            </div>
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Instalación</p>
+                                <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
+                            </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">{exercise['Objetivos']}</p>
+                        <div className="border border-gray-800 text-left p-1 flex-grow">
+                            <p className="text-xs font-bold">Objetivos</p>
+                            <ul className="text-sm space-y-1 mt-1">
+                                {(sessionData.objectives || []).map((obj: string, index: number) => (
+                                    <li key={index} className="list-disc list-inside">{obj}</li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
                 </div>
-                </Card>
-            ))}
-            </div>
-        );
-    };
-    
-    return (
-        <div ref={printRef} className="bg-white text-black p-8" style={{ width: '210mm' }}>
-             <div className="space-y-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Detalles y Objetivos de la Sesión</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-10 gap-6">
-                            <div className="col-span-3 space-y-2 text-sm">
-                                <div className="flex gap-2">
-                                    <span className="font-semibold">Equipo:</span>
-                                    <span className="text-gray-600">{teamName}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <span className="font-semibold">Instalación:</span>
-                                    <span className="text-gray-600">{session.facility}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <span className="font-semibold">Microciclo:</span>
-                                    <span className="text-gray-600">{session.microcycle || '-'}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <span className="font-semibold">Nº Sesión:</span>
-                                    <span className="text-gray-600">{session.sessionNumber || '-'}</span>
-                                </div>
+                <div className="grid grid-cols-2 gap-4 pt-0">
+                    {allSessionExercises.map(ex => (
+                        <Card key={ex.id} className="overflow-hidden">
+                            <div className="relative aspect-video w-full bg-muted">
+                                <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" />
                             </div>
-                            <div className="col-span-7">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <ListChecks className="w-5 h-5 text-primary" />
-                                    <h4 className="font-semibold">Objetivos</h4>
-                                </div>
-                                <ul className="space-y-2 list-disc pl-5 text-sm">
-                                    {(session.objectives || []).map((obj: string, i: number) => (
-                                        <li key={i} className="text-gray-600">{obj}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {initialExercises.length > 0 && (
-                    <div>
-                        <h2 className="text-2xl font-bold font-headline text-primary mb-4">Fase Inicial (Calentamiento)</h2>
-                        <SessionProViewForPrint exercises={initialExercises} />
-                    </div>
-                )}
-                {mainExercises.length > 0 && (
-                    <div>
-                        <h2 className="text-2xl font-bold font-headline text-primary mb-4">Fase Principal</h2>
-                        <SessionProViewForPrint exercises={mainExercises} />
-                    </div>
-                )}
-                {finalExercises.length > 0 && (
-                    <div>
-                        <h2 className="text-2xl font-bold font-headline text-primary mb-4">Fase Final (Vuelta a la Calma)</h2>
-                        <SessionProViewForPrint exercises={finalExercises} />
-                    </div>
-                )}
+                            <CardFooter className="p-2 bg-card border-t">
+                                <p className="text-xs font-semibold truncate text-center w-full">{ex.Ejercicio}</p>
+                            </CardFooter>
+                        </Card>
+                    ))}
+                </div>
             </div>
         </div>
     );
-};
+});
+SessionBasicPreview.displayName = "SessionBasicPreview";
 
-
-const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { session: any, exercises: Exercise[], teamName: string, sessionRef: React.RefObject<HTMLDivElement> }) => {
-  if (!session) return null;
-
-  const getExercisesByIds = (ids: string[] = []) => ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
-
-  const initialExercises = getExercisesByIds(session.initialExercises);
-  const mainExercises = getExercisesByIds(session.mainExercises);
-  const finalExercises = getExercisesByIds(session.finalExercises);
-  
-  const sessionDate = (session.date as Timestamp)?.toDate();
-  
-  const pages = useMemo(() => {
-    const allPhases = [
-      { title: 'Fase Inicial', exercises: initialExercises },
-      { title: 'Fase Principal', exercises: mainExercises },
-      { title: 'Fase Final', exercises: finalExercises },
-    ];
-
-    const pagesContent: { title?: string; exercises: Exercise[] }[][] = [];
-    let currentPageContent: { title?: string; exercises: Exercise[] }[] = [];
-    let exerciseCountOnPage = 0;
+const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, exercises: Exercise[] }>(({ sessionData, exercises }, ref) => {
+    const getExercisesByIds = (ids: string[]) => {
+        if (!ids || ids.length === 0) return [];
+        return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+    };
     
-    const exercisesPerPage = (isFirstPage: boolean) => isFirstPage ? 2 : 3;
+    const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date.seconds * 1000), 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
-    allPhases.forEach(phase => {
-        if (phase.exercises.length === 0) return;
+    const PhaseSectionPro = ({ title, exercises }: { title: string; exercises: Exercise[] }) => {
+        if (exercises.length === 0) return null;
+        return (
+            <div className="space-y-4">
+                <div className="bg-gray-800 text-white text-center py-1">
+                    <h3 className="font-bold tracking-widest">{title}</h3>
+                </div>
+                {exercises.map(ex => (
+                    <Card key={ex.id} className="overflow-hidden">
+                        <CardHeader className="bg-gray-200 dark:bg-gray-700 p-2">
+                             <CardTitle className="text-sm text-center font-bold">{ex['Ejercicio']}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-2 grid grid-cols-2 gap-2">
+                            <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
+                                <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
+                            </div>
+                            <div className="text-xs space-y-2">
+                                <div>
+                                    <p className="font-bold">Descripción</p>
+                                    <p className="text-gray-600 dark:text-gray-400 text-justify">{ex['Descripción de la tarea']}</p>
+                                </div>
+                                <div>
+                                    <p className="font-bold">Objetivos</p>
+                                    <p className="text-gray-600 dark:text-gray-400 text-justify">{ex['Objetivos']}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                         <CardFooter className="p-2 text-xs text-center text-gray-900">
+                            <div className="flex gap-2 w-full items-stretch">
+                                <div className="border p-1 rounded-sm flex flex-col justify-center w-[15%]">
+                                    <p className="font-bold">Tiempo</p>
+                                    <p>{ex['Duración (min)']}</p>
+                                </div>
+                                <div className="border p-1 rounded-sm flex flex-col justify-center w-[15%]">
+                                    <p className="font-bold">Jugadores</p>
+                                    <p>{ex['Número de jugadores']}</p>
+                                </div>
+                                <div className="border p-1 rounded-sm flex flex-col justify-center w-[70%]">
+                                    <p className="font-bold">Material</p>
+                                    <p className="break-words">{ex['Espacio y materiales necesarios']}</p>
+                                </div>
+                            </div>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+        );
+    };
 
-        let phaseTitleAdded = false;
-        let exercisesInPhase = [...phase.exercises];
-        
-        while(exercisesInPhase.length > 0) {
-            const limit = exercisesPerPage(pagesContent.length === 0);
-            
-            if (!phaseTitleAdded) {
-                currentPageContent.push({ title: phase.title, exercises: [] });
-                phaseTitleAdded = true;
-            }
-
-            const spaceOnPage = limit - exerciseCountOnPage;
-            const exercisesToAdd = exercisesInPhase.splice(0, spaceOnPage);
-            currentPageContent.push({ exercises: exercisesToAdd });
-            exerciseCountOnPage += exercisesToAdd.length;
-
-            if (exerciseCountOnPage >= limit && exercisesInPhase.length > 0) {
-                pagesContent.push(currentPageContent);
-                currentPageContent = [];
-                exerciseCountOnPage = 0;
-                phaseTitleAdded = false;
-            }
-        }
-    });
-
-    if (currentPageContent.length > 0) {
-        pagesContent.push(currentPageContent);
-    }
-    
-    return pagesContent;
-
-  }, [initialExercises, mainExercises, finalExercises]);
-
-
-  return (
-    <div ref={sessionRef} className="bg-white text-black">
-      {pages.map((pageItems, pageIndex) => (
-        <div key={pageIndex} className="p-8" style={{ width: '210mm', minHeight: '297mm', pageBreakAfter: 'always', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-          <div className="flex-grow">
-            {pageIndex === 0 && (
-                 <div className="border-b-2 border-black pb-4 mb-6">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <h1 className="text-3xl font-bold" style={{ letterSpacing: '0.5px' }}>{session.name}</h1>
-                            <p className="text-lg text-gray-700" style={{ letterSpacing: '0.5px' }}>{teamName}</p>
-                            <p className="text-lg text-gray-700" style={{ letterSpacing: '0.5px' }}>{session.facility || 'Instalación no especificada'}</p>
+    return (
+        <div ref={ref} className="bg-white text-gray-900 p-8">
+            <div className="space-y-6">
+                <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
+                    <div className="flex w-full space-x-2">
+                        <div className="flex flex-col justify-between gap-1 basis-1/5">
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Microciclo</p>
+                                <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
+                            </div>
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Fecha</p>
+                                <p className="text-sm">{sessionDateFormatted}</p>
+                            </div>
                         </div>
-                        <div className="text-right text-base">
-                            <p>{sessionDate ? format(sessionDate, "d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
-                            <p><span className="font-semibold">Sesión:</span> #{session.sessionNumber}</p>
+                        <div className="flex flex-col justify-between gap-1 basis-1/5">
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Sesión</p>
+                                <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
+                            </div>
+                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
+                                <p className="text-xs font-bold">Instalación</p>
+                                <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <h2 className="font-bold text-xl mb-2">Objetivos</h2>
-                        <ul className="list-disc pl-5 text-base space-y-1 text-gray-800" style={{ lineHeight: 1.6, letterSpacing: '0.5px', wordSpacing: '1px' }}>
-                            {(session.objectives || []).map((obj: string, i: number) => <li key={i}>{obj}</li>)}
-                        </ul>
+                        <div className="border border-gray-800 text-left p-1 flex-grow">
+                            <p className="text-xs font-bold">Objetivos</p>
+                            <ul className="text-sm space-y-1 mt-1">
+                                {(sessionData.objectives || []).map((obj: string, index: number) => (
+                                    <li key={index} className='list-disc list-inside'>{obj}</li>
+                                ))}
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            )}
-            
-            {pageItems.map((item, itemIndex) => (
-              <div key={itemIndex} className="space-y-4">
-                {item.title && <h3 className="font-bold text-2xl mt-6 border-b-2 border-gray-400 pb-1">{item.title}</h3>}
-                {item.exercises.map(ex => (
-                    <div key={ex.id} className="p-3 border border-gray-300 rounded-lg" style={{ breakInside: 'avoid', marginBottom: '1.5rem' }}>
-                        <h4 className="font-bold text-lg mb-2" style={{ letterSpacing: '0.5px' }}>{ex['Ejercicio']}</h4>
-                        <div className="flex gap-4">
-                        <div className="w-1/3">
-                            <div className="relative aspect-video bg-gray-100 rounded-md">
-                            <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
-                            </div>
-                        </div>
-                        <div className="w-2/3 text-sm space-y-2">
-                            <div>
-                                <p className="font-semibold" style={{ letterSpacing: '0.5px' }}>Descripción:</p>
-                                <p className="text-gray-600" style={{ lineHeight: 1.6, letterSpacing: '0.5px', wordSpacing: '1px' }}>{ex['Descripción de la tarea']}</p>
-                            </div>
-                            <div>
-                                <p className="font-semibold" style={{ letterSpacing: '0.5px' }}>Detalles:</p>
-                                <p className="text-gray-600" style={{ lineHeight: 1.6, letterSpacing: '0.5px', wordSpacing: '1px' }}>Duración: {ex['Duración (min)']} min | Jugadores: {ex['Número de jugadores']}</p>
-                            </div>
-                        </div>
-                        </div>
-                    </div>
-                ))}
-              </div>
-            ))}
-           </div>
-          <div style={{ position: 'absolute', bottom: '1rem', right: '2rem', fontSize: '0.8rem', color: '#666' }}>
-            página {pageIndex + 1} de {pages.length}
-          </div>
+
+                <div className="space-y-6 pt-0">
+                    <PhaseSectionPro title="FASE INICIAL" exercises={getExercisesByIds(sessionData.initialExercises)} />
+                    <PhaseSectionPro title="FASE PRINCIPAL" exercises={getExercisesByIds(sessionData.mainExercises)} />
+                    <PhaseSectionPro title="FASE FINAL" exercises={getExercisesByIds(sessionData.finalExercises)} />
+                </div>
+
+                <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
+            </div>
         </div>
-      ))}
-    </div>
-  );
-};
+    );
+});
+SessionProPreview.displayName = "SessionProPreview";
 
 
 const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
@@ -362,10 +284,9 @@ export default function SesionDetallePage() {
   const sessionId = params.id as string;
   const [viewMode, setViewMode] = useState<'pro' | 'basic'>('pro');
   const { toast } = useToast();
-  const fichaPrintRef = useRef<HTMLDivElement>(null);
-  const pagePrintRef = useRef<HTMLDivElement>(null);
+  const basicPrintRef = useRef<HTMLDivElement>(null);
+  const proPrintRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isPageDownloading, setIsPageDownloading] = useState(false);
   
   const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
@@ -375,11 +296,13 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
 
-  const handleDownloadPdf = async () => {
-    if (!fichaPrintRef.current) return;
+  const handleDownloadPdf = async (type: 'basic' | 'pro') => {
+    const elementToPrint = type === 'basic' ? basicPrintRef.current : proPrintRef.current;
+    if (!elementToPrint) return;
+
     setIsDownloading(true);
     try {
-      const canvas = await html2canvas(fichaPrintRef.current, {
+      const canvas = await html2canvas(elementToPrint, {
         scale: 2,
         useCORS: true,
       });
@@ -404,10 +327,10 @@ export default function SesionDetallePage() {
         heightLeft -= pdfHeight;
       }
       
-      pdf.save(`sesion-${sessionId}.pdf`);
+      pdf.save(`sesion-${type}-${sessionId}.pdf`);
       toast({
         title: 'Descarga Completa',
-        description: 'Tu PDF ha sido descargado con éxito.',
+        description: `Tu PDF (${type}) ha sido descargado.`,
       });
     } catch (error) {
       console.error('Error al generar el PDF:', error);
@@ -421,57 +344,6 @@ export default function SesionDetallePage() {
     }
   };
 
-  const handleDownloadPageAsPdf = async () => {
-    const elementToCapture = pagePrintRef.current;
-    if (!elementToCapture) return;
-
-    setIsPageDownloading(true);
-    try {
-        const canvas = await html2canvas(elementToCapture, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: window.getComputedStyle(document.body).getPropertyValue('background-color'),
-        });
-        
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        
-        const canvasAspectRatio = canvas.width / canvas.height;
-        let imgWidth = pdfWidth;
-        let imgHeight = pdfWidth / canvasAspectRatio;
-
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        pdf.addImage(canvas, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
-
-        while (heightLeft > 0) {
-            position -= pdfHeight;
-            pdf.addPage();
-            pdf.addImage(canvas, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pdfHeight;
-        }
-        
-        pdf.save(`pagina-sesion-${sessionId}.pdf`);
-
-        toast({
-            title: "Descarga de página completa",
-            description: "La captura de la página se ha descargado como PDF."
-        });
-
-    } catch (error) {
-        console.error("Error al generar PDF de la página:", error);
-        toast({
-            variant: "destructive",
-            title: "Fallo en la descarga",
-            description: "Hubo un problema al generar el PDF de la página."
-        });
-    } finally {
-        setIsPageDownloading(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -544,38 +416,27 @@ export default function SesionDetallePage() {
                     <DialogHeader>
                         <DialogTitle>Vista Previa de la Ficha de Sesión</DialogTitle>
                         <DialogDescription>
-                            Revisa la sesión antes de guardarla como PDF. El diseño está optimizado para un formato A4.
+                            Elige el formato de ficha que deseas descargar. El diseño está optimizado para A4.
                         </DialogDescription>
                     </DialogHeader>
-                    <ScrollArea className="h-[70vh] p-4 border rounded-md bg-gray-100">
-                        <div className="flex justify-center">
-                           <div style={{ display: 'none' }}>
-                                <SessionPrintPreview session={session} exercises={allExercises} teamName={teamName} sessionRef={fichaPrintRef} />
-                            </div>
-                             <p>Vista previa no disponible en este modo.</p>
+                    <div className="grid grid-cols-2 gap-4 pt-4">
+                        <div className="flex flex-col gap-2 items-center">
+                            <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
+                            <Button className="w-full" onClick={() => handleDownloadPdf('basic')} disabled={isDownloading}>
+                                {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
+                                Descargar Básica
+                            </Button>
                         </div>
-                    </ScrollArea>
-                    <DialogFooter>
-                         <Button onClick={handleDownloadPdf} disabled={isDownloading}>
-                            {isDownloading ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Descargando...
-                              </>
-                            ) : (
-                              <>
-                                <Download className="mr-2" />
-                                Descargar PDF
-                              </>
-                            )}
-                        </Button>
-                    </DialogFooter>
+                        <div className="flex flex-col gap-2 items-center">
+                            <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
+                            <Button className="w-full" onClick={() => handleDownloadPdf('pro')} disabled={isDownloading}>
+                                {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
+                                Descargar Pro
+                            </Button>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
-            <Button onClick={handleDownloadPageAsPdf} disabled={isPageDownloading}>
-                {isPageDownloading ? <Loader2 className="mr-2 animate-spin" /> : <Download className="mr-2" />}
-                Prueba PDF
-            </Button>
 
             <Button asChild>
               <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
@@ -600,20 +461,20 @@ export default function SesionDetallePage() {
                 <CardContent>
                     <div className="grid grid-cols-10 gap-6">
                         <div className="col-span-10 md:col-span-3 space-y-2 text-sm">
-                            <div className="flex gap-2">
-                                <span className="font-semibold">Equipo:</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold w-24">Equipo:</span>
                                 <span className="text-muted-foreground">{teamName}</span>
                             </div>
-                             <div className="flex gap-2">
-                                <span className="font-semibold">Instalación:</span>
+                             <div className="flex items-center gap-2">
+                                <span className="font-semibold w-24">Instalación:</span>
                                 <span className="text-muted-foreground">{session.facility}</span>
                             </div>
-                             <div className="flex gap-2">
-                                <span className="font-semibold">Microciclo:</span>
+                             <div className="flex items-center gap-2">
+                                <span className="font-semibold w-24">Microciclo:</span>
                                 <span className="text-muted-foreground">{session.microcycle || '-'}</span>
                             </div>
-                            <div className="flex gap-2">
-                                <span className="font-semibold">Nº Sesión:</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold w-24">Nº Sesión:</span>
                                 <span className="text-muted-foreground">{session.sessionNumber || '-'}</span>
                             </div>
                         </div>
@@ -645,7 +506,8 @@ export default function SesionDetallePage() {
         </div>
       </div>
       <div style={{ position: 'absolute', left: '-9999px', top: '0' }}>
-         <SessionPageForPrint session={session} exercises={allExercises} teamName={teamName} printRef={pagePrintRef} />
+         <SessionBasicPreview sessionData={session} exercises={allExercises} teamName={teamName} printRef={basicPrintRef} />
+         <SessionProPreview sessionData={session} exercises={allExercises} printRef={proPrintRef} />
       </div>
     </>
   );
