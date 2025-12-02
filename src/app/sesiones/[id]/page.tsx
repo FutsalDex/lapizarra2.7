@@ -67,7 +67,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                         </div>
                         <div className="border border-gray-800 text-left p-1 flex-grow">
                             <p className="text-xs font-bold">Objetivos</p>
-                            <ul className="text-[10px] space-y-0.5 mt-1 leading-tight">
+                            <ul className="text-[9px] space-y-0.5 mt-1 leading-tight">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
                                     <li key={index} className="list-disc list-inside">{obj}</li>
                                 ))}
@@ -120,11 +120,11 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
                             <div className="text-xs space-y-2">
                                 <div>
                                     <p className="font-bold">Descripción</p>
-                                    <p className="text-gray-600 dark:text-gray-400 text-justify">{ex['Descripción de la tarea']}</p>
+                                    <p className="text-gray-600 dark:text-gray-400 text-justify text-sm">{ex['Descripción de la tarea']}</p>
                                 </div>
                                 <div>
                                     <p className="font-bold">Objetivos</p>
-                                    <p className="text-gray-600 dark:text-gray-400 text-justify">{ex['Objetivos']}</p>
+                                    <p className="text-gray-600 dark:text-gray-400 text-justify text-sm">{ex['Objetivos']}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -209,7 +209,7 @@ const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
         <Card key={exercise.id} className="overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
             <div className="md:col-span-1 space-y-4">
-              <div className="relative min-h-[200px] bg-muted rounded-md">
+              <div className="relative min-h-[200px] bg-muted rounded-md aspect-video">
                 <Image
                   src={exercise['Imagen']}
                   alt={`Táctica para ${exercise['Ejercicio']}`}
@@ -393,7 +393,7 @@ export default function SesionDetallePage() {
   const finalExercises = getExercisesByIds(session.finalExercises || []);
   
   const sessionDate = (session.date as Timestamp)?.toDate();
-  const teamName = teamSnapshot?.name || session.teamId || 'No especificado';
+  const teamName = teamSnapshot?.name || 'No especificado';
 
   return (
     <>
