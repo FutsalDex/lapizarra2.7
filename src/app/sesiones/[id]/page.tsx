@@ -174,7 +174,7 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
                         <div>
                             <h1 className="text-3xl font-bold" style={{ letterSpacing: '0.5px' }}>{session.name}</h1>
                             <p className="text-lg text-gray-700" style={{ letterSpacing: '0.5px' }}>{teamName}</p>
-                            <p className="text-md text-gray-600" style={{ letterSpacing: '0.5px' }}>{session.facility || 'Instalación no especificada'}</p>
+                            <p className="text-lg text-gray-700" style={{ letterSpacing: '0.5px' }}>{session.facility || 'Instalación no especificada'}</p>
                         </div>
                         <div className="text-right text-base">
                             <p>{sessionDate ? format(sessionDate, "d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
@@ -260,7 +260,7 @@ const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
             <div className="md:col-span-2 space-y-4">
                 <div>
                   <h3 className="text-xl font-bold font-headline">{exercise['Ejercicio']}</h3>
-                  <p className="text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
+                  <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
                 </div>
                 <div className="pt-4">
                   <div className="flex items-center gap-2 mb-2">
