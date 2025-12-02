@@ -333,8 +333,7 @@ export default function SesionDetallePage() {
       
       pdf.save(`sesion-${type}-${sessionId}.pdf`);
       toast({
-        title: 'Descarga Completa',
-        description: `Tu PDF (${type}) ha sido descargado.`,
+        title: "El archivo PDF se ha descargado",
       });
     } catch (error) {
       console.error('Error al generar el PDF:', error);
