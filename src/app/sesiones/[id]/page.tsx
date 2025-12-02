@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -51,7 +52,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                                     <tr>
                                         <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
                                             <div className="text-[10px] font-bold">Microciclo</div>
-                                            <div className="text-[10px]">{sessionData.microcycle || 'N/A'}</div>
+                                            <div className="text-[10px] truncate">{sessionData.microcycle || 'N/A'}</div>
                                         </td>
                                         <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
                                             <div className="text-[10px] font-bold">Sesión</div>
@@ -73,7 +74,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                         </td>
                         <td style={{ width: '70%', padding: '8px', border: '1px solid black', verticalAlign: 'top' }}>
                             <div className="text-[10px] font-bold mb-1">Objetivos</div>
-                            <ul className="text-[9px] space-y-0 leading-tight list-disc list-inside">
+                            <ul className="text-[9px] space-y-0 leading-tight list-disc list-inside pl-2">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
                                     <li key={index}>{obj}</li>
                                 ))}
@@ -90,7 +91,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                             <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" unoptimized={true} />
                         </div>
                         <div className="p-1 text-center border-t">
-                            <p className="text-[9px] font-semibold truncate">{ex.Ejercicio}</p>
+                            <p className="text-[9px] font-semibold truncate px-1">{ex.Ejercicio}</p>
                         </div>
                     </div>
                 ))}
@@ -522,3 +523,4 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
