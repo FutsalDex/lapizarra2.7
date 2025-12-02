@@ -4,7 +4,7 @@
 
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { ArrowLeft, Download, Users, Clock, Target, Loader2, ListChecks, Edit } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -16,15 +16,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState } from 'react';
 
 const db = getFirestore(app);
 
-const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise[] }) => {
+const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
   if (!exercises || exercises.length === 0) return null;
   
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold font-headline text-primary">{title}</h2>
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
@@ -70,9 +71,41 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
 };
 
 
+const SessionBasicView = ({ exercises }: { exercises: Exercise[] }) => {
+    if (!exercises || exercises.length === 0) return null;
+
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {exercises.map((exercise) => (
+                 <Card key={exercise.id} className="overflow-hidden group relative">
+                    <div className="relative aspect-video w-full">
+                     <Image src={exercise['Imagen']} alt={exercise['Ejercicio']} layout="fill" objectFit="contain" className="p-2" />
+                    </div>
+                    <CardFooter className="p-2 text-center border-t bg-card">
+                         <p className="text-xs font-semibold truncate">{exercise['Ejercicio']}</p>
+                    </CardFooter>
+                </Card>
+            ))}
+        </div>
+    )
+}
+
+const PhaseSection = ({ title, exercises, viewMode }: { title: string; exercises: Exercise[], viewMode: 'pro' | 'basic' }) => {
+  if (!exercises || exercises.length === 0) return null;
+  
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold font-headline text-primary">{title}</h2>
+      {viewMode === 'pro' ? <SessionProView exercises={exercises} /> : <SessionBasicView exercises={exercises} />}
+    </div>
+  );
+};
+
+
 export default function SesionDetallePage() {
   const params = useParams();
   const sessionId = params.id as string;
+  const [viewMode, setViewMode] = useState<'pro' | 'basic'>('pro');
   
   const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
@@ -200,10 +233,20 @@ export default function SesionDetallePage() {
             </CardContent>
         </Card>
 
+        <div className="flex justify-end">
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
+                <TabsList>
+                    <TabsTrigger value="pro">Vista Pro</TabsTrigger>
+                    <TabsTrigger value="basic">Vista Básica</TabsTrigger>
+                </TabsList>
+            </Tabs>
+        </div>
+
+
         <div className="space-y-12">
-            <PhaseSection title="Fase Inicial (Calentamiento)" exercises={initialExercises} />
-            <PhaseSection title="Fase Principal" exercises={mainExercises} />
-            <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} />
+            <PhaseSection title="Fase Inicial (Calentamiento)" exercises={initialExercises} viewMode={viewMode} />
+            <PhaseSection title="Fase Principal" exercises={mainExercises} viewMode={viewMode} />
+            <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} viewMode={viewMode} />
         </div>
 
       </div>
