@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useParams } from 'next/navigation';
@@ -34,65 +33,77 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
   const initialExercises = getExercisesByIds(session.initialExercises);
   const mainExercises = getExercisesByIds(session.mainExercises);
   const finalExercises = getExercisesByIds(session.finalExercises);
+  const allSessionExercises = [...initialExercises, ...mainExercises, ...finalExercises];
   const sessionDate = (session.date as Timestamp)?.toDate();
+
+  const pages = useMemo(() => {
+    const pagesContent: Exercise[][] = [];
+    const exercisesCopy = [...allSessionExercises];
+    
+    // First page: max 3 exercises
+    pagesContent.push(exercisesCopy.splice(0, 3));
+
+    // Subsequent pages: max 4 exercises
+    while (exercisesCopy.length > 0) {
+      pagesContent.push(exercisesCopy.splice(0, 4));
+    }
+    
+    return pagesContent;
+  }, [allSessionExercises]);
   
-  const PhasePrintSection = ({ title, exercises }: { title: string, exercises: Exercise[] }) => {
+  const PhasePrintSection = ({ exercises }: { exercises: Exercise[] }) => {
     if (!exercises || exercises.length === 0) return null;
     return (
-      <div className="mb-4" style={{ breakInside: 'avoid' }}>
-        <h3 className="font-bold text-lg mb-2 text-center bg-gray-200 p-1">{title}</h3>
-        <div className="space-y-3">
-          {exercises.map(ex => (
-            <div key={ex.id} className="p-2 border border-gray-300 rounded-md" style={{ breakInside: 'avoid' }}>
-              <h4 className="font-semibold text-md mb-1">{ex['Ejercicio']}</h4>
-              <div className="flex gap-2">
-                <div className="w-1/3">
-                  <div className="relative aspect-video bg-gray-100 rounded-sm">
-                    <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
-                  </div>
-                </div>
-                <div className="w-2/3 text-xs">
-                  <p><strong>Descripción:</strong> {ex['Descripción de la tarea']}</p>
-                  <p className="mt-1"><strong>Duración:</strong> {ex['Duración (min)']} min | <strong>Jugadores:</strong> {ex['Número de jugadores']}</p>
+      <div className="space-y-3">
+        {exercises.map(ex => (
+          <div key={ex.id} className="p-2 border border-gray-300 rounded-md" style={{ breakInside: 'avoid' }}>
+            <h4 className="font-semibold text-md mb-1">{ex['Ejercicio']}</h4>
+            <div className="flex gap-2">
+              <div className="w-1/3">
+                <div className="relative aspect-video bg-gray-100 rounded-sm">
+                  <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
                 </div>
               </div>
+              <div className="w-2/3 text-xs">
+                <p><strong>Descripción:</strong> {ex['Descripción de la tarea']}</p>
+                <p className="mt-1"><strong>Duración:</strong> {ex['Duración (min)']} min | <strong>Jugadores:</strong> {ex['Número de jugadores']}</p>
+              </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     );
   };
 
   return (
-    <div ref={sessionRef} className="bg-white text-black p-6" style={{ width: '210mm' }}>
-      {/* Header */}
-       <div className="border-b-2 border-black pb-2 mb-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl font-bold">{session.name}</h1>
-              <p className="text-sm text-gray-600">{teamName}</p>
+    <div ref={sessionRef} className="bg-white text-black">
+      {pages.map((pageExercises, pageIndex) => (
+        <div key={pageIndex} className="p-6" style={{ width: '210mm', height: '297mm', pageBreakAfter: 'always' }}>
+           {pageIndex === 0 && (
+            <div className="border-b-2 border-black pb-2 mb-4">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h1 className="text-2xl font-bold">{session.name}</h1>
+                        <p className="text-sm text-gray-600">{teamName}</p>
+                    </div>
+                    <div className="text-right text-sm">
+                        <p>{sessionDate ? format(sessionDate, "d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
+                        <p>Sesión #{session.sessionNumber}</p>
+                        <p>Microciclo: {session.microcycle || '-'}</p>
+                        <p>Instalación: {session.facility || '-'}</p>
+                    </div>
+                </div>
+                <div className="mt-4">
+                    <h2 className="font-bold text-lg">Objetivos</h2>
+                    <ul className="list-disc pl-5 text-sm space-y-1 text-gray-700">
+                        {(session.objectives || []).map((obj: string, i: number) => <li key={i}>{obj}</li>)}
+                    </ul>
+                </div>
             </div>
-            <div className="text-right text-sm">
-              <p>{sessionDate ? format(sessionDate, "d 'de' MMMM 'de' yyyy", { locale: es }) : ''}</p>
-              <p>Sesión #{session.sessionNumber}</p>
-              <p>Microciclo: {session.microcycle || '-'}</p>
-              <p>Instalación: {session.facility || '-'}</p>
-            </div>
-          </div>
-          <div className="mt-4">
-             <h2 className="font-bold text-lg">Objetivos</h2>
-             <ul className="list-disc pl-5 text-sm space-y-1 text-gray-700">
-                {(session.objectives || []).map((obj: string, i: number) => <li key={i}>{obj}</li>)}
-             </ul>
-          </div>
-       </div>
-
-      {/* Main Content */}
-      <div>
-        <PhasePrintSection title="FASE INICIAL" exercises={initialExercises} />
-        <PhasePrintSection title="FASE PRINCIPAL" exercises={mainExercises} />
-        <PhasePrintSection title="FASE FINAL" exercises={finalExercises} />
-      </div>
+          )}
+          <PhasePrintSection exercises={pageExercises} />
+        </div>
+      ))}
     </div>
   );
 };
@@ -199,28 +210,30 @@ export default function SesionDetallePage() {
     setIsDownloading(true);
     try {
       const canvas = await html2canvas(sessionRef.current, {
-        scale: 2,
+        scale: 2, // Aumenta la resolución para mejor calidad
         useCORS: true,
-        windowWidth: sessionRef.current.scrollWidth,
-        windowHeight: sessionRef.current.scrollHeight,
       });
 
       const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidth = pdfWidth;
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      
       let heightLeft = imgHeight;
       let position = 0;
 
-      const pdf = new jsPDF('p', 'mm', 'a4');
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      heightLeft -= pdfHeight;
 
-      while (heightLeft >= 0) {
+      while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        heightLeft -= pdfHeight;
       }
       
       pdf.save(`sesion-${sessionId}.pdf`);
@@ -286,62 +299,6 @@ export default function SesionDetallePage() {
   const sessionDate = (session.date as Timestamp)?.toDate();
   const teamName = teamSnapshot?.name || session.teamId || 'No especificado';
 
-  const PrintableContent = () => (
-     <div className="space-y-8">
-        <Card>
-            <CardHeader>
-                <CardTitle>Detalles de la Sesión</CardTitle>
-            </CardHeader>
-            <CardContent>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                        <p className="font-semibold">Equipo</p>
-                        <p className="text-muted-foreground">{teamName}</p>
-                    </div>
-                    <div>
-                        <p className="font-semibold">Instalación</p>
-                        <p className="text-muted-foreground">{session.facility}</p>
-                    </div>
-                     <div>
-                        <p className="font-semibold">Microciclo</p>
-                        <p className="text-muted-foreground">{session.microcycle || '-'}</p>
-                    </div>
-                     <div>
-                        <p className="font-semibold">Nº Sesión</p>
-                        <p className="text-muted-foreground">{session.sessionNumber || '-'}</p>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-        
-        <Card>
-             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ListChecks className="w-5 h-5 text-primary" />
-                  Objetivos de la Sesión
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                {Array.isArray(session.objectives) && session.objectives.length > 0 ? (
-                  <ul className="space-y-2 list-disc pl-5">
-                    {session.objectives.map((obj: string, index: number) => (
-                      <li key={index} className="text-muted-foreground">{obj}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted-foreground">No hay objetivos específicos definidos para esta sesión.</p>
-                )}
-            </CardContent>
-        </Card>
-
-        <div className="space-y-12">
-            <PhaseSection title="Fase Inicial (Calentamiento)" exercises={initialExercises} viewMode={viewMode} />
-            <PhaseSection title="Fase Principal" exercises={mainExercises} viewMode={viewMode} />
-            <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} viewMode={viewMode} />
-        </div>
-    </div>
-  );
-
   return (
     <>
       <div className="container mx-auto px-4 py-8">
@@ -356,7 +313,7 @@ export default function SesionDetallePage() {
               <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
             </Button>
             
-             <Dialog>
+            <Dialog>
                 <DialogTrigger asChild>
                     <Button>
                       <Printer className="mr-2" />
@@ -408,7 +365,59 @@ export default function SesionDetallePage() {
                 </TabsList>
             </Tabs>
           </div>
-          <PrintableContent />
+          <div className="space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Detalles de la Sesión</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <p className="font-semibold">Equipo</p>
+                            <p className="text-muted-foreground">{teamName}</p>
+                        </div>
+                        <div>
+                            <p className="font-semibold">Instalación</p>
+                            <p className="text-muted-foreground">{session.facility}</p>
+                        </div>
+                         <div>
+                            <p className="font-semibold">Microciclo</p>
+                            <p className="text-muted-foreground">{session.microcycle || '-'}</p>
+                        </div>
+                         <div>
+                            <p className="font-semibold">Nº Sesión</p>
+                            <p className="text-muted-foreground">{session.sessionNumber || '-'}</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+            
+            <Card>
+                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ListChecks className="w-5 h-5 text-primary" />
+                      Objetivos de la Sesión
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {Array.isArray(session.objectives) && session.objectives.length > 0 ? (
+                      <ul className="space-y-2 list-disc pl-5">
+                        {session.objectives.map((obj: string, index: number) => (
+                          <li key={index} className="text-muted-foreground">{obj}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-muted-foreground">No hay objetivos específicos definidos para esta sesión.</p>
+                    )}
+                </CardContent>
+            </Card>
+
+            <div className="space-y-12">
+                <PhaseSection title="Fase Inicial (Calentamiento)" exercises={initialExercises} viewMode={viewMode} />
+                <PhaseSection title="Fase Principal" exercises={mainExercises} viewMode={viewMode} />
+                <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} viewMode={viewMode} />
+            </div>
+        </div>
         </div>
       </div>
     </>
