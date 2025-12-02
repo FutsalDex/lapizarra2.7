@@ -17,7 +17,7 @@ import { Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 const db = getFirestore(app);
 
@@ -113,6 +113,8 @@ export default function SesionDetallePage() {
   const teamId = sessionSnapshot?.teamId;
   const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
 
+  const printRef = useRef<HTMLDivElement>(null);
+
   if (loadingSession || loadingExercises || loadingTeam) {
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -158,35 +160,9 @@ export default function SesionDetallePage() {
   
   const sessionDate = (session.date as Timestamp)?.toDate();
   const teamName = teamSnapshot?.name || session.teamId || 'No especificado';
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="non-printable">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-4xl font-bold font-headline">{session.name}</h1>
-            <p className="text-lg text-muted-foreground mt-1">
-                {sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}
-            </p>
-          </div>
-          <div className="flex gap-2">
-              <Button variant="outline" asChild>
-                  <Link href="/sesiones">
-                      <ArrowLeft className="mr-2" />
-                      Volver
-                  </Link>
-              </Button>
-               <Button asChild>
-                  <Link href={`/sesiones/${sessionId}/editar`}>
-                      <Edit className="mr-2" />
-                      Editar
-                  </Link>
-              </Button>
-          </div>
-        </div>
-      </div>
-      
-      <div className="max-w-4xl mx-auto space-y-8 non-printable">
+  
+  const PrintableContent = () => (
+     <div className="space-y-8">
         <Card>
             <CardHeader>
                 <CardTitle>Detalles de la Sesión</CardTitle>
@@ -233,23 +209,59 @@ export default function SesionDetallePage() {
             </CardContent>
         </Card>
 
-        <div className="flex justify-end">
-            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
-                <TabsList>
-                    <TabsTrigger value="pro">Vista Pro</TabsTrigger>
-                    <TabsTrigger value="basic">Vista Básica</TabsTrigger>
-                </TabsList>
-            </Tabs>
-        </div>
-
-
         <div className="space-y-12">
             <PhaseSection title="Fase Inicial (Calentamiento)" exercises={initialExercises} viewMode={viewMode} />
             <PhaseSection title="Fase Principal" exercises={mainExercises} viewMode={viewMode} />
             <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} viewMode={viewMode} />
         </div>
-
-      </div>
     </div>
+  );
+
+  return (
+    <>
+      <div className="container mx-auto px-4 py-8 non-printable">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-4xl font-bold font-headline">{session.name}</h1>
+            <p className="text-lg text-muted-foreground mt-1">
+                {sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}
+            </p>
+          </div>
+          <div className="flex gap-2">
+              <Button variant="outline" asChild>
+                  <Link href="/sesiones">
+                      <ArrowLeft className="mr-2" />
+                      Volver
+                  </Link>
+              </Button>
+               <Button onClick={() => window.print()}>
+                  <Download className="mr-2" />
+                  Descargar PDF
+              </Button>
+               <Button asChild>
+                  <Link href={`/sesiones/${sessionId}/editar`}>
+                      <Edit className="mr-2" />
+                      Editar
+                  </Link>
+              </Button>
+          </div>
+        </div>
+      
+        <div className="max-w-4xl mx-auto space-y-8">
+            <div className="flex justify-end">
+              <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
+                  <TabsList>
+                      <TabsTrigger value="pro">Vista Pro</TabsTrigger>
+                      <TabsTrigger value="basic">Vista Básica</TabsTrigger>
+                  </TabsList>
+              </Tabs>
+            </div>
+            <PrintableContent />
+        </div>
+      </div>
+       <div className="printable-content">
+          <PrintableContent />
+      </div>
+    </>
   );
 }

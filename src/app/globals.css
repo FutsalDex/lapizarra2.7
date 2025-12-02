@@ -77,21 +77,15 @@ body {
   display: none;
 }
 
-
 @media print {
-  body * {
-    visibility: hidden;
-  }
-  .printable-content, .printable-content * {
-    visibility: visible;
+  .non-printable {
+    display: none !important;
   }
   .printable-content {
+    display: block !important;
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
-  }
-  .no-print {
-    display: none !important;
   }
 }
