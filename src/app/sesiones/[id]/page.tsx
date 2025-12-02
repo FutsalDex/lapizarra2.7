@@ -43,20 +43,20 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
 
     return (
         <div ref={ref} className="bg-white text-gray-900 p-4" style={{ width: '210mm' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
+             <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
                 <tbody>
                     <tr>
-                        <td style={{ width: '30%', padding: '8px', verticalAlign: 'top' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <td style={{ width: '30%', padding: '0', verticalAlign: 'top' }}>
+                            <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                                 <tbody>
                                     <tr>
                                         <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
                                             <div className="text-[10px] font-bold">Microciclo</div>
-                                            <div className="text-[10px] truncate">{sessionData.microcycle || 'N/A'}</div>
+                                            <div className="text-[10px]">{sessionData.microcycle || '1'}</div>
                                         </td>
                                         <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
                                             <div className="text-[10px] font-bold">Sesión</div>
-                                            <div className="text-[10px]">{sessionData.sessionNumber || 'N/A'}</div>
+                                            <div className="text-[10px]">{sessionData.sessionNumber || '1'}</div>
                                         </td>
                                     </tr>
                                     <tr>
@@ -66,7 +66,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                                         </td>
                                         <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
                                             <div className="text-[10px] font-bold">Instalación</div>
-                                            <div className="text-[10px] truncate">{sessionData.facility || 'N/A'}</div>
+                                            <div className="text-[10px] truncate">{sessionData.facility || 'Pista Numancia'}</div>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -159,41 +159,48 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
     };
 
     return (
-        <div ref={ref} className="bg-white text-gray-900 p-8">
+         <div ref={ref} className="bg-white text-gray-900 p-8" style={{ width: '210mm' }}>
             <div className="space-y-6">
-                <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
-                    <div className="flex w-full space-x-2">
-                        <div className="flex flex-col justify-between gap-1 basis-1/5">
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-[10px] font-bold">Microciclo</p>
-                                <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
-                            </div>
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-[10px] font-bold">Fecha</p>
-                                <p className="text-sm">{sessionDateFormatted}</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col justify-between gap-1 basis-1/5">
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-[10px] font-bold">Sesión</p>
-                                <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
-                            </div>
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-[10px] font-bold">Instalación</p>
-                                <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
-                            </div>
-                        </div>
-                        <div className="border border-gray-800 text-left p-1 flex-grow">
-                            <p className="text-[10px] font-bold">Objetivos</p>
-                            <ul className="text-sm space-y-1 mt-1">
-                                {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                    <li key={index} className='list-disc list-inside'>{obj}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
+                <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
+                    <tbody>
+                        <tr>
+                            <td style={{ width: '30%', padding: '0', verticalAlign: 'top' }}>
+                                <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
+                                                <div className="text-[10px] font-bold">Microciclo</div>
+                                                <div className="text-[10px]">{sessionData.microcycle || '1'}</div>
+                                            </td>
+                                            <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
+                                                <div className="text-[10px] font-bold">Sesión</div>
+                                                <div className="text-[10px]">{sessionData.sessionNumber || '1'}</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
+                                                <div className="text-[10px] font-bold">Fecha</div>
+                                                <div className="text-[10px]">{sessionDateFormatted}</div>
+                                            </td>
+                                            <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
+                                                <div className="text-[10px] font-bold">Instalación</div>
+                                                <div className="text-[10px] truncate">{sessionData.facility || 'Pista Numancia'}</div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                            <td style={{ width: '70%', padding: '8px', border: '1px solid black', verticalAlign: 'top' }}>
+                                <div className="text-[10px] font-bold mb-1">Objetivos</div>
+                                <ul className="text-[10px] list-disc list-inside pl-2">
+                                    {(sessionData.objectives || []).map((obj: string, index: number) => (
+                                        <li key={index}>{obj}</li>
+                                    ))}
+                                </ul>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
                 <div className="space-y-6 pt-0">
                     <PhaseSectionPro title="FASE INICIAL" exercises={getExercisesByIds(sessionData.initialExercises)} />
                     <PhaseSectionPro title="FASE PRINCIPAL" exercises={getExercisesByIds(sessionData.mainExercises)} />
@@ -515,10 +522,11 @@ export default function SesionDetallePage() {
           </div>
         </div>
       </div>
-      <div style={{ position: 'absolute', left: '-9999px', top: '0' }}>
+      <div style={{ position: 'absolute', left: '-9999px', top: '0', zIndex: -100 }}>
          <SessionBasicPreview ref={basicPrintRef} sessionData={session} exercises={allExercises} teamName={teamName} />
          <SessionProPreview ref={proPrintRef} sessionData={session} exercises={allExercises} />
       </div>
     </>
   );
 }
+
