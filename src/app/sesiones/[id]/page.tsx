@@ -48,26 +48,26 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                         <div className="flex flex-col gap-1 basis-1/5">
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                 <p className="text-xs font-bold">Microciclo</p>
-                                <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
+                                <p className="text-[10px]">{sessionData.microcycle || 'N/A'}</p>
                             </div>
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                 <p className="text-xs font-bold">Fecha</p>
-                                <p className="text-sm">{sessionDateFormatted}</p>
+                                <p className="text-[10px]">{sessionDateFormatted}</p>
                             </div>
                         </div>
                         <div className="flex flex-col gap-1 basis-1/5">
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                 <p className="text-xs font-bold">Sesión</p>
-                                <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
+                                <p className="text-[10px]">{sessionData.sessionNumber || 'N/A'}</p>
                             </div>
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
                                 <p className="text-xs font-bold">Instalación</p>
-                                <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
+                                <p className="text-[10px] truncate">{sessionData.facility || 'N/A'}</p>
                             </div>
                         </div>
                         <div className="border border-gray-800 text-left p-1 flex-grow">
                             <p className="text-xs font-bold">Objetivos</p>
-                            <ul className="text-sm space-y-1 mt-1">
+                            <ul className="text-[10px] space-y-0.5 mt-1 leading-tight">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
                                     <li key={index} className="list-disc list-inside">{obj}</li>
                                 ))}
@@ -82,7 +82,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                                 <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" unoptimized={true} />
                             </div>
                             <CardFooter className="p-2 bg-card border-t">
-                                <p className="text-xs font-semibold truncate text-center w-full">{ex.Ejercicio}</p>
+                                <p className="text-[10px] font-semibold truncate text-center w-full">{ex.Ejercicio}</p>
                             </CardFooter>
                         </Card>
                     ))}
