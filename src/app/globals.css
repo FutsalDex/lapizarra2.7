@@ -73,40 +73,36 @@ body {
   }
 }
 
-/* ----- NORMAL MODE: OCULTAR PRINT CONTENT ----- */
-.printable-content {
-  display: none;
-}
-
 /* ----- GENERAL PRINT RULES ----- */
 @media print {
+
   /* Oculta todo lo que NO sea imprimible */
   .non-printable {
     display: none !important;
   }
 
-  /* Muestra solo lo imprimible */
-  .printable-content {
+  /* El contenido de la página principal se vuelve imprimible */
+  body > .container {
     display: block !important;
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
   }
-
-  /* Fondo blanco para evitar problemas */
+  
   body {
     background: #ffffff !important;
+    margin: 0;
+    padding: 0;
   }
 
-  /* Evitar page-break raros */
-  .page-break {
+  /* Evitar saltos de página indeseados */
+  .page-break-before {
     page-break-before: always;
   }
 
-  /* Forzar las cards a ocupar todo el ancho e imprimirse correctamente */
   .card, .Card {
     break-inside: avoid;
     page-break-inside: avoid;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
   }
 }
+
+    

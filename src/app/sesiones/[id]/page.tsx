@@ -218,9 +218,9 @@ export default function SesionDetallePage() {
   );
 
   return (
-    <>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6 non-printable">
+    <div className="container mx-auto px-4 py-8">
+      <div className="non-printable">
+        <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-4xl font-bold font-headline">{session.name}</h1>
             <p className="text-lg text-muted-foreground mt-1">
@@ -234,11 +234,11 @@ export default function SesionDetallePage() {
                       Volver
                   </Link>
               </Button>
-               <Button onClick={() => window.print()}>
+              <Button onClick={() => window.print()}>
                   <Download className="mr-2" />
                   Descargar PDF
               </Button>
-               <Button asChild>
+              <Button asChild>
                   <Link href={`/sesiones/${sessionId}/editar`}>
                       <Edit className="mr-2" />
                       Editar
@@ -247,7 +247,7 @@ export default function SesionDetallePage() {
           </div>
         </div>
       
-        <div className="max-w-4xl mx-auto space-y-8 non-printable">
+        <div className="max-w-4xl mx-auto space-y-8">
             <div className="flex justify-end">
               <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
                   <TabsList>
@@ -256,14 +256,13 @@ export default function SesionDetallePage() {
                   </TabsList>
               </Tabs>
             </div>
-            <PrintableContent />
         </div>
       </div>
-      <div className="printable-content">
-          <div className="p-8">
-            <PrintableContent />
-          </div>
+       <div className="max-w-4xl mx-auto">
+         <PrintableContent />
       </div>
-    </>
+    </div>
   );
 }
+
+    
