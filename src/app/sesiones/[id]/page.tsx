@@ -50,21 +50,21 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                                 <tbody>
                                     <tr>
                                         <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
-                                            <div className="text-xs font-bold">Microciclo</div>
+                                            <div className="text-[10px] font-bold">Microciclo</div>
                                             <div className="text-[10px]">{sessionData.microcycle || 'N/A'}</div>
                                         </td>
                                         <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
-                                            <div className="text-xs font-bold">Sesión</div>
+                                            <div className="text-[10px] font-bold">Sesión</div>
                                             <div className="text-[10px]">{sessionData.sessionNumber || 'N/A'}</div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
-                                            <div className="text-xs font-bold">Fecha</div>
+                                            <div className="text-[10px] font-bold">Fecha</div>
                                             <div className="text-[10px]">{sessionDateFormatted}</div>
                                         </td>
                                         <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center', width: '50%' }}>
-                                            <div className="text-xs font-bold">Instalación</div>
+                                            <div className="text-[10px] font-bold">Instalación</div>
                                             <div className="text-[10px] truncate">{sessionData.facility || 'N/A'}</div>
                                         </td>
                                     </tr>
@@ -72,7 +72,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                             </table>
                         </td>
                         <td style={{ width: '70%', padding: '8px', border: '1px solid black', verticalAlign: 'top' }}>
-                            <div className="text-xs font-bold mb-1">Objetivos</div>
+                            <div className="text-[10px] font-bold mb-1">Objetivos</div>
                             <ul className="text-[9px] space-y-0 leading-tight list-disc list-inside">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
                                     <li key={index}>{obj}</li>
@@ -164,26 +164,26 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
                     <div className="flex w-full space-x-2">
                         <div className="flex flex-col justify-between gap-1 basis-1/5">
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Microciclo</p>
+                                <p className="text-[10px] font-bold">Microciclo</p>
                                 <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
                             </div>
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Fecha</p>
+                                <p className="text-[10px] font-bold">Fecha</p>
                                 <p className="text-sm">{sessionDateFormatted}</p>
                             </div>
                         </div>
                         <div className="flex flex-col justify-between gap-1 basis-1/5">
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Sesión</p>
+                                <p className="text-[10px] font-bold">Sesión</p>
                                 <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
                             </div>
                             <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Instalación</p>
+                                <p className="text-[10px] font-bold">Instalación</p>
                                 <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
                             </div>
                         </div>
                         <div className="border border-gray-800 text-left p-1 flex-grow">
-                            <p className="text-xs font-bold">Objetivos</p>
+                            <p className="text-[10px] font-bold">Objetivos</p>
                             <ul className="text-sm space-y-1 mt-1">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
                                     <li key={index} className='list-disc list-inside'>{obj}</li>
