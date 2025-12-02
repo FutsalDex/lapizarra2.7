@@ -39,26 +39,24 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
         ...getExercisesByIds(sessionData.finalExercises)
     ];
 
-    const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date.seconds * 1000), 'dd/MM/yyyy', { locale: es }) : 'N/A';
-
     return (
-        <div ref={ref} className="bg-white text-gray-900 p-4" style={{ width: '210mm' }}>
-             <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px', fontSize: '10px' }}>
+        <div ref={ref} className="bg-white text-gray-900 p-4" style={{ width: '210mm', fontSize: '10px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
                 <tbody>
                     <tr>
                         <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
                             <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                                 <tbody>
-                                    <tr><td style={{borderBottom: '1px solid black', padding: '4px'}}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                                    <tr><td style={{borderBottom: '1px solid black', padding: '4px'}}><span className="font-bold">Instalación:</span> <span className="truncate">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
-                                    <tr><td style={{borderBottom: '1px solid black', padding: '4px'}}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
-                                    <tr><td style={{padding: '4px'}}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
+                                    <tr><td style={{ padding: '4px' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
+                                    <tr><td style={{ padding: '4px' }}><span className="font-bold">Instalación:</span> <span className="truncate">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
+                                    <tr><td style={{ padding: '4px' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
+                                    <tr><td style={{ padding: '4px' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
                                 </tbody>
                             </table>
                         </td>
                         <td style={{ width: '70%', padding: '8px', verticalAlign: 'top' }}>
                             <div className="font-bold mb-1">Objetivos</div>
-                             <ul className="list-disc list-inside pl-2 leading-tight">
+                            <ul className="list-disc list-inside pl-2 leading-tight">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
                                     <li key={index}>{obj}</li>
                                 ))}
@@ -67,15 +65,14 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                     </tr>
                 </tbody>
             </table>
-
             <div className="grid grid-cols-2 gap-4">
                 {allSessionExercises.map(ex => (
                     <div key={ex.id} className="border border-gray-400 rounded-lg overflow-hidden break-inside-avoid">
+                         <div className="p-1 text-center border-b">
+                            <p className="text-[9px] font-semibold truncate px-1">{ex.Ejercicio}</p>
+                        </div>
                         <div className="relative aspect-video w-full bg-muted">
                             <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" unoptimized={true} />
-                        </div>
-                        <div className="p-1 text-center border-t">
-                            <p className="text-[9px] font-semibold truncate px-1">{ex.Ejercicio}</p>
                         </div>
                     </div>
                 ))}
@@ -90,8 +87,6 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
         if (!ids || ids.length === 0) return [];
         return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
     };
-    
-    const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date.seconds * 1000), 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
     const PhaseSectionPro = ({ title, exercises }: { title: string; exercises: Exercise[] }) => {
         if (exercises.length === 0) return null;
@@ -151,10 +146,10 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
                            <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
                                 <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                                     <tbody>
-                                        <tr><td style={{borderBottom: '1px solid black', padding: '4px'}}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                                        <tr><td style={{borderBottom: '1px solid black', padding: '4px'}}><span className="font-bold">Instalación:</span> <span className="truncate">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
-                                        <tr><td style={{borderBottom: '1px solid black', padding: '4px'}}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
-                                        <tr><td style={{padding: '4px'}}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
+                                        <tr><td style={{ padding: '4px' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
+                                        <tr><td style={{ padding: '4px' }}><span className="font-bold">Instalación:</span> <span className="truncate">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
+                                        <tr><td style={{ padding: '4px' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
+                                        <tr><td style={{ padding: '4px' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
                                     </tbody>
                                 </table>
                             </td>
@@ -190,8 +185,9 @@ const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
     <div className="space-y-6">
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
                 <div className="md:col-span-1 space-y-4">
+                    <h3 className="text-xl font-bold font-headline text-center">{exercise['Ejercicio']}</h3>
                     <div className="relative min-h-[200px] bg-muted rounded-md aspect-video">
                         <Image
                         src={exercise['Imagen']}
@@ -213,7 +209,7 @@ const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
                 </div>
                 <div className="md:col-span-2 space-y-4">
                     <div>
-                        <h3 className="text-xl font-bold font-headline">{exercise['Ejercicio']}</h3>
+                        <h4 className="font-semibold text-lg">Descripción</h4>
                         <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
                     </div>
                     <div className="pt-4">
@@ -239,12 +235,12 @@ const SessionBasicView = ({ exercises }: { exercises: Exercise[] }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {exercises.map((exercise) => (
                  <Card key={exercise.id} className="overflow-hidden group relative">
+                    <CardHeader className="p-2 text-center border-b bg-card">
+                         <CardTitle className="text-xs font-semibold truncate">{exercise['Ejercicio']}</CardTitle>
+                    </CardHeader>
                     <div className="relative aspect-video w-full">
                      <Image src={exercise['Imagen']} alt={exercise['Ejercicio']} layout="fill" objectFit="contain" className="p-2" />
                     </div>
-                    <CardFooter className="p-2 text-center border-t bg-card">
-                         <p className="text-xs font-semibold truncate">{exercise['Ejercicio']}</p>
-                    </CardFooter>
                 </Card>
             ))}
         </div>
@@ -497,5 +493,6 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
 
