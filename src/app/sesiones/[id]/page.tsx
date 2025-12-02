@@ -48,7 +48,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                              <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                                 <tbody>
                                     <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                                    <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
+                                    <tr><td style={{ padding: '4px', height: '25%', wordBreak: 'break-word' }}><span className="font-bold">Instalación:</span> {sessionData.facility || 'Pista Numancia'}</td></tr>
                                     <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
                                     <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
                                 </tbody>
@@ -67,11 +67,11 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
             </table>
             <div className="grid grid-cols-2 gap-4">
                 {allSessionExercises.map(ex => (
-                    <div key={ex.id} className="border border-gray-400 rounded-lg overflow-hidden break-inside-avoid">
-                         <div className="px-1 text-center border-b">
+                    <div key={ex.id} className="border border-gray-400 rounded-lg overflow-hidden break-inside-avoid flex flex-col">
+                        <div className="px-1 text-center border-b flex-shrink-0">
                             <p className="text-[8px] font-semibold break-words leading-tight">{ex.Ejercicio}</p>
                         </div>
-                        <div className="relative aspect-[1.88/1] w-full bg-muted">
+                        <div className="relative w-full bg-muted flex-grow">
                             <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" unoptimized={true} />
                         </div>
                     </div>
@@ -147,7 +147,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
                                 <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                                     <tbody>
                                         <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                                        <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Instalación:</span> <span className="break-words">{sessionData.facility || 'Pista Numancia'}</span></td></tr>
+                                        <tr><td style={{ padding: '4px', height: '25%', wordBreak: 'break-word' }}><span className="font-bold">Instalación:</span> {sessionData.facility || 'Pista Numancia'}</td></tr>
                                         <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
                                         <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
                                     </tbody>
