@@ -34,7 +34,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useReactToPrint } from 'react-to-print';
+import ReactToPrint from 'react-to-print';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -48,7 +48,7 @@ const phaseLimits: Record<SessionPhase, number> = {
 };
 
 const objectivesByCategory = {
-  Técnicos: ["Perfeccionar el control de balón en espacios reducidos para mayor precisión.","Mejorar pases cortos y largos con ambas piernas para fluidez en el juego.","Desarrollar regates y fintas para superar rivales en uno contra uno.","Potenciar la finalización variada en situaciones de gol.","Reforzar el dominio aéreo y el cabezazo ofensivo/defensivo en corners.","Mejorar la recepción orientada para iniciar contraataques rápidos.","Entrenar el toque de primera en pases y centros para velocidad de juego.","Desarrollar el uso del cuerpo para proteger el balón bajo presión.","Potenciar disparos a portería desde ángulos cerrados.","Reforzar la técnica de volea y media volea en finalizaciones aéreas."],
+  Técnicos: ["Potenciar la finalización variada en situaciones de gol.","Mejorar pases cortos y largos con ambas piernas para fluidez en el juego.","Desarrollar regates y fintas para superar rivales en uno contra uno.","Perfeccionar el control de balón en espacios reducidos para mayor precisión.","Reforzar el dominio aéreo y el cabezazo ofensivo/defensivo en corners.","Mejorar la recepción orientada para iniciar contraataques rápidos.","Entrenar el toque de primera en pases y centros para velocidad de juego.","Desarrollar el uso del cuerpo para proteger el balón bajo presión.","Potenciar disparos a portería desde ángulos cerrados.","Reforzar la técnica de volea y media volea en finalizaciones aéreas."],
   Tácticos: ["Desarrollar patrones de juego posicional para superioridad numérica.","Implementar presión alta y robo de balón en zonas avanzadas.","Optimizar transiciones rápidas de ataque a defensa y viceversa.","Entrenar sistemas defensivos como el 2-2 o pressing zonal.","Fomentar el uso de paredes y triangulaciones para desequilibrar defensas.","Mejorar la construcción desde atrás con el portero como iniciador.","Entrenar la amplitud en ataque para estirar la defensa rival.","Desarrollar bloqueos y pantallas para crear espacios en el área.","Implementar rotaciones posicionales para confundir al pressing.","Optimizar el contraataque en inferioridad numérica temporal."],
   Físicos: ["Aumentar la resistencia aeróbica para mantener intensidad durante todo el partido.","Mejorar la velocidad explosiva en sprints cortos y cambios de dirección.","Desarrollar agilidad y coordinación motora en pista limitada.","Fortalecer el core y las piernas para mayor potencia en disparos y saltos.","Trabajar la recuperación activa para minimizar fatiga entre acciones.","Potenciar la fuerza explosiva en saltos y duelos aéreos.","Mejorar la flexibilidad dinámica para movimientos fluidos.","Entrenar la capacidad anaeróbica para ráfagas de alta intensidad.","Desarrollar el equilibrio en situaciones de contacto.","Fomentar la resistencia a la fatiga muscular en fases finales de partido."],
   Colectivos: ["Fomentar la comunicación verbal y no verbal entre líneas.","Mejorar la coordinación en movimientos sincronizados de equipo.","Desarrollar toma de decisiones colectivas bajo presión temporal.","Promover el apoyo mutuo en ataque y cobertura en defensa.","Cultivar el espíritu de equipo mediante rotaciones y roles intercambiables.","Entrenar la sincronía en el pressing colectivo.","Mejorar la lectura mutua de espacios y apoyos.","Fomentar el liderazgo distribuido en momentos clave.","Desarrollar la empatía en la cobertura de compañeros.","Promover la celebración colectiva para reforzar la cohesión."],
@@ -317,30 +317,25 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
 };
 
 const PreviewDialog = ({ open, onOpenChange, children }: { open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode }) => {
-    const printRef = React.useRef(null);
-    const handlePrint = useReactToPrint({
-      content: () => printRef.current,
-    });
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Vista Previa de la Ficha</DialogTitle>
-                    <div className="flex gap-2 pt-2">
-                        <Button onClick={handlePrint}><Download className="mr-2"/>Descargar PDF</Button>
-                        <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
-                    </div>
                 </DialogHeader>
                 <div className="overflow-auto flex-1 bg-gray-200 p-4">
                     <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg">
-                        {children && React.cloneElement(children as React.ReactElement, { ref: printRef })}
+                        {children}
                     </div>
                 </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 };
+
 
 export default function EditarSesionPage() {
   const router = useRouter();
@@ -531,6 +526,9 @@ export default function EditarSesionPage() {
   };
 
   const isLoading = loadingAuth || loadingSession || loadingExercises || loadingTeams || loadingProfile;
+  
+  const componentRef = useRef<HTMLDivElement>(null);
+  const proComponentRef = useRef<HTMLDivElement>(null);
 
   if (isLoading) {
     return (
@@ -691,21 +689,31 @@ export default function EditarSesionPage() {
                                 <div className="grid grid-cols-2 gap-4 pt-4">
                                     <div className="flex flex-col gap-2 items-center">
                                         <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                        <Button onClick={() => handleOpenPreview('Básica')} className="w-full">
-                                            <Eye className="mr-2" />
-                                            Ver Ficha Básica
-                                        </Button>
+                                        <ReactToPrint
+                                            trigger={() => (
+                                                <Button className="w-full">
+                                                    <Download className="mr-2" />
+                                                    Descargar Básica
+                                                </Button>
+                                            )}
+                                            content={() => componentRef.current}
+                                        />
                                     </div>
                                     <div className="flex flex-col gap-2 items-center">
                                         <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                        <TooltipProvider>
+                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <div className="w-full">
-                                                        <Button onClick={() => handleOpenPreview('Pro')} className="w-full" disabled={!isProUser}>
-                                                            <Eye className="mr-2" />
-                                                            Ver Ficha Pro
-                                                        </Button>
+                                                        <ReactToPrint
+                                                            trigger={() => (
+                                                                <Button className="w-full" disabled={!isProUser}>
+                                                                    <Download className="mr-2" />
+                                                                    Descargar Pro
+                                                                </Button>
+                                                            )}
+                                                            content={() => proComponentRef.current}
+                                                        />
                                                     </div>
                                                 </TooltipTrigger>
                                                 {!isProUser && (
@@ -728,10 +736,10 @@ export default function EditarSesionPage() {
             </Card>
         </form>
       </div>
-
-       <PreviewDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-            {previewContent}
-       </PreviewDialog>
+      <div className="hidden">
+         <SessionBasicPreview ref={componentRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
+         <SessionProPreview ref={proComponentRef} sessionData={sessionDataForPreview} exercises={allExercises} />
+      </div>
     </>
   );
 }
