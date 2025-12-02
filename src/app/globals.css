@@ -77,15 +77,24 @@ body {
 @media print {
 
   /* Oculta todo lo que NO sea imprimible */
+  body > *:not(.printable-section) {
+    display: none !important;
+  }
+  
   .non-printable {
     display: none !important;
   }
-
-  /* El contenido de la página principal se vuelve imprimible */
-  body > .container {
-    display: block !important;
-  }
   
+  /* Muestra solo lo imprimible y lo expande */
+  .printable-section {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+  }
+
+  /* Fondo blanco para evitar problemas */
   body {
     background: #ffffff !important;
     margin: 0;
@@ -105,4 +114,6 @@ body {
   }
 }
 
-    
+.printable-content {
+  display: none;
+}

@@ -258,11 +258,9 @@ export default function SesionDetallePage() {
             </div>
         </div>
       </div>
-       <div className="max-w-4xl mx-auto">
+       <div className="printable-section max-w-4xl mx-auto">
          <PrintableContent />
       </div>
     </div>
   );
 }
-
-    
