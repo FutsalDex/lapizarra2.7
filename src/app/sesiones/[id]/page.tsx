@@ -79,7 +79,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                     {allSessionExercises.map(ex => (
                         <Card key={ex.id} className="overflow-hidden">
                             <div className="relative aspect-video w-full bg-muted">
-                                <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" />
+                                <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" unoptimized={true} />
                             </div>
                             <CardFooter className="p-2 bg-card border-t">
                                 <p className="text-xs font-semibold truncate text-center w-full">{ex.Ejercicio}</p>
@@ -115,7 +115,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
                         </CardHeader>
                         <CardContent className="p-2 grid grid-cols-2 gap-2">
                             <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
-                                <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
+                                <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" unoptimized={true} />
                             </div>
                             <div className="text-xs space-y-2">
                                 <div>
@@ -288,6 +288,7 @@ export default function SesionDetallePage() {
   const basicPrintRef = useRef<HTMLDivElement>(null);
   const proPrintRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   
   const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
@@ -302,15 +303,17 @@ export default function SesionDetallePage() {
     if (!elementToPrint) return;
 
     setIsDownloading(true);
+    setIsPrintDialogOpen(false); // Close dialog on download start
+
     try {
       const canvas = await html2canvas(elementToPrint, {
         scale: 2,
         useCORS: true,
+        logging: false,
       });
   
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
       
       const imgProps = pdf.getImageProperties(canvas);
       const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
@@ -319,13 +322,13 @@ export default function SesionDetallePage() {
       let position = 0;
   
       pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
-      heightLeft -= pdfHeight;
+      heightLeft -= pdf.internal.pageSize.getHeight();
   
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdfHeight;
+        heightLeft -= pdf.internal.pageSize.getHeight();
       }
       
       pdf.save(`sesion-${type}-${sessionId}.pdf`);
@@ -406,7 +409,7 @@ export default function SesionDetallePage() {
               <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
             </Button>
             
-            <Dialog>
+            <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
                 <DialogTrigger asChild>
                     <Button>
                       <Printer className="mr-2" />
@@ -506,7 +509,7 @@ export default function SesionDetallePage() {
           </div>
         </div>
       </div>
-      <div style={{ position: 'absolute', left: '-9999px', top: '0' }}>
+      <div style={{ position: 'absolute', left: '-9999px', top: '0', width: '210mm' }}>
          <SessionBasicPreview ref={basicPrintRef} sessionData={session} exercises={allExercises} teamName={teamName} />
          <SessionProPreview ref={proPrintRef} sessionData={session} exercises={allExercises} />
       </div>
