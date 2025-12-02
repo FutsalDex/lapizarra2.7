@@ -71,6 +71,7 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
                 pagesContent.push(currentPageContent);
                 currentPageContent = [];
                 exerciseCountOnPage = 0;
+                phaseTitleAdded = false; // Reset for next page
             }
         }
     });
@@ -294,37 +295,41 @@ export default function SesionDetallePage() {
   };
 
   const handleDownloadPageAsPdf = async () => {
-    if (!pagePrintRef.current) return;
+    const elementToCapture = pagePrintRef.current;
+    if (!elementToCapture) return;
+
     setIsPageDownloading(true);
     try {
-        const canvas = await html2canvas(pagePrintRef.current, { 
+        const canvas = await html2canvas(elementToCapture, {
             scale: 2,
             useCORS: true,
-            // Opcional: para fondos oscuros
-            backgroundColor: window.getComputedStyle(document.body).getPropertyValue('background-color')
+            backgroundColor: window.getComputedStyle(document.documentElement).getPropertyValue('--background').trim() === '240 4% 12%' ? '#1f2123' : '#ffffff',
         });
         
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
+        const canvasAspectRatio = canvas.width / canvas.height;
+        const pageAspectRatio = pdfWidth / pdfHeight;
         
-        const ratio = canvasHeight / canvasWidth;
-        const imgHeight = pdfWidth * ratio;
+        let canvasPrintWidth = canvas.width;
+        let canvasPrintHeight = canvas.height;
         
-        let heightLeft = imgHeight;
-        let position = 0;
-        
-        pdf.addImage(canvas, 'PNG', 0, 0, pdfWidth, imgHeight);
-        heightLeft -= pdfHeight;
-        
-        while (heightLeft > 0) {
-            position -= pdfHeight;
-            pdf.addPage();
-            pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
-            heightLeft -= pdfHeight;
+        if (canvasAspectRatio > pageAspectRatio) {
+            canvasPrintHeight = canvas.width / pageAspectRatio;
+        } else {
+            canvasPrintWidth = canvas.height * pageAspectRatio;
+        }
+
+        const totalPages = Math.ceil(canvas.height / canvasPrintHeight);
+
+        for (let i = 0; i < totalPages; i++) {
+            if (i > 0) {
+                pdf.addPage();
+            }
+            const y = -i * canvasPrintHeight;
+            pdf.addImage(canvas, 'PNG', 0, y, canvasPrintWidth, canvas.height, undefined, 'FAST');
         }
         
         pdf.save(`pagina-sesion-${sessionId}.pdf`);
@@ -425,7 +430,7 @@ export default function SesionDetallePage() {
                            <div style={{ display: 'none' }}>
                                 <SessionPrintPreview session={session} exercises={allExercises} teamName={teamName} sessionRef={printRef} />
                             </div>
-                            <p>Vista previa no disponible en este modo.</p>
+                             <p>Vista previa no disponible en este modo.</p>
                         </div>
                     </ScrollArea>
                     <DialogFooter>
@@ -523,5 +528,3 @@ export default function SesionDetallePage() {
     </>
   );
 }
-
-    
