@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useParams } from 'next/navigation';
@@ -78,7 +79,7 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
   return (
     <div ref={sessionRef} className="bg-white text-black">
       {pages.map((pageExercises, pageIndex) => (
-        <div key={pageIndex} className="p-6" style={{ width: '210mm', height: '297mm', pageBreakAfter: 'always' }}>
+        <div key={pageIndex} className="p-6" style={{ width: '210mm', minHeight: '297mm', pageBreakAfter: 'always', position: 'relative' }}>
            {pageIndex === 0 && (
             <div className="border-b-2 border-black pb-2 mb-4">
                 <div className="flex justify-between items-start">
@@ -102,6 +103,9 @@ const SessionPrintPreview = ({ session, exercises, teamName, sessionRef }: { ses
             </div>
           )}
           <PhasePrintSection exercises={pageExercises} />
+          <div style={{ position: 'absolute', bottom: '1rem', right: '1.5rem', fontSize: '0.75rem', color: '#666' }}>
+            página {pageIndex + 1} de {pages.length}
+          </div>
         </div>
       ))}
     </div>
@@ -210,29 +214,27 @@ export default function SesionDetallePage() {
     setIsDownloading(true);
     try {
       const canvas = await html2canvas(sessionRef.current, {
-        scale: 2, // Aumenta la resolución para mejor calidad
+        scale: 2,
         useCORS: true,
       });
-
-      const imgData = canvas.toDataURL('image/png');
+  
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgWidth = pdfWidth;
-      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      const imgProps = pdf.getImageProperties(canvas);
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
       
       let heightLeft = imgHeight;
       let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+  
+      pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
       heightLeft -= pdfHeight;
-
+  
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
         heightLeft -= pdfHeight;
       }
       
