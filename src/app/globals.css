@@ -73,19 +73,40 @@ body {
   }
 }
 
+/* ----- NORMAL MODE: OCULTAR PRINT CONTENT ----- */
 .printable-content {
   display: none;
 }
 
+/* ----- GENERAL PRINT RULES ----- */
 @media print {
+  /* Oculta todo lo que NO sea imprimible */
   .non-printable {
     display: none !important;
   }
+
+  /* Muestra solo lo imprimible */
   .printable-content {
     display: block !important;
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
+  }
+
+  /* Fondo blanco para evitar problemas */
+  body {
+    background: #ffffff !important;
+  }
+
+  /* Evitar page-break raros */
+  .page-break {
+    page-break-before: always;
+  }
+
+  /* Forzar las cards a ocupar todo el ancho e imprimirse correctamente */
+  .card, .Card {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

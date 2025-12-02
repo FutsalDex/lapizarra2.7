@@ -259,8 +259,10 @@ export default function SesionDetallePage() {
             <PrintableContent />
         </div>
       </div>
-       <div className="printable-content">
-          <PrintableContent />
+      <div className="printable-content">
+          <div className="p-8">
+            <PrintableContent />
+          </div>
       </div>
     </>
   );
