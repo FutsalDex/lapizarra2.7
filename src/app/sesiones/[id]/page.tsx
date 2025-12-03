@@ -101,34 +101,34 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
         <div className="bg-gray-200 text-center py-1 border-b border-black">
           <h3 className="font-bold uppercase">{ex['Ejercicio']}</h3>
         </div>
-        <div className="grid grid-cols-10 p-1 gap-1">
-          <div className="col-span-4 flex flex-col gap-1">
-            <div className="border border-black aspect-[2/1] flex items-center justify-center p-1">
-                <Image src={ex['Imagen']} alt={ex['Ejercicio']} width={150} height={75} objectFit="contain" unoptimized={true} />
+        <div className="grid grid-cols-10">
+          <div className="col-span-4 border-r border-black">
+            <div className="border-b border-black aspect-[1.7/1] flex items-center justify-center p-1">
+                <Image src={ex['Imagen']} alt={ex['Ejercicio']} width={200} height={120} objectFit="contain" unoptimized={true} />
             </div>
-             <div className="grid grid-cols-2 gap-1">
-                <div className="border border-black text-center p-1">
+            <div className="grid grid-cols-2 border-b border-black">
+                <div className="border-r border-black p-1 text-center">
                     <p className="font-bold">Tiempo</p>
-                    <p>{ex['Duración (min)']}</p>
+                    <p>{ex['Duración (min)']}'</p>
                 </div>
-                <div className="border border-black text-center p-1">
+                <div className="p-1 text-center">
                     <p className="font-bold">Jugadores</p>
                     <p>{ex['Número de jugadores']}</p>
                 </div>
             </div>
-            <div className="border border-black text-center p-1">
+            <div className="p-1 text-center">
               <p className="font-bold">Material</p>
-              <p className="break-words h-8">{ex['Espacio y materiales necesarios']}</p>
+              <p className="break-words">{ex['Espacio y materiales necesarios']}</p>
             </div>
           </div>
-          <div className="col-span-6 space-y-2 p-1">
+          <div className="col-span-6 space-y-2 p-2">
             <div>
               <p className="font-bold">Descripción:</p>
-              <p>{ex['Descripción de la tarea']}</p>
+              <p className="text-justify">{ex['Descripción de la tarea']}</p>
             </div>
             <div>
               <p className="font-bold">Objetivos:</p>
-              <p>{ex['Objetivos']}</p>
+              <p className="text-justify">{ex['Objetivos']}</p>
             </div>
           </div>
         </div>
@@ -137,7 +137,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
 
     return (
         <div ref={ref} className="bg-white text-gray-900 p-8" style={{ width: '210mm', minHeight: '297mm' }}>
-            <div className="break-after-page">
+           <div className="break-after-page">
               <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
                 <tbody>
                   <tr>
@@ -476,6 +476,7 @@ export default function SesionDetallePage() {
 
     
     
+
 
 
 
