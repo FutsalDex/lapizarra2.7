@@ -71,7 +71,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                         <div className="px-1 text-center border-b flex-shrink-0">
                             <p className="text-[8px] font-semibold break-words leading-tight">{ex.Ejercicio}</p>
                         </div>
-                        <div className="relative aspect-[2/1] w-full bg-muted flex-grow">
+                        <div className="relative aspect-[1.88/1] w-full bg-muted flex-grow">
                             <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-4" unoptimized={true} />
                         </div>
                     </div>
