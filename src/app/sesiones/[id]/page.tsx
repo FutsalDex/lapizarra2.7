@@ -184,7 +184,7 @@ const SessionView = ({ exercises }: { exercises: Exercise[] }) => {
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
              <div className="grid grid-cols-10 gap-6 p-6">
-                <div className="col-span-4 space-y-4">
+                <div className="col-span-5 space-y-4">
                     <div className="relative min-h-[190px] bg-muted rounded-md aspect-[1.88/1]">
                         <Image
                         src={exercise['Imagen']}
@@ -204,7 +204,7 @@ const SessionView = ({ exercises }: { exercises: Exercise[] }) => {
                         </div>
                     </div>
                 </div>
-                <div className="col-span-6 space-y-4">
+                <div className="col-span-5 space-y-4">
                     <h3 className="text-xl font-bold font-headline break-words">{exercise['Ejercicio']}</h3>
                     <div>
                         <h4 className="font-semibold text-lg">Descripción</h4>
