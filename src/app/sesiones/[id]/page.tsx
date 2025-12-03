@@ -80,99 +80,99 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
 });
 SessionBasicPreview.displayName = "SessionBasicPreview";
 
-const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, exercises: Exercise[], teamName: string }>(({ sessionData, exercises, teamName }, ref) => {
+const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; exercises: Exercise[]; teamName: string }>(
+  ({ sessionData, exercises, teamName }, ref) => {
     const getExercisesByIds = (ids: string[]) => {
-        if (!ids || ids.length === 0) return [];
-        return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
+      if (!ids || ids.length === 0) return [];
+      return ids.map((id) => exercises.find((ex) => ex.id === id)).filter(Boolean) as Exercise[];
     };
+    
+    const initial = getExercisesByIds(sessionData.initialExercises);
+    const main = getExercisesByIds(sessionData.mainExercises);
+    const final = getExercisesByIds(sessionData.finalExercises);
+    const allSessionExercises = [...initial, ...main, ...final];
 
-    const PhaseSectionPro = ({ title, exercises }: { title: string; exercises: Exercise[] }) => {
-        if (exercises.length === 0) return null;
-        return (
-            <div className="space-y-4">
-                <div className="bg-gray-800 text-white text-center py-1">
-                    <h3 className="font-bold tracking-widest">{title}</h3>
-                </div>
-                {exercises.map(ex => (
-                    <Card key={ex.id} className="overflow-hidden">
-                       <div className="px-1 text-center border-b">
-                            <p className="text-[9px] font-semibold break-words">{ex.Ejercicio}</p>
-                        </div>
-                        <CardContent className="p-2 grid grid-cols-2 gap-2">
-                            <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
-                                <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" unoptimized={true} />
-                            </div>
-                            <div className="text-xs space-y-2">
-                                <div>
-                                    <p className="font-bold">Descripción</p>
-                                    <p className="text-gray-600 dark:text-gray-400 text-sm">{ex['Descripción de la tarea']}</p>
-                                </div>
-                                <div>
-                                    <p className="font-bold">Objetivos</p>
-                                    <p className="text-gray-600 dark:text-gray-400 text-sm">{ex['Objetivos']}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                         <CardFooter className="p-2 text-xs text-center text-gray-900">
-                            <div className="flex gap-2 w-full items-stretch">
-                                <div className="border p-1 rounded-sm flex flex-col justify-center w-[15%]">
-                                    <p className="font-bold">Tiempo</p>
-                                    <p>{ex['Duración (min)']}</p>
-                                </div>
-                                <div className="border p-1 rounded-sm flex flex-col justify-center w-[15%]">
-                                    <p className="font-bold">Jugadores</p>
-                                    <p>{ex['Número de jugadores']}</p>
-                                </div>
-                                <div className="border p-1 rounded-sm flex flex-col justify-center w-[70%]">
-                                    <p className="font-bold">Material</p>
-                                    <p className="break-words">{ex['Espacio y materiales necesarios']}</p>
-                                </div>
-                            </div>
-                        </CardFooter>
-                    </Card>
-                ))}
+    const firstPageExercises = allSessionExercises.slice(0, 2);
+    const remainingExercises = allSessionExercises.slice(2);
+    
+    const ExerciseCard = ({ ex }: { ex: Exercise }) => (
+      <Card key={ex.id} className="overflow-hidden break-inside-avoid">
+        <div className="px-1 text-center border-b">
+          <p className="text-[9px] font-semibold break-words">{ex['Ejercicio']}</p>
+        </div>
+        <CardContent className="p-2 grid grid-cols-2 gap-2">
+          <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
+            <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" unoptimized={true} />
+          </div>
+          <div className="text-xs space-y-2">
+            <div>
+              <p className="font-bold">Descripción</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">{ex['Descripción de la tarea']}</p>
             </div>
-        );
-    };
+            <div>
+              <p className="font-bold">Objetivos</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">{ex['Objetivos']}</p>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="p-2 text-xs text-center text-gray-900">
+          <div className="flex gap-2 w-full items-stretch">
+            <div className="border p-1 rounded-sm flex flex-col justify-center w-[15%]">
+              <p className="font-bold">Tiempo</p>
+              <p>{ex['Duración (min)']}</p>
+            </div>
+            <div className="border p-1 rounded-sm flex flex-col justify-center w-[15%]">
+              <p className="font-bold">Jugadores</p>
+              <p>{ex['Número de jugadores']}</p>
+            </div>
+            <div className="border p-1 rounded-sm flex flex-col justify-center w-[70%]">
+              <p className="font-bold">Material</p>
+              <p className="break-words">{ex['Espacio y materiales necesarios']}</p>
+            </div>
+          </div>
+        </CardFooter>
+      </Card>
+    );
 
     return (
-         <div ref={ref} className="bg-white text-gray-900 p-8" style={{ width: '210mm', fontSize: '10px' }}>
-            <div className="space-y-6">
-                 <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
+      <div ref={ref} className="bg-white text-gray-900 p-8" style={{ width: '210mm', fontSize: '10px' }}>
+        <div className="break-after-page">
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
+                  <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
                     <tbody>
-                        <tr>
-                            <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
-                                <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
-                                    <tbody>
-                                        <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                                        <tr><td style={{ padding: '4px', height: '25%', wordBreak: 'break-word' }}><span className="font-bold">Instalación:</span> {sessionData.facility || 'Pista Numancia'}</td></tr>
-                                        <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
-                                        <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                            <td style={{ width: '70%', padding: '8px', verticalAlign: 'top' }}>
-                                <div className="font-bold mb-1">Objetivos</div>
-                                <ul className="list-disc list-inside pl-2">
-                                    {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                        <li key={index}>{obj}</li>
-                                    ))}
-                                </ul>
-                            </td>
-                        </tr>
+                      <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
+                      <tr><td style={{ padding: '4px', height: '25%', wordBreak: 'break-word' }}><span className="font-bold">Instalación:</span> {sessionData.facility || 'Pista Numancia'}</td></tr>
+                      <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
+                      <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
                     </tbody>
-                </table>
-                <div className="space-y-6 pt-0">
-                    <PhaseSectionPro title="FASE INICIAL" exercises={getExercisesByIds(sessionData.initialExercises)} />
-                    <PhaseSectionPro title="FASE PRINCIPAL" exercises={getExercisesByIds(sessionData.mainExercises)} />
-                    <PhaseSectionPro title="FASE FINAL" exercises={getExercisesByIds(sessionData.finalExercises)} />
-                </div>
-
-                <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
-            </div>
+                  </table>
+                </td>
+                <td style={{ width: '70%', padding: '8px', verticalAlign: 'top' }}>
+                  <div className="font-bold mb-1">Objetivos</div>
+                  <ul className="list-disc list-inside pl-2">
+                    {(sessionData.objectives || []).map((obj: string, index: number) => (
+                      <li key={index}>{obj}</li>
+                    ))}
+                  </ul>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div className="space-y-2">
+            {firstPageExercises.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
+          </div>
         </div>
+        <div className="space-y-2">
+          {remainingExercises.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
+        </div>
+        <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
+      </div>
     );
-});
+  }
+);
 SessionProPreview.displayName = "SessionProPreview";
 
 
@@ -475,4 +475,5 @@ export default function SesionDetallePage() {
 
     
     
+
 
