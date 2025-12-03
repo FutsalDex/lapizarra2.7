@@ -103,22 +103,22 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
         </div>
         <div className="grid grid-cols-10 p-1 gap-1">
           <div className="col-span-4 flex flex-col gap-1">
-            <div className="border border-black aspect-[2/1] flex items-center justify-center">
+            <div className="border border-black aspect-[2/1] flex items-center justify-center p-1">
                 <Image src={ex['Imagen']} alt={ex['Ejercicio']} width={150} height={75} objectFit="contain" unoptimized={true} />
             </div>
-            <div className="flex gap-1">
-              <div className="border border-black text-center p-1 flex-1">
-                <p className="font-bold">Tiempo</p>
-                <p>{ex['Duración (min)']}</p>
-              </div>
-              <div className="border border-black text-center p-1 flex-1">
-                <p className="font-bold">Jugadores</p>
-                <p>{ex['Número de jugadores']}</p>
-              </div>
+             <div className="grid grid-cols-2 gap-1">
+                <div className="border border-black text-center p-1">
+                    <p className="font-bold">Tiempo</p>
+                    <p>{ex['Duración (min)']}</p>
+                </div>
+                <div className="border border-black text-center p-1">
+                    <p className="font-bold">Jugadores</p>
+                    <p>{ex['Número de jugadores']}</p>
+                </div>
             </div>
             <div className="border border-black text-center p-1">
               <p className="font-bold">Material</p>
-              <p className="break-words">{ex['Espacio y materiales necesarios']}</p>
+              <p className="break-words h-8">{ex['Espacio y materiales necesarios']}</p>
             </div>
           </div>
           <div className="col-span-6 space-y-2 p-1">
@@ -136,8 +136,8 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
     );
 
     return (
-      <div ref={ref} className="bg-white text-gray-900 p-8" style={{ width: '210mm', minHeight: '297mm' }}>
-          <div className="break-after-page">
+        <div ref={ref} className="bg-white text-gray-900 p-8" style={{ width: '210mm', minHeight: '297mm' }}>
+            <div className="break-after-page">
               <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
                 <tbody>
                   <tr>
@@ -165,11 +165,11 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
               <div className="space-y-4">
                 {firstPageExercises.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
               </div>
-          </div>
-          <div className="space-y-4">
-              {remainingExercises.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
-          </div>
-        <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
+            </div>
+            <div className="space-y-4">
+                {remainingExercises.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
+            </div>
+            <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
       </div>
     );
   }
@@ -476,6 +476,7 @@ export default function SesionDetallePage() {
 
     
     
+
 
 
 
