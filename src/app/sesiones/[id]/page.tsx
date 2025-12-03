@@ -101,11 +101,11 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
         <div className="px-1 text-center border-b">
           <p className="text-[9px] font-semibold break-words">{ex['Ejercicio']}</p>
         </div>
-        <CardContent className="p-2 grid grid-cols-2 gap-2">
-          <div className="relative aspect-[2/1] bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
+        <CardContent className="p-2 grid grid-cols-10 gap-2">
+          <div className="col-span-4 relative aspect-[2/1] bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
             <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" unoptimized={true} />
           </div>
-          <div className="text-xs space-y-2">
+          <div className="col-span-6 text-xs space-y-2">
             <div>
               <p className="font-bold">Descripción</p>
               <p className="text-gray-600 dark:text-gray-400 text-sm">{ex['Descripción de la tarea']}</p>
@@ -476,6 +476,7 @@ export default function SesionDetallePage() {
 
     
     
+
 
 
 
