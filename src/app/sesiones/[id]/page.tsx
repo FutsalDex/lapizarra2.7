@@ -17,10 +17,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -178,15 +176,15 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, e
 SessionProPreview.displayName = "SessionProPreview";
 
 
-const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
+const SessionView = ({ exercises }: { exercises: Exercise[] }) => {
   if (!exercises || exercises.length === 0) return null;
   
   return (
     <div className="space-y-6">
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-                <div className="md:col-span-1 space-y-4">
+             <div className="grid grid-cols-10 gap-6 p-6">
+                <div className="col-span-4 space-y-4">
                      <h3 className="text-xl font-bold font-headline text-center break-words">{exercise['Ejercicio']}</h3>
                     <div className="relative min-h-[200px] bg-muted rounded-md aspect-video">
                         <Image
@@ -207,7 +205,7 @@ const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
                         </div>
                     </div>
                 </div>
-                <div className="md:col-span-2 space-y-4">
+                <div className="col-span-6 space-y-4">
                     <div>
                         <h4 className="font-semibold text-lg">Descripción</h4>
                         <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
@@ -228,32 +226,13 @@ const SessionProView = ({ exercises }: { exercises: Exercise[] }) => {
 };
 
 
-const SessionBasicView = ({ exercises }: { exercises: Exercise[] }) => {
-    if (!exercises || exercises.length === 0) return null;
-
-    return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {exercises.map((exercise) => (
-                 <Card key={exercise.id} className="overflow-hidden group relative">
-                    <div className="px-1 text-center border-b">
-                        <p className="text-[9px] font-semibold break-words">{exercise.Ejercicio}</p>
-                    </div>
-                    <div className="relative aspect-video w-full">
-                     <Image src={exercise['Imagen']} alt={exercise['Ejercicio']} layout="fill" objectFit="contain" className="p-2" />
-                    </div>
-                </Card>
-            ))}
-        </div>
-    )
-}
-
-const PhaseSection = ({ title, exercises, viewMode }: { title: string; exercises: Exercise[], viewMode: 'pro' | 'basic' }) => {
+const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise[] }) => {
   if (!exercises || exercises.length === 0) return null;
   
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold font-headline text-primary">{title}</h2>
-      {viewMode === 'pro' ? <SessionProView exercises={exercises} /> : <SessionBasicView exercises={exercises} />}
+      <SessionView exercises={exercises} />
     </div>
   );
 };
@@ -261,7 +240,6 @@ const PhaseSection = ({ title, exercises, viewMode }: { title: string; exercises
 export default function SesionDetallePage() {
   const params = useParams();
   const sessionId = params.id as string;
-  const [viewMode, setViewMode] = useState<'pro' | 'basic'>('pro');
   const { toast } = useToast();
   const basicPrintRef = useRef<HTMLDivElement>(null);
   const proPrintRef = useRef<HTMLDivElement>(null);
@@ -426,14 +404,7 @@ export default function SesionDetallePage() {
         </div>
 
         <div className="max-w-4xl mx-auto space-y-8">
-          <div className="flex justify-end">
-            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'pro' | 'basic')}>
-                <TabsList>
-                    <TabsTrigger value="pro">Vista Pro</TabsTrigger>
-                    <TabsTrigger value="basic">Vista Básica</TabsTrigger>
-                </TabsList>
-            </Tabs>
-          </div>
+          
           <div className="space-y-8">
             <Card>
                 <CardHeader>
@@ -479,9 +450,9 @@ export default function SesionDetallePage() {
             </Card>
 
             <div className="space-y-12">
-                <PhaseSection title="Fase Inicial (Calentamiento)" exercises={initialExercises} viewMode={viewMode} />
-                <PhaseSection title="Fase Principal" exercises={mainExercises} viewMode={viewMode} />
-                <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} viewMode={viewMode} />
+                <PhaseSection title="Fase Inicial (Calentamiento)" exercises={initialExercises} />
+                <PhaseSection title="Fase Principal" exercises={mainExercises} />
+                <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} />
             </div>
           </div>
         </div>
