@@ -40,7 +40,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
     ];
 
     return (
-        <div ref={ref} className="bg-white text-gray-900 p-4" style={{ width: '210mm' }}>
+        <div ref={ref} className="bg-white text-gray-900 p-4" style={{ width: '210mm', fontSize: '10px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
                 <tbody>
                     <tr>
@@ -55,8 +55,8 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                             </table>
                         </td>
                         <td style={{ width: '70%', padding: '8px', verticalAlign: 'top' }}>
-                            <div className="font-bold mb-1" style={{ fontSize: '10px' }}>Objetivos</div>
-                            <ul className="list-disc list-inside pl-2 leading-tight" style={{ fontSize: '10px' }}>
+                            <div className="font-bold mb-1">Objetivos</div>
+                            <ul className="list-disc list-inside pl-2 leading-tight">
                                 {(sessionData.objectives || []).map((obj: string, index: number) => (
                                     <li key={index}>{obj}</li>
                                 ))}
@@ -65,7 +65,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
                     </tr>
                 </tbody>
             </table>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
                 {allSessionExercises.map(ex => (
                     <div key={ex.id} className="border border-gray-400 rounded-lg overflow-hidden break-inside-avoid flex flex-col">
                         <div className="px-1 text-center border-b flex-shrink-0">
