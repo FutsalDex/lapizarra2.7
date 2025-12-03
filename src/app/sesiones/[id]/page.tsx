@@ -185,8 +185,7 @@ const SessionView = ({ exercises }: { exercises: Exercise[] }) => {
         <Card key={exercise.id} className="overflow-hidden">
              <div className="grid grid-cols-10 gap-6 p-6">
                 <div className="col-span-4 space-y-4">
-                     <h3 className="text-xl font-bold font-headline text-center break-words">{exercise['Ejercicio']}</h3>
-                    <div className="relative min-h-[200px] bg-muted rounded-md aspect-video">
+                    <div className="relative min-h-[190px] bg-muted rounded-md aspect-[1.88/1]">
                         <Image
                         src={exercise['Imagen']}
                         alt={`Táctica para ${exercise['Ejercicio']}`}
@@ -206,6 +205,7 @@ const SessionView = ({ exercises }: { exercises: Exercise[] }) => {
                     </div>
                 </div>
                 <div className="col-span-6 space-y-4">
+                    <h3 className="text-xl font-bold font-headline break-words">{exercise['Ejercicio']}</h3>
                     <div>
                         <h4 className="font-semibold text-lg">Descripción</h4>
                         <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
@@ -475,3 +475,4 @@ export default function SesionDetallePage() {
 
     
     
+
