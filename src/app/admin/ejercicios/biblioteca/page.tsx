@@ -24,11 +24,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, doc, updateDoc, deleteDoc, getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 import { app } from '@/firebase/config';
 import { Exercise } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -102,7 +100,7 @@ export default function LibraryManagementPage() {
         }
 
         return matchesSearch && matchesCategory && matchesAuthor;
-      }).sort((a, b) => a['Número'] - b['Número']);
+      }).sort((a, b) => (a['Número'] || 0) - (b['Número'] || 0));
   }, [exercises, searchTerm, categoryFilter, authorFilter, user, loadingExercises, loadingAuth]);
 
   const isLoading = loadingAuth || loadingExercises;
@@ -207,25 +205,11 @@ export default function LibraryManagementPage() {
                         checked={exercise['Visible']} 
                         onCheckedChange={(checked) => handleVisibilityChange(exercise.id, checked)}
                       />
-                      <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                              <DialogHeader>
-                                  <DialogTitle>Editar Ejercicio</DialogTitle>
-                                  <DialogDescription>
-                                      Para editar este ejercicio, serás redirigido al formulario de alta.
-                                  </DialogDescription>
-                              </DialogHeader>
-                              <DialogFooter>
-                                  <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-                                  <Button asChild><Link href="/ejercicios/mis-ejercicios">Ir al Formulario</Link></Button>
-                              </DialogFooter>
-                          </DialogContent>
-                      </Dialog>
+                      <Button variant="ghost" size="icon" asChild>
+                        <Link href={`/ejercicios/mis-ejercicios?edit=${exercise.id}`}>
+                            <Edit className="h-4 w-4" />
+                        </Link>
+                      </Button>
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
