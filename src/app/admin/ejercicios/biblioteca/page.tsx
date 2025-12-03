@@ -147,8 +147,8 @@ export default function LibraryManagementPage() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="Todas">Todas las Categorías</SelectItem>
-                    {allCategories.map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    {allCategories.map((cat, index) => (
+                        <SelectItem key={`${cat}-${index}`} value={cat}>{cat}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
