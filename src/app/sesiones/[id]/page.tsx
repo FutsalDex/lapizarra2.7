@@ -280,48 +280,48 @@ export default function SesionDetallePage() {
   const isLoading = loadingSession || loadingExercises || loadingTeam;
 
   const handleDownloadPdf = async (type: 'basic' | 'pro') => {
-    const elementToPrint = type === 'basic' ? basicPrintRef.current : proPrintRef.current;
-    if (!elementToPrint) return;
+    const root = type === 'basic' ? basicPrintRef.current : proPrintRef.current;
+    if (!root) return;
 
     setIsDownloading(true);
-    setIsPrintDialogOpen(false); // Close dialog on download start
+    setIsPrintDialogOpen(false);
 
     try {
-      const canvas = await html2canvas(elementToPrint, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-  
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      
-      const imgProps = pdf.getImageProperties(canvas);
-      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      let heightLeft = imgHeight;
-      let position = 0;
-  
-      pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
-      heightLeft -= pdf.internal.pageSize.getHeight();
-  
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(canvas, 'PNG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
+      const pages = Array.from(root.children); // cada hijo = 1 página
+
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i] as HTMLElement;
+
+        // ignorar nodos que no son páginas (text nodes, etc.)
+        if (page.nodeType !== 1) continue;
+
+        const canvas = await html2canvas(page, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = pdf.internal.pageSize.getWidth();
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        if (i !== 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       }
-      
+
       pdf.save(`sesion-${type}-${sessionId}.pdf`);
+
       toast({
         title: "El archivo PDF se ha descargado",
       });
+
     } catch (error) {
-      console.error('Error al generar el PDF:', error);
+      console.error("Error al generar PDF", error);
       toast({
-        variant: 'destructive',
-        title: 'Fallo en la Descarga',
-        description: 'Hubo un problema al generar el PDF.',
+        variant: "destructive",
+        title: "Fallo al descargar",
+        description: "No se pudo generar el PDF.",
       });
     } finally {
       setIsDownloading(false);
@@ -483,8 +483,12 @@ export default function SesionDetallePage() {
         </div>
       </div>
       <div style={{ position: 'absolute', left: '-9999px', top: '0', zIndex: -100 }}>
-         <SessionBasicPreview ref={basicPrintRef} sessionData={session} exercises={allExercises} teamName={teamName} />
-         <SessionProPreview ref={proPrintRef} sessionData={session} exercises={allExercises} teamName={teamName} />
+        <div ref={basicPrintRef}>
+            <SessionBasicPreview sessionData={session} exercises={allExercises} teamName={teamName} />
+        </div>
+        <div ref={proPrintRef}>
+            <SessionProPreview sessionData={session} exercises={allExercises} teamName={teamName} />
+        </div>
       </div>
     </>
   );
@@ -500,6 +504,7 @@ export default function SesionDetallePage() {
 
     
     
+
 
 
 
