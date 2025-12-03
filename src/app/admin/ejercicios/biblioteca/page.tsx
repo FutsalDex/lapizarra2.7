@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Search, Trash2, Filter } from 'lucide-react';
+import { ArrowLeft, Edit, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,77 +22,89 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { collection, doc, updateDoc, deleteDoc, getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { app } from '@/firebase/config';
+import { Exercise } from '@/lib/data';
+import { Skeleton } from '@/components/ui/skeleton';
 
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-type Exercise = {
-  id: number;
-  name: string;
-  category: string;
-  visible: boolean;
-  author: string;
-};
-
-const exercisesData: Exercise[] = [
-    { id: 1, name: 'RONDO CON PASE DIAGONAL', category: 'Pase y control', visible: true, author: 'Otro' },
-    { id: 2, name: 'POSESION CON CUATRO PORTERIAS PEQUEÑAS', category: 'Posesión y circulación del balón', visible: true, author: 'Otro' },
-    { id: 3, name: 'PARALELA DOBLANDO CON PASE AL PIVOT', category: 'Finalización', visible: true, author: 'Propio' },
-    { id: 4, name: 'JUEGO EN CUATRO ZONAS', category: 'Superioridades e inferioridades numéricas', visible: true, author: 'Otro' },
-    { id: 5, name: 'CHUTES EN CRUZ CON PARALELA', category: 'Finalización', visible: true, author: 'Propio' },
-    { id: 6, name: '2C2 CON REPLIEGUE + 1 COMODIN EXTERIOR', category: 'Transiciones (ofensivas y defensivas)', visible: true, author: 'Otro' },
-    { id: 7, name: '2C2 CON REPLIEGUE', category: 'Transiciones (ofensivas y defensivas)', visible: true, author: 'Propio' },
-    { id: 8, name: '3C1 DOBLANDO', category: 'Técnica individual y combinada', visible: true, author: 'Otro' },
-    { id: 9, name: '3C3 CON 2 COMODINES EXTERIORES', category: 'Superioridades e inferioridades numéricas', visible: true, author: 'Otro' },
-    { id: 10, name: 'POSESION EN IGUALDAD CON APOYOS EXTERIORES Y FINALIZACION', category: 'Posesión y circulación del balón', visible: true, author: 'Otro' },
-    { id: 11, name: 'CIRCUITO FISICO - REPLIEGUE Y COORDINACION', category: 'Coordinación, agilidad y velocidad', visible: true, author: 'Propio' },
-    { id: 13, name: 'RONDO CON REPLIEGUE', category: 'Posesión y circulación del balón', visible: true, author: 'Otro' },
-    { id: 14, name: 'SISTEMA 3-1 (ATACAR EL CAMBIO)', category: 'sistema táctico ofensivo', visible: true, author: 'Propio' },
-    { id: 15, name: 'FINTA, CONTROL ORIENTADO Y FINALIZACION', category: 'Finalización', visible: true, author: 'Otro' },
-    { id: 16, name: '2 RONDOS CON CAMBIO DE RONDO', category: 'Técnica individual y combinada', visible: true, author: 'Otro' },
-    { id: 17, name: '1C1 ENTRANDO Y SALIENDO', category: 'Técnica individual y combinada', visible: true, author: 'Propio' },
-    { id: 18, name: 'CIRCUITO FISICO - RESISTENCIA Y VELOCIDAD ESPECIFICA', category: 'Coordinación, agilidad y velocidad', visible: true, author: 'Otro' },
-    { id: 19, name: 'JUGADA DE CORNER - AMAGO + BLOQUEO', category: 'Balón parado y remates', visible: true, author: 'Otro' },
-];
-
-const allCategories = [...new Set(exercisesData.map(ex => ex.category))];
 
 export default function LibraryManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('Todas');
   const [authorFilter, setAuthorFilter] = useState('Todos');
-  const [exercises, setExercises] = useState<Exercise[]>(exercisesData);
   const { toast } = useToast();
+  
+  const [user, loadingAuth] = useAuthState(auth);
+  const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
 
-  const handleVisibilityChange = (id: number, checked: boolean) => {
-    setExercises(prev => 
-      prev.map(ex => ex.id === id ? { ...ex, visible: checked } : ex)
-    );
-     toast({
+  const exercises = useMemo(() => 
+    exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [],
+  [exercisesSnapshot]);
+
+  const allCategories = useMemo(() => 
+      [...new Set(exercises.map(ex => ex['Categoría']))].sort(),
+  [exercises]);
+
+  const handleVisibilityChange = async (id: string, checked: boolean) => {
+    try {
+      const exerciseRef = doc(db, 'exercises', id);
+      await updateDoc(exerciseRef, { Visible: checked });
+      toast({
         title: "Visibilidad actualizada",
         description: `El ejercicio ahora es ${checked ? 'visible' : 'oculto'}.`,
-    });
+      });
+    } catch (error: any) {
+       toast({
+        variant: "destructive",
+        title: "Error al actualizar",
+        description: error.message,
+      });
+    }
   };
 
-  const handleDeleteExercise = (id: number) => {
-    setExercises(prev => prev.filter(ex => ex.id !== id));
-    toast({
+  const handleDeleteExercise = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'exercises', id));
+      toast({
         variant: "destructive",
         title: "Ejercicio eliminado",
         description: "El ejercicio ha sido eliminado de la biblioteca.",
-    });
+      });
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Error al eliminar",
+            description: error.message,
+        });
+    }
   };
   
-  const filteredExercises = exercises.filter(exercise => {
-    const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'Todas' || exercise.category === categoryFilter;
-    const matchesAuthor = 
-        authorFilter === 'Todos' || 
-        (authorFilter === 'Mis Ejercicios' && exercise.author === 'Propio') ||
-        (authorFilter === 'Otros Usuarios' && exercise.author === 'Otro');
-    return matchesSearch && matchesCategory && matchesAuthor;
-  });
+  const filteredExercises = useMemo(() => {
+      if (loadingExercises || loadingAuth) return [];
+      return exercises.filter(exercise => {
+        const matchesSearch = exercise['Ejercicio'].toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = categoryFilter === 'Todas' || exercise['Categoría'] === categoryFilter;
+        
+        let matchesAuthor = true;
+        if (authorFilter === 'Mis Ejercicios') {
+            matchesAuthor = user ? exercise.userId === user.uid : false;
+        } else if (authorFilter === 'Otros Usuarios') {
+            matchesAuthor = user ? exercise.userId !== user.uid : true;
+        }
+
+        return matchesSearch && matchesCategory && matchesAuthor;
+      });
+  }, [exercises, searchTerm, categoryFilter, authorFilter, user, loadingExercises, loadingAuth]);
+
+  const isLoading = loadingAuth || loadingExercises;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -162,25 +174,36 @@ export default function LibraryManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredExercises.map((exercise) => (
+                {isLoading && (
+                  Array.from({ length: 10 }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell><Skeleton className="h-5 w-10" /></TableCell>
+                      <TableCell><Skeleton className="h-12 w-16 rounded-sm" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                    </TableRow>
+                  ))
+                )}
+                {!isLoading && filteredExercises.map((exercise) => (
                   <TableRow key={exercise.id}>
-                    <TableCell className="font-medium">{exercise.id}</TableCell>
+                    <TableCell className="font-medium">{exercise['Número']}</TableCell>
                     <TableCell>
                       <Image 
-                        src={`https://picsum.photos/seed/ex${exercise.id}/64/48`}
-                        alt={exercise.name}
+                        src={exercise['Imagen'] || `https://picsum.photos/seed/ex${exercise.id}/64/48`}
+                        alt={exercise['Ejercicio']}
                         width={64}
                         height={48}
                         className="rounded-sm object-cover"
                       />
                     </TableCell>
-                    <TableCell>{exercise.name}</TableCell>
+                    <TableCell>{exercise['Ejercicio']}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{exercise.category}</Badge>
+                      <Badge variant="outline">{exercise['Categoría']}</Badge>
                     </TableCell>
                     <TableCell className="flex items-center justify-end gap-2">
                       <Switch 
-                        checked={exercise.visible} 
+                        checked={exercise['Visible']} 
                         onCheckedChange={(checked) => handleVisibilityChange(exercise.id, checked)}
                       />
                       <Dialog>
@@ -213,7 +236,7 @@ export default function LibraryManagementPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Esta acción eliminará permanentemente el ejercicio "{exercise.name}". No se puede deshacer.
+                                    Esta acción eliminará permanentemente el ejercicio "{exercise['Ejercicio']}". No se puede deshacer.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -228,9 +251,21 @@ export default function LibraryManagementPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {!isLoading && filteredExercises.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                            No se encontraron ejercicios con los filtros seleccionados.
+                        </TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
+          {errorExercises && (
+            <p className="text-destructive mt-4">
+              Error al cargar los ejercicios: {errorExercises.message}
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
