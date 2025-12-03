@@ -27,6 +27,7 @@ import {
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, doc, updateDoc, deleteDoc, getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { app } from '@/firebase/config';
 import { Exercise } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
