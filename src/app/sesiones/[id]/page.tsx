@@ -82,20 +82,28 @@ SessionBasicPreview.displayName = "SessionBasicPreview";
 
 const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; exercises: Exercise[]; teamName: string }>(
   ({ sessionData, exercises, teamName }, ref) => {
+
     const getExercisesByIds = (ids: string[]) => {
       if (!ids || ids.length === 0) return [];
-      return ids.map((id) => exercises.find((ex) => ex.id === id)).filter(Boolean) as Exercise[];
+      return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
     };
-    
+
     const allSessionExercises = [
       ...getExercisesByIds(sessionData.initialExercises),
       ...getExercisesByIds(sessionData.mainExercises),
       ...getExercisesByIds(sessionData.finalExercises)
     ];
 
+    // 👉 Página 1: solo 2 ejercicios
     const firstPageExercises = allSessionExercises.slice(0, 2);
+
+    // 👉 Resto: grupos de 3 ejercicios por página
     const remainingExercises = allSessionExercises.slice(2);
-    
+    const chunksOfThree = [];
+    for (let i = 0; i < remainingExercises.length; i += 3) {
+      chunksOfThree.push(remainingExercises.slice(i, i + 3));
+    }
+
     const ExerciseCard = ({ ex }: { ex: Exercise }) => (
       <div className="border border-black break-inside-avoid text-[10px]">
         <div className="bg-gray-200 text-center py-1 border-b border-black">
@@ -104,23 +112,24 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
         <div className="grid grid-cols-10">
           <div className="col-span-4 border-r border-black">
             <div className="border-b border-black aspect-[1.7/1] flex items-center justify-center p-1">
-                <Image src={ex['Imagen']} alt={ex['Ejercicio']} width={200} height={120} objectFit="contain" unoptimized={true} />
+              <Image src={ex['Imagen']} alt={ex['Ejercicio']} width={200} height={120} unoptimized={true} />
             </div>
             <div className="grid grid-cols-2 border-b border-black">
-                <div className="border-r border-black p-1 text-center">
-                    <p className="font-bold">Tiempo</p>
-                    <p>{ex['Duración (min)']}'</p>
-                </div>
-                <div className="p-1 text-center">
-                    <p className="font-bold">Jugadores</p>
-                    <p>{ex['Número de jugadores']}</p>
-                </div>
+              <div className="border-r border-black p-1 text-center">
+                <p className="font-bold">Tiempo</p>
+                <p>{ex['Duración (min)']}'</p>
+              </div>
+              <div className="p-1 text-center">
+                <p className="font-bold">Jugadores</p>
+                <p>{ex['Número de jugadores']}</p>
+              </div>
             </div>
             <div className="p-1 text-center">
               <p className="font-bold">Material</p>
               <p className="break-words">{ex['Espacio y materiales necesarios']}</p>
             </div>
           </div>
+
           <div className="col-span-6 space-y-2 p-2">
             <div>
               <p className="font-bold">Descripción:</p>
@@ -136,40 +145,55 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
     );
 
     return (
-        <div ref={ref} className="bg-white text-gray-900 p-8" style={{ width: '210mm', minHeight: '297mm' }}>
-           <div className="break-after-page">
-              <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
-                <tbody>
-                  <tr>
-                    <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
-                      <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
-                        <tbody>
-                          <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                          <tr><td style={{ padding: '4px', height: '25%', wordBreak: 'break-word' }}><span className="font-bold">Instalación:</span> {sessionData.facility || 'Pista Numancia'}</td></tr>
-                          <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
-                          <tr><td style={{ padding: '4px', height: '25%' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
-                        </tbody>
-                      </table>
-                    </td>
-                    <td style={{ width: '70%', padding: '8px', verticalAlign: 'top' }}>
-                      <div className="font-bold mb-1">Objetivos</div>
-                      <ul className="list-disc list-inside pl-2">
-                        {(sessionData.objectives || []).map((obj: string, index: number) => (
-                          <li key={index}>{obj}</li>
-                        ))}
-                      </ul>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="space-y-4">
-                {firstPageExercises.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
-              </div>
-            </div>
-            <div className="space-y-4">
-                {remainingExercises.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
-            </div>
-            <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
+      <div ref={ref} className="bg-white text-gray-900 p-8" style={{ width: '210mm', minHeight: '297mm' }}>
+
+        {/* ---------------------------------------------------- */}
+        {/* 📄 PRIMERA PÁGINA: CABECERA + 2 EJERCICIOS           */}
+        {/* ---------------------------------------------------- */}
+        <div className="break-after-page">
+          {/* Cabecera */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
+                  <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
+                    <tbody>
+                      <tr><td style={{ padding: '4px' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
+                      <tr><td style={{ padding: '4px' }}><span className="font-bold">Instalación:</span> {sessionData.facility || 'Pista Numancia'}</td></tr>
+                      <tr><td style={{ padding: '4px' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
+                      <tr><td style={{ padding: '4px' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
+                    </tbody>
+                  </table>
+                </td>
+
+                <td style={{ width: '70%', padding: '8px', verticalAlign: 'top' }}>
+                  <div className="font-bold mb-1">Objetivos</div>
+                  <ul className="list-disc list-inside pl-2">
+                    {(sessionData.objectives || []).map((obj: string, index: number) => (
+                      <li key={index}>{obj}</li>
+                    ))}
+                  </ul>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* 2 ejercicios */}
+          <div className="space-y-4">
+            {firstPageExercises.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
+          </div>
+        </div>
+
+        {/* ---------------------------------------------------- */}
+        {/* 📄 RESTO DE PÁGINAS: 3 EJERCICIOS POR PÁGINA          */}
+        {/* ---------------------------------------------------- */}
+        {chunksOfThree.map((group, idx) => (
+          <div key={idx} className="space-y-4 break-after-page">
+            {group.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
+          </div>
+        ))}
+
+        <p className="text-center text-xs mt-8 text-gray-500">Powered by LaPizarra</p>
       </div>
     );
   }
@@ -476,6 +500,7 @@ export default function SesionDetallePage() {
 
     
     
+
 
 
 
