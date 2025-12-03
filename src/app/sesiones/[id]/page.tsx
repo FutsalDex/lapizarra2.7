@@ -94,45 +94,45 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
     ];
 
     const firstPageExercises = allSessionExercises.slice(0, 2);
-    const remainingExercises = allSessionExercises.slice(2);
+    const remainingExercises = allSessionExamples.slice(2);
     
     const ExerciseCard = ({ ex }: { ex: Exercise }) => (
-      <Card key={ex.id} className="overflow-hidden break-inside-avoid">
-        <div className="px-1 text-center border-b">
-          <p className="text-[9px] font-semibold break-words">{ex['Ejercicio']}</p>
+      <div className="border border-black break-inside-avoid text-[10px]">
+        <div className="bg-gray-200 text-center py-1 border-b border-black">
+          <h3 className="font-bold uppercase">{ex['Ejercicio']}</h3>
         </div>
-        <CardContent className="p-2 grid grid-cols-10 gap-2">
-          <div className="col-span-4 relative aspect-[2/1] bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
-            <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" unoptimized={true} />
-          </div>
-          <div className="col-span-6 text-xs space-y-2">
-            <div>
-              <p className="font-bold">Descripción</p>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">{ex['Descripción de la tarea']}</p>
+        <div className="flex p-1 gap-1">
+          <div className="w-5/12 flex flex-col gap-1">
+            <div className="border border-black aspect-square flex items-center justify-center">
+                <Image src={ex['Imagen']} alt={ex['Ejercicio']} width={150} height={150} objectFit="contain" unoptimized={true} />
             </div>
-            <div>
-              <p className="font-bold">Objetivos</p>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">{ex['Objetivos']}</p>
+            <div className="flex gap-1">
+              <div className="border border-black text-center p-1 flex-1">
+                <p className="font-bold">Tiempo</p>
+                <p>{ex['Duración (min)']}</p>
+              </div>
+              <div className="border border-black text-center p-1 flex-1">
+                <p className="font-bold">Jugadores</p>
+                <p>{ex['Número de jugadores']}</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-        <CardFooter className="p-2 text-xs text-center text-gray-900">
-          <div className="flex gap-2 w-full items-stretch">
-            <div className="border p-1 rounded-sm flex flex-col justify-center w-[15%]">
-              <p className="font-bold">Tiempo</p>
-              <p>{ex['Duración (min)']}</p>
-            </div>
-            <div className="border p-1 rounded-sm flex flex-col justify-center w-[15%]">
-              <p className="font-bold">Jugadores</p>
-              <p>{ex['Número de jugadores']}</p>
-            </div>
-            <div className="border p-1 rounded-sm flex flex-col justify-center w-[70%]">
+            <div className="border border-black text-center p-1">
               <p className="font-bold">Material</p>
               <p className="break-words">{ex['Espacio y materiales necesarios']}</p>
             </div>
           </div>
-        </CardFooter>
-      </Card>
+          <div className="w-7/12 space-y-2 p-1">
+            <div>
+              <p className="font-bold">Descripción:</p>
+              <p>{ex['Descripción de la tarea']}</p>
+            </div>
+            <div>
+              <p className="font-bold">Objetivos:</p>
+              <p>{ex['Objetivos']}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     );
 
     return (
@@ -476,6 +476,7 @@ export default function SesionDetallePage() {
 
     
     
+
 
 
 
