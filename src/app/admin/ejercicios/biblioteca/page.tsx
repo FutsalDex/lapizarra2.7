@@ -102,7 +102,7 @@ export default function LibraryManagementPage() {
         }
 
         return matchesSearch && matchesCategory && matchesAuthor;
-      });
+      }).sort((a, b) => a['Número'] - b['Número']);
   }, [exercises, searchTerm, categoryFilter, authorFilter, user, loadingExercises, loadingAuth]);
 
   const isLoading = loadingAuth || loadingExercises;
