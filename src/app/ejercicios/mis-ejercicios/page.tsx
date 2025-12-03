@@ -3,7 +3,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ArrowLeft, Upload, PlusCircle, X, Save, Loader2, Edit } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
