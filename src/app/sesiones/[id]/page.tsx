@@ -94,7 +94,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
     ];
 
     const firstPageExercises = allSessionExercises.slice(0, 2);
-    const remainingExercises = allSessionExamples.slice(2);
+    const remainingExercises = allSessionExercises.slice(2);
     
     const ExerciseCard = ({ ex }: { ex: Exercise }) => (
       <div className="border border-black break-inside-avoid text-[10px]">
@@ -102,7 +102,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
           <h3 className="font-bold uppercase">{ex['Ejercicio']}</h3>
         </div>
         <div className="flex p-1 gap-1">
-          <div className="w-5/12 flex flex-col gap-1">
+          <div className="w-4/12 flex flex-col gap-1">
             <div className="border border-black aspect-square flex items-center justify-center">
                 <Image src={ex['Imagen']} alt={ex['Ejercicio']} width={150} height={150} objectFit="contain" unoptimized={true} />
             </div>
@@ -121,7 +121,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
               <p className="break-words">{ex['Espacio y materiales necesarios']}</p>
             </div>
           </div>
-          <div className="w-7/12 space-y-2 p-1">
+          <div className="w-6/12 space-y-2 p-1">
             <div>
               <p className="font-bold">Descripción:</p>
               <p>{ex['Descripción de la tarea']}</p>
@@ -476,6 +476,7 @@ export default function SesionDetallePage() {
 
     
     
+
 
 
 
