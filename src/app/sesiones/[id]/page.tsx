@@ -87,10 +87,11 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
       return ids.map((id) => exercises.find((ex) => ex.id === id)).filter(Boolean) as Exercise[];
     };
     
-    const initial = getExercisesByIds(sessionData.initialExercises);
-    const main = getExercisesByIds(sessionData.mainExercises);
-    const final = getExercisesByIds(sessionData.finalExercises);
-    const allSessionExercises = [...initial, ...main, ...final];
+    const allSessionExercises = [
+      ...getExercisesByIds(sessionData.initialExercises),
+      ...getExercisesByIds(sessionData.mainExercises),
+      ...getExercisesByIds(sessionData.finalExercises)
+    ];
 
     const firstPageExercises = allSessionExercises.slice(0, 2);
     const remainingExercises = allSessionExercises.slice(2);
@@ -101,7 +102,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
           <p className="text-[9px] font-semibold break-words">{ex['Ejercicio']}</p>
         </div>
         <CardContent className="p-2 grid grid-cols-2 gap-2">
-          <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
+          <div className="relative aspect-[2/1] bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
             <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" unoptimized={true} />
           </div>
           <div className="text-xs space-y-2">
@@ -475,5 +476,6 @@ export default function SesionDetallePage() {
 
     
     
+
 
 
