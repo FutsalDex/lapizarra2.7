@@ -84,7 +84,7 @@ SessionBasicPreview.displayName = "SessionBasicPreview";
 
 
 // ====================================================================
-// 2. SessionProPreview (Estructura de paginación corregida)
+// 2. SessionProPreview (Estructura de paginación correcta)
 // ====================================================================
 
 const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; exercises: Exercise[]; teamName: string }>(
@@ -292,7 +292,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
 };
 
 // ====================================================================
-// 4. Página Principal y Handler de Descarga (Corregido)
+// 4. Página Principal y Handler de Descarga (CORREGIDO)
 // ====================================================================
 
 export default function SesionDetallePage() {
@@ -312,7 +312,6 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
 
-  // CORRECCIÓN CLAVE: FILTRAR NODOS DE TEXTO y usar i > 0
   const handleDownloadPdf = async (type: 'basic' | 'pro') => {
     const root = type === 'basic' ? basicPrintRef.current : proPrintRef.current;
     if (!root) return;
@@ -323,7 +322,7 @@ export default function SesionDetallePage() {
     try {
         const pdf = new jsPDF('p', 'mm', 'a4');
         
-        // CORRECCIÓN: Filtrar solo nodos de elemento (los divs de página A4)
+        // CORRECCIÓN CRUCIAL: Filtrar solo nodos de elemento (los divs de página A4)
         const elementPages = Array.from(root.children).filter(
             (node): node is HTMLElement => node.nodeType === 1
         ) as HTMLElement[];
@@ -522,7 +521,7 @@ export default function SesionDetallePage() {
         </div>
       </div>
       <div style={{ position: 'absolute', left: '-9999px', top: '0', zIndex: -100 }}>
-        {/* Los contenedores ref ahora solo contienen los hijos directos (páginas A4) */}
+        {/* Contenedores ocultos para la generación del PDF */}
         <div ref={basicPrintRef}>
             <SessionBasicPreview sessionData={session} exercises={allExercises} teamName={teamName} />
         </div>
