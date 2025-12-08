@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import * as React from 'react';
@@ -24,6 +22,10 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const db = getFirestore(app);
+
+// ====================================================================
+// COMPONENTE PREVIEW BÁSICO (Mantenido sin cambios de paginación)
+// ====================================================================
 
 const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any, exercises: Exercise[], teamName: string }>(({ sessionData, exercises, teamName }, ref) => {
     const getExercisesByIds = (ids: string[]) => {
@@ -65,7 +67,7 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
             </table>
             <div className="grid grid-cols-2 gap-2">
                 {allSessionExercises.map(ex => (
-                    <div key={ex.id} className="border border-gray-400 rounded-lg overflow-hidden break-inside-avoid flex flex-col">
+                    <div key={ex.id} className="border border-gray-400 rounded-lg overflow-hidden break-inside-avoid flex flex-col" style={{ pageBreakInside: 'avoid' }}>
                         <div className="px-1 text-center border-b flex-shrink-0">
                             <p className="text-[11px] font-semibold break-words leading-tight">{ex.Ejercicio}</p>
                         </div>
@@ -79,6 +81,11 @@ const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any,
     );
 });
 SessionBasicPreview.displayName = "SessionBasicPreview";
+
+
+// ====================================================================
+// COMPONENTE PREVIEW PRO (CORREGIDO PARA PAGINACIÓN)
+// ====================================================================
 
 const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; exercises: Exercise[]; teamName: string }>(
   ({ sessionData, exercises, teamName }, ref) => {
@@ -94,18 +101,32 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
       ...getExercisesByIds(sessionData.finalExercises)
     ];
 
-    // 👉 Página 1: solo 2 ejercicios
-    const firstPageExercises = allSessionExercises.slice(0, 2);
+    // --- LÓGICA DE PAGINACIÓN ---
+    const pages = [];
+    let currentExIndex = 0;
 
-    // 👉 Resto: grupos de 3 ejercicios por página
-    const remainingExercises = allSessionExercises.slice(2);
-    const chunksOfThree = [];
+    // 1. Primera Página: Cabecera + 2 Ejercicios
+    const firstPageEx = allSessionExercises.slice(currentExIndex, currentExIndex + 2);
+    if (firstPageEx.length > 0) {
+      pages.push({
+        isHeaderPage: true,
+        exercises: firstPageEx,
+      });
+      currentExIndex += 2;
+    }
+
+    // 2. Resto de Páginas: Grupos de 3 Ejercicios
+    const remainingExercises = allSessionExercises.slice(currentExIndex);
     for (let i = 0; i < remainingExercises.length; i += 3) {
-      chunksOfThree.push(remainingExercises.slice(i, i + 3));
+      pages.push({
+        isHeaderPage: false,
+        exercises: remainingExercises.slice(i, i + 3),
+      });
     }
 
     const ExerciseCard = ({ ex }: { ex: Exercise }) => (
-      <div className="border border-black break-inside-avoid text-[10px]">
+      // Aplicamos style={{ pageBreakInside: 'avoid' }} para evitar que se rompa internamente
+      <div className="border border-black break-inside-avoid text-[10px]" style={{ pageBreakInside: 'avoid', marginBottom: '16px' }}>
         <div className="bg-gray-200 text-center py-1 border-b border-black">
           <h3 className="font-bold uppercase">{ex['Ejercicio']}</h3>
         </div>
@@ -145,61 +166,69 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
     );
 
     return (
-      <div ref={ref} className="bg-white text-gray-900 p-8" style={{ width: '210mm', minHeight: '297mm' }}>
+      <div ref={ref}> {/* Contenedor raíz para que el handler lo procese como array de hijos */}
+        {pages.map((page, pageIdx) => (
+          // CONTENEDOR DE CADA PÁGINA A4 con SALTO DE PÁGINA FORZADO
+          <div 
+            key={pageIdx} 
+            className="bg-white text-gray-900 p-8" 
+            style={{ 
+              width: '210mm', 
+              minHeight: '297mm', // Altura A4 (solo referencia, la clave es el width y el salto)
+              boxSizing: 'border-box',
+              // Forzar el salto de página en todos excepto en el último
+              pageBreakAfter: pageIdx < pages.length - 1 ? 'always' : 'auto' 
+            }}
+          >
+            
+            {/* 1. Cabecera (SOLO si es la primera página) */}
+            {page.isHeaderPage && (
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
+                      <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
+                        <tbody>
+                          <tr><td style={{ padding: '4px' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
+                          <tr><td style={{ padding: '4px' }}><span className="font-bold">Instalación:</span> {sessionData.facility || 'Pista Numancia'}</td></tr>
+                          <tr><td style={{ padding: '4px' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
+                          <tr><td style={{ padding: '4px' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
+                        </tbody>
+                      </table>
+                    </td>
+                    <td style={{ width: '70%', padding: '8px', verticalAlign: 'top' }}>
+                      <div className="font-bold mb-1">Objetivos</div>
+                      <ul className="list-disc list-inside pl-2">
+                        {(sessionData.objectives || []).map((obj: string, index: number) => (
+                          <li key={index}>{obj}</li>
+                        ))}
+                      </ul>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
 
-        {/* ---------------------------------------------------- */}
-        {/* 📄 PRIMERA PÁGINA: CABECERA + 2 EJERCICIOS           */}
-        {/* ---------------------------------------------------- */}
-        <div className="break-after-page">
-          {/* Cabecera */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid black', marginBottom: '16px' }}>
-            <tbody>
-              <tr>
-                <td style={{ width: '30%', padding: '0', verticalAlign: 'top', borderRight: '2px solid black' }}>
-                  <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
-                    <tbody>
-                      <tr><td style={{ padding: '4px' }}><span className="font-bold">Equipo:</span> {teamName}</td></tr>
-                      <tr><td style={{ padding: '4px' }}><span className="font-bold">Instalación:</span> {sessionData.facility || 'Pista Numancia'}</td></tr>
-                      <tr><td style={{ padding: '4px' }}><span className="font-bold">Microciclo:</span> {sessionData.microcycle || '1'}</td></tr>
-                      <tr><td style={{ padding: '4px' }}><span className="font-bold">Nº Sesión:</span> {sessionData.sessionNumber || '1'}</td></tr>
-                    </tbody>
-                  </table>
-                </td>
+            {/* 2. Ejercicios para la página actual */}
+            <div className="space-y-4">
+              {page.exercises.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
+            </div>
 
-                <td style={{ width: '70%', padding: '8px', verticalAlign: 'top' }}>
-                  <div className="font-bold mb-1">Objetivos</div>
-                  <ul className="list-disc list-inside pl-2">
-                    {(sessionData.objectives || []).map((obj: string, index: number) => (
-                      <li key={index}>{obj}</li>
-                    ))}
-                  </ul>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* 2 ejercicios */}
-          <div className="space-y-4">
-            {firstPageExercises.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
-          </div>
-        </div>
-
-        {/* ---------------------------------------------------- */}
-        {/* 📄 RESTO DE PÁGINAS: 3 EJERCICIOS POR PÁGINA          */}
-        {/* ---------------------------------------------------- */}
-        {chunksOfThree.map((group, idx) => (
-          <div key={idx} className="space-y-4 break-after-page">
-            {group.map(ex => <ExerciseCard ex={ex} key={ex.id} />)}
+            <p className="text-center text-xs mt-8 text-gray-500">
+                {pageIdx === pages.length - 1 ? 'Powered by LaPizarra' : ''}
+            </p>
           </div>
         ))}
-
-        <p className="text-center text-xs mt-8 text-gray-500">Powered by LaPizarra</p>
       </div>
     );
   }
 );
 SessionProPreview.displayName = "SessionProPreview";
 
+
+// ====================================================================
+// VISTAS NORMALES (Mantenidas)
+// ====================================================================
 
 const SessionView = ({ exercises }: { exercises: Exercise[] }) => {
   if (!exercises || exercises.length === 0) return null;
@@ -262,6 +291,10 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
   );
 };
 
+// ====================================================================
+// PÁGINA PRINCIPAL (Mantenida)
+// ====================================================================
+
 export default function SesionDetallePage() {
   const params = useParams();
   const sessionId = params.id as string;
@@ -288,16 +321,15 @@ export default function SesionDetallePage() {
 
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pages = Array.from(root.children); // cada hijo = 1 página
+      const pages = Array.from(root.children); // Esto es correcto, ahora root.children son los divs de página A4
 
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement;
 
-        // ignorar nodos que no son páginas (text nodes, etc.)
         if (page.nodeType !== 1) continue;
 
         const canvas = await html2canvas(page, {
-          scale: 2,
+          scale: 2, // Usar buena resolución
           useCORS: true,
           logging: false,
         });
@@ -493,25 +525,3 @@ export default function SesionDetallePage() {
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-    
-    
-
-
-
-
-
-
-
-
-
-
-
