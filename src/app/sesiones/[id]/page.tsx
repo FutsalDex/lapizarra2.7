@@ -24,7 +24,7 @@ import html2canvas from 'html2canvas';
 const db = getFirestore(app);
 
 // ====================================================================
-// COMPONENTE PREVIEW BÁSICO (Mantenido sin cambios de paginación)
+// 1. SessionBasicPreview (Mantenido)
 // ====================================================================
 
 const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any, exercises: Exercise[], teamName: string }>(({ sessionData, exercises, teamName }, ref) => {
@@ -84,7 +84,7 @@ SessionBasicPreview.displayName = "SessionBasicPreview";
 
 
 // ====================================================================
-// COMPONENTE PREVIEW PRO (CORREGIDO PARA PAGINACIÓN)
+// 2. SessionProPreview (Estructura de paginación corregida)
 // ====================================================================
 
 const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; exercises: Exercise[]; teamName: string }>(
@@ -125,7 +125,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
     }
 
     const ExerciseCard = ({ ex }: { ex: Exercise }) => (
-      // Aplicamos style={{ pageBreakInside: 'avoid' }} para evitar que se rompa internamente
+      // Asegurar que la tarjeta no se rompa internamente con CSS en línea
       <div className="border border-black break-inside-avoid text-[10px]" style={{ pageBreakInside: 'avoid', marginBottom: '16px' }}>
         <div className="bg-gray-200 text-center py-1 border-b border-black">
           <h3 className="font-bold uppercase">{ex['Ejercicio']}</h3>
@@ -166,7 +166,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
     );
 
     return (
-      <div ref={ref}> {/* Contenedor raíz para que el handler lo procese como array de hijos */}
+      <div ref={ref}> {/* Contenedor raíz para que el handler procese sus hijos */}
         {pages.map((page, pageIdx) => (
           // CONTENEDOR DE CADA PÁGINA A4 con SALTO DE PÁGINA FORZADO
           <div 
@@ -174,7 +174,7 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
             className="bg-white text-gray-900 p-8" 
             style={{ 
               width: '210mm', 
-              minHeight: '297mm', // Altura A4 (solo referencia, la clave es el width y el salto)
+              minHeight: '297mm',
               boxSizing: 'border-box',
               // Forzar el salto de página en todos excepto en el último
               pageBreakAfter: pageIdx < pages.length - 1 ? 'always' : 'auto' 
@@ -227,7 +227,7 @@ SessionProPreview.displayName = "SessionProPreview";
 
 
 // ====================================================================
-// VISTAS NORMALES (Mantenidas)
+// 3. Vistas Normales (Mantenidas)
 // ====================================================================
 
 const SessionView = ({ exercises }: { exercises: Exercise[] }) => {
@@ -292,7 +292,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
 };
 
 // ====================================================================
-// PÁGINA PRINCIPAL (Mantenida)
+// 4. Página Principal y Handler de Descarga (Corregido)
 // ====================================================================
 
 export default function SesionDetallePage() {
@@ -312,6 +312,7 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
 
+  // CORRECCIÓN CLAVE: FILTRAR NODOS DE TEXTO y usar i > 0
   const handleDownloadPdf = async (type: 'basic' | 'pro') => {
     const root = type === 'basic' ? basicPrintRef.current : proPrintRef.current;
     if (!root) return;
@@ -320,45 +321,51 @@ export default function SesionDetallePage() {
     setIsPrintDialogOpen(false);
 
     try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pages = Array.from(root.children); // Esto es correcto, ahora root.children son los divs de página A4
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        // CORRECCIÓN: Filtrar solo nodos de elemento (los divs de página A4)
+        const elementPages = Array.from(root.children).filter(
+            (node): node is HTMLElement => node.nodeType === 1
+        ) as HTMLElement[];
 
-      for (let i = 0; i < pages.length; i++) {
-        const page = pages[i] as HTMLElement;
+        for (let i = 0; i < elementPages.length; i++) {
+            const page = elementPages[i];
 
-        if (page.nodeType !== 1) continue;
+            const canvas = await html2canvas(page, {
+                scale: 2, // Usar buena resolución
+                useCORS: true,
+                logging: false,
+            });
 
-        const canvas = await html2canvas(page, {
-          scale: 2, // Usar buena resolución
-          useCORS: true,
-          logging: false,
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = pdf.internal.pageSize.getWidth();
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            // Condición corregida: Agregar página SOLO a partir de la segunda iteración (i=1)
+            if (i > 0) { 
+                pdf.addPage();
+            }
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        }
+
+        pdf.save(`sesion-${type}-${sessionId}.pdf`);
+
+        toast({
+            title: "El archivo PDF se ha descargado",
         });
 
-        const imgData = canvas.toDataURL('image/png');
-        const imgWidth = pdf.internal.pageSize.getWidth();
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        if (i !== 0) pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      }
-
-      pdf.save(`sesion-${type}-${sessionId}.pdf`);
-
-      toast({
-        title: "El archivo PDF se ha descargado",
-      });
-
     } catch (error) {
-      console.error("Error al generar PDF", error);
-      toast({
-        variant: "destructive",
-        title: "Fallo al descargar",
-        description: "No se pudo generar el PDF.",
-      });
+        console.error("Error al generar PDF", error);
+        toast({
+            variant: "destructive",
+            title: "Fallo al descargar",
+            description: "No se pudo generar el PDF.",
+        });
     } finally {
-      setIsDownloading(false);
+        setIsDownloading(false);
     }
-  };
+};
 
 
   if (isLoading) {
@@ -515,6 +522,7 @@ export default function SesionDetallePage() {
         </div>
       </div>
       <div style={{ position: 'absolute', left: '-9999px', top: '0', zIndex: -100 }}>
+        {/* Los contenedores ref ahora solo contienen los hijos directos (páginas A4) */}
         <div ref={basicPrintRef}>
             <SessionBasicPreview sessionData={session} exercises={allExercises} teamName={teamName} />
         </div>
