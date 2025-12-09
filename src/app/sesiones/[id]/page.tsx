@@ -22,92 +22,6 @@ import html2canvas from 'html2canvas';
 
 const db = getFirestore(app);
 
-const SessionProPreview = React.forwardRef<HTMLDivElement, { session: any; exercises: Exercise[]; teamName: string }>(
-  ({ session, exercises, teamName }, ref) => {
-    // build flat exercise list
-    const getByIds = (ids: string[] = []) =>
-      ids.map((id) => exercises.find((e) => e.id === id)).filter(Boolean) as Exercise[];
-
-    const all = [...getByIds(session.initialExercises), ...getByIds(session.mainExercises), ...getByIds(session.finalExercises)];
-
-    // first page: header + 2 exercises
-    const firstPageEx = all.slice(0, 2);
-    
-    // chunk rest into groups of 3
-    const rest = all.slice(2);
-    const chunks: Exercise[][] = [];
-    for (let i = 0; i < rest.length; i += 3) {
-        chunks.push(rest.slice(i, i + 3));
-    }
-    
-    return (
-      <div ref={ref} aria-hidden style={{ width: "210mm" }}>
-        {/* Page 1 */}
-        <div className="print-page first-page">
-           <h2 className="session-title">Detalles y Objetivos de la Sesión</h2>
-           <table style={{width: '100%'}}>
-               <tbody>
-                   <tr>
-                       <td style={{width: '30%', verticalAlign: 'top'}}>
-                           <p><strong>Equipo:</strong> {teamName}</p>
-                           <p><strong>Instalación:</strong> {session.facility}</p>
-                           <p><strong>Microciclo:</strong> {session.microcycle}</p>
-                           <p><strong>Nº Sesión:</strong> {session.sessionNumber}</p>
-                       </td>
-                       <td style={{width: '70%', verticalAlign: 'top'}}>
-                           <h3 style={{fontWeight: 'bold'}}>Objetivos</h3>
-                           <ul style={{margin: 0, paddingLeft: '20px'}}>
-                               {(session.objectives || []).map((o: string, i: number) => <li key={i}>{o}</li>)}
-                           </ul>
-                       </td>
-                   </tr>
-               </tbody>
-           </table>
-
-           <h2 className="phase-header">Fase Inicial (Calentamiento)</h2>
-           {firstPageEx.map((ex) => (
-             <div key={ex.id} className="exercise-block">
-                <img src={ex.Imagen} className="exercise-img" alt={ex.Ejercicio} />
-                <div className="exercise-info">
-                    <h3 className="exercise-title">{ex.Ejercicio}</h3>
-                    <h4 className="exercise-sub">Descripción</h4>
-                    <p>{ex['Descripción de la tarea']}</p>
-                    <h4 className="exercise-sub">Objetivos del Ejercicio</h4>
-                    <p>{ex.Objetivos}</p>
-                    <div className="exercise-meta">
-                        <p><strong>Duración:</strong> {ex['Duración (min)']} min</p>
-                        <p><strong>Jugadores:</strong> {ex['Número de jugadores']}</p>
-                        <p><strong>Material:</strong> {ex['Espacio y materiales necesarios']}</p>
-                    </div>
-                </div>
-             </div>
-           ))}
-        </div>
-
-        {/* Following pages */}
-        {chunks.map((group, pageIndex) => (
-          <div key={pageIndex} className="print-page page-grid">
-            {group.map((ex) => (
-              <div key={ex.id} className="card">
-                <img src={ex.Imagen} className="card-img" alt={ex.Ejercicio} />
-                <h2 className="card-title">{ex.Ejercicio}</h2>
-                <p className="card-desc">{ex['Descripción de la tarea']}</p>
-                <div className="card-meta">
-                  <p><strong>🕒</strong> {ex['Duración (min)']} min</p>
-                  <p><strong>👥</strong> {ex['Número de jugadores']}</p>
-                  <p><strong>🎒</strong> {ex['Espacio y materiales necesarios']}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    );
-  }
-);
-SessionProPreview.displayName = "SessionProPreview";
-
-
 const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise[] }) => {
   if (!exercises || exercises.length === 0) {
     return (
@@ -124,7 +38,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
              <div className="grid grid-cols-10 gap-6 p-6">
-                <div className="col-span-10 md:col-span-5 space-y-4">
+                <div className="col-span-10 md:col-span-3 space-y-4">
                     <div className="relative min-h-[190px] bg-muted rounded-md aspect-video">
                         <Image
                         src={exercise['Imagen']}
@@ -133,7 +47,14 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
                         className="object-contain p-2"
                         />
                     </div>
-                    <div className="space-y-2 text-sm">
+                </div>
+                <div className="col-span-10 md:col-span-7 space-y-4">
+                    <h3 className="text-xl font-bold font-headline break-words">{exercise['Ejercicio']}</h3>
+                    <div>
+                        <h4 className="font-semibold text-lg">Descripción</h4>
+                        <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
+                    </div>
+                     <div className="grid grid-cols-2 gap-4 text-sm pt-2">
                         <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-muted-foreground" />
                             <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
@@ -143,14 +64,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
                             <span><span className="font-semibold">Jugadores:</span> {exercise['Número de jugadores']}</span>
                         </div>
                     </div>
-                </div>
-                <div className="col-span-10 md:col-span-5 space-y-4">
-                    <h3 className="text-xl font-bold font-headline break-words">{exercise['Ejercicio']}</h3>
-                    <div>
-                        <h4 className="font-semibold text-lg">Descripción</h4>
-                        <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
-                    </div>
-                    <div className="pt-4">
+                    <div className="pt-2">
                         <div className="flex items-center gap-2 mb-2">
                             <Target className="w-4 h-4 text-primary" />
                             <h4 className="font-semibold">Objetivos del Ejercicio</h4>
@@ -170,7 +84,6 @@ export default function SesionDetallePage() {
   const params = useParams();
   const sessionId = params.id as string;
   const { toast } = useToast();
-  const proPrintRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   
@@ -182,34 +95,54 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
-  const handleDownloadPdf = async (type: 'pro' | 'basic') => {
-    const root = proPrintRef.current;
-    if (!root) return;
+  const handleDownloadPdf = async () => {
+    const proLayoutElement = document.getElementById('session-pro-layout');
+    if (!proLayoutElement) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudo encontrar el contenido para generar el PDF.",
+        });
+        return;
+    }
 
     setIsDownloading(true);
     setIsPrintDialogOpen(false);
 
     try {
+        const canvas = await html2canvas(proLayoutElement, {
+            scale: 2,
+            useCORS: true,
+            windowWidth: proLayoutElement.scrollWidth,
+            windowHeight: proLayoutElement.scrollHeight,
+        });
+
+        const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const elementPages = Array.from(root.children).filter(
-            (node): node is HTMLElement => node.classList.contains('print-page')
-        );
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         
-        for (let i = 0; i < elementPages.length; i++) {
-            const page = elementPages[i];
-            const canvas = await html2canvas(page, { scale: 2, useCORS: true });
-            const imgData = canvas.toDataURL('image/png');
-            const imgWidth = pdf.internal.pageSize.getWidth();
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            
-            if (i > 0) { 
-                pdf.addPage();
-            }
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = canvasWidth / canvasHeight;
+        
+        const imgWidth = pdfWidth;
+        const imgHeight = imgWidth / ratio;
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pdfHeight;
         }
 
-        pdf.save(`sesion-${type}-${sessionId}.pdf`);
+        pdf.save(`sesion-pro-${sessionId}.pdf`);
         toast({ title: "El archivo PDF se ha descargado" });
     } catch (error) {
         console.error("Error al generar PDF", error);
@@ -308,7 +241,7 @@ export default function SesionDetallePage() {
                         </div>
                         <div className="flex flex-col gap-2 items-center">
                             <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                            <Button className="w-full" onClick={() => handleDownloadPdf('pro')} disabled={isDownloading}>
+                            <Button className="w-full" onClick={handleDownloadPdf} disabled={isDownloading}>
                                 {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
                                 Descargar Pro
                             </Button>
@@ -322,10 +255,9 @@ export default function SesionDetallePage() {
             </Button>
           </div>
         </div>
-
-        <div className="max-w-4xl mx-auto space-y-8">
-          
-          <div className="space-y-8">
+        
+        {/* Este es el contenedor que se imprimirá */}
+        <div id="session-pro-layout" className="max-w-4xl mx-auto space-y-8 bg-background">
             <Card>
                 <CardHeader>
                     <CardTitle>Detalles y Objetivos de la Sesión</CardTitle>
@@ -374,12 +306,7 @@ export default function SesionDetallePage() {
                 <PhaseSection title="Fase Principal" exercises={mainExercises} />
                 <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} />
             </div>
-          </div>
         </div>
-      </div>
-      
-      <div style={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -100 }}>
-        <SessionProPreview ref={proPrintRef} session={session} exercises={allExercises} teamName={teamName} />
       </div>
     </>
   );
