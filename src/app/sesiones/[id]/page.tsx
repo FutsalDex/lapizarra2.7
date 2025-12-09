@@ -191,7 +191,7 @@ export default function SesionDetallePage() {
   const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
       let element;
       if (layout === 'pro') {
-          element = proLayoutRef.current;
+          element = document.getElementById("session-pro-layout");
       } else {
           // Temporarily render the basic layout for capture if it's different
           element = document.getElementById("session-pro-layout");
@@ -213,15 +213,16 @@ export default function SesionDetallePage() {
           const canvases = [];
           const pages = element.querySelectorAll('.print-page');
           
-          for (const page of Array.from(pages)) {
-            const canvas = await html2canvas(page as HTMLElement, { scale: 2, useCORS: true });
-            canvases.push(canvas);
-          }
-
-          if (canvases.length === 0) {
+          if (pages.length > 0) {
+            for (const page of Array.from(pages)) {
+              const canvas = await html2canvas(page as HTMLElement, { scale: 2, useCORS: true });
+              canvases.push(canvas);
+            }
+          } else {
              const canvas = await html2canvas(element, { scale: 2, useCORS: true });
              canvases.push(canvas);
           }
+
 
           const pdf = new jsPDF('p', 'mm', 'a4');
           const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -429,6 +430,7 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
 
 
