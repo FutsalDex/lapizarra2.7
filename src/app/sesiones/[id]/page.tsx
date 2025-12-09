@@ -209,47 +209,46 @@ export default function SesionDetallePage() {
       setIsPrintDialogOpen(false);
 
       try {
-          const canvases = [];
-          const pages = element.querySelectorAll('.print-page');
-          
-          if (pages.length > 0) {
-            for (const page of Array.from(pages)) {
-              const canvas = await html2canvas(page as HTMLElement, { scale: 2, useCORS: true });
-              canvases.push(canvas);
-            }
-          } else {
-             const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-             canvases.push(canvas);
-          }
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const pages = element.querySelectorAll<HTMLElement>('.print-page');
 
-
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-
-          canvases.forEach((canvas, index) => {
-              if (index > 0) {
-                  pdf.addPage();
-              }
-              try {
-                const imgData = canvas.toDataURL('image/png');
-                const ratio = canvas.width / canvas.height;
-                const imgWidth = pdfWidth;
-                const imgHeight = imgWidth / ratio;
-                
-                let height = imgHeight;
-                if (imgHeight > pdfHeight) {
-                  height = pdfHeight;
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+            
+            const images = Array.from(page.querySelectorAll('img'));
+            const promises = images.map(img => new Promise((resolve, reject) => {
+                if (img.complete) {
+                    resolve(true);
+                } else {
+                    img.onload = () => resolve(true);
+                    img.onerror = () => reject(new Error(`Could not load image: ${img.src}`));
                 }
-                
-                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, height);
-              } catch (e) {
-                console.error("Error adding image to PDF for one canvas. Skipping.", e);
-              }
-          });
+            }));
+
+            await Promise.all(promises);
+
+            const canvas = await html2canvas(page, { scale: 2, useCORS: true });
+            
+            if (i > 0) {
+                pdf.addPage();
+            }
+            
+            const imgData = canvas.toDataURL('image/png');
+            const ratio = canvas.width / canvas.height;
+            const imgWidth = pdfWidth;
+            let imgHeight = imgWidth / ratio;
+
+            if (imgHeight > pdfHeight) {
+                imgHeight = pdfHeight;
+            }
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        }
           
-          pdf.save(`sesion-${layout}-${sessionId}.pdf`);
-          toast({ title: "El archivo PDF se ha descargado" });
+        pdf.save(`sesion-${layout}-${sessionId}.pdf`);
+        toast({ title: "El archivo PDF se ha descargado" });
       } catch (error) {
           console.error("Error al generar PDF", error);
           toast({
@@ -431,3 +430,4 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
