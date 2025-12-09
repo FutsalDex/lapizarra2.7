@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useParams } from 'next/navigation';
@@ -15,7 +16,7 @@ import Image from 'next/image';
 import { Clock, Users, Target, ListChecks, Edit, Printer, Download, ArrowLeft, Loader2, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import type { Exercise } from '@/lib/data';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -40,7 +41,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
         <Card key={exercise.id} className="overflow-hidden">
              <div className="grid grid-cols-10 gap-6 p-6">
                 <div className="col-span-10 md:col-span-3 space-y-4">
-                    <div className="relative aspect-video bg-muted rounded-md w-full mx-auto">
+                    <div className="relative aspect-video w-full mx-auto">
                         <Image
                         src={exercise['Imagen']}
                         alt={`Táctica para ${exercise['Ejercicio']}`}
@@ -84,6 +85,91 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
   );
 };
 
+const SessionProPreview = React.forwardRef<
+  HTMLDivElement,
+  { sessionData: any; exercises: Exercise[]; teamName: string; }
+>(({ sessionData, exercises, teamName }, ref) => {
+  
+  const getExercisesByIds = (ids: string[] = []): Exercise[] => {
+    return ids.map(id => exercises.find(ex => ex.id === id)).filter((ex): ex is Exercise => !!ex);
+  };
+
+  const allSessionExercises = [
+    ...getExercisesByIds(sessionData.initialExercises),
+    ...getExercisesByIds(sessionData.mainExercises),
+    ...getExercisesByIds(sessionData.finalExercises),
+  ];
+
+  const firstPageExercises = allSessionExercises.slice(0, 3);
+  const remainingExercises = allSessionExercises.slice(3);
+  const exercisePages: Exercise[][] = [];
+  for (let i = 0; i < remainingExercises.length; i += 4) {
+    exercisePages.push(remainingExercises.slice(i, i + 4));
+  }
+
+  const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
+
+  const ExerciseCard = ({ exercise }: { exercise: Exercise }) => (
+    <div className="exercise-block">
+        <img src={exercise['Imagen']} alt={exercise['Ejercicio']} className="exercise-img" />
+        <div className="exercise-info">
+            <p className="exercise-title">{exercise['Ejercicio']}</p>
+            <div className="exercise-meta">
+                <p><strong>Duración:</strong> {exercise['Duración (min)']} min</p>
+                <p><strong>Jugadores:</strong> {exercise['Número de jugadores']}</p>
+            </div>
+            <p className="exercise-sub">Descripción</p>
+            <p>{exercise['Descripción de la tarea']}</p>
+            <p className="exercise-sub">Objetivos</p>
+            <p>{exercise['Objetivos']}</p>
+        </div>
+    </div>
+  );
+
+  return (
+    <div ref={ref}>
+        {/* First Page */}
+        <div className="print-page p-8 bg-white text-black">
+            <div className="session-title">Sesión de Entrenamiento</div>
+            <div className="grid grid-cols-10 gap-x-4 mb-4 text-sm">
+                <div className="col-span-3 space-y-1">
+                    <p><strong>Equipo:</strong> {teamName}</p>
+                    <p><strong>Instalación:</strong> {sessionData.facility || 'N/A'}</p>
+                </div>
+                <div className="col-span-3 space-y-1">
+                     <p><strong>Microciclo:</strong> {sessionData.microcycle || 'N/A'}</p>
+                    <p><strong>Nº Sesión:</strong> {sessionData.sessionNumber || 'N/A'}</p>
+                </div>
+                <div className="col-span-4 space-y-1">
+                    <p><strong>Fecha:</strong> {sessionDateFormatted}</p>
+                </div>
+            </div>
+            <div className="border-t-2 border-b-2 border-black py-2 mb-4">
+                <h4 className="font-bold text-center">Objetivos de la Sesión</h4>
+                 <ul className="list-disc list-inside text-sm mt-1">
+                    {(sessionData.objectives || []).map((obj: string, index: number) => (
+                        <li key={index}>{obj}</li>
+                    ))}
+                </ul>
+            </div>
+            <div className="space-y-4">
+                {firstPageExercises.map(ex => <ExerciseCard key={ex.id} exercise={ex} />)}
+            </div>
+        </div>
+
+        {/* Subsequent Pages */}
+        {exercisePages.map((page, pageIndex) => (
+            <div key={pageIndex} className="print-page p-8 bg-white text-black">
+                 <div className="space-y-4">
+                    {page.map(ex => <ExerciseCard key={ex.id} exercise={ex} />)}
+                </div>
+            </div>
+        ))}
+    </div>
+  );
+});
+SessionProPreview.displayName = 'SessionProPreview';
+
 
 export default function SesionDetallePage() {
   const params = useParams();
@@ -91,6 +177,8 @@ export default function SesionDetallePage() {
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  
+  const proLayoutRef = useRef<HTMLDivElement>(null);
   
   const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
@@ -101,67 +189,74 @@ export default function SesionDetallePage() {
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
   const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
-    const layoutId = layout === 'pro' ? 'session-pro-layout' : 'session-pro-layout';
-    const element = document.getElementById(layoutId);
+      let element;
+      if (layout === 'pro') {
+          element = proLayoutRef.current;
+      } else {
+          // Temporarily render the basic layout for capture if it's different
+          element = document.getElementById("session-pro-layout");
+      }
 
-    if (!element) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "No se pudo encontrar el contenido para generar el PDF.",
-        });
-        return;
-    }
+      if (!element) {
+          toast({
+              variant: "destructive",
+              title: "Error",
+              description: "No se pudo encontrar el contenido para generar el PDF.",
+          });
+          return;
+      }
 
-    setIsDownloading(true);
-    setIsPrintDialogOpen(false);
+      setIsDownloading(true);
+      setIsPrintDialogOpen(false);
 
-    try {
-        const canvas = await html2canvas(element, {
-            scale: 2,
-            useCORS: true,
-            windowWidth: element.scrollWidth,
-            windowHeight: element.scrollHeight,
-        });
+      try {
+          const canvases = [];
+          const pages = element.querySelectorAll('.print-page');
+          
+          for (const page of Array.from(pages)) {
+            const canvas = await html2canvas(page as HTMLElement, { scale: 2, useCORS: true });
+            canvases.push(canvas);
+          }
 
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const ratio = canvasWidth / canvasHeight;
-        
-        const imgWidth = pdfWidth;
-        const imgHeight = imgWidth / ratio;
+          if (canvases.length === 0) {
+             const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+             canvases.push(canvas);
+          }
 
-        let heightLeft = imgHeight;
-        let position = 0;
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
-
-        while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pdfHeight;
-        }
-
-        pdf.save(`sesion-${layout}-${sessionId}.pdf`);
-        toast({ title: "El archivo PDF se ha descargado" });
-    } catch (error) {
-        console.error("Error al generar PDF", error);
-        toast({
-            variant: "destructive",
-            title: "Fallo al descargar",
-            description: "No se pudo generar el PDF.",
-        });
-    } finally {
-        setIsDownloading(false);
-    }
-};
+          canvases.forEach((canvas, index) => {
+              if (index > 0) {
+                  pdf.addPage();
+              }
+              const imgData = canvas.toDataURL('image/png');
+              const ratio = canvas.width / canvas.height;
+              const imgWidth = pdfWidth;
+              const imgHeight = imgWidth / ratio;
+              
+              let height = imgHeight;
+              if (imgHeight > pdfHeight) {
+                height = pdfHeight;
+              }
+              
+              pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, height);
+          });
+          
+          pdf.save(`sesion-${layout}-${sessionId}.pdf`);
+          toast({ title: "El archivo PDF se ha descargado" });
+      } catch (error) {
+          console.error("Error al generar PDF", error);
+          toast({
+              variant: "destructive",
+              title: "Fallo al descargar",
+              description: "No se pudo generar el PDF.",
+          });
+      } finally {
+          setIsDownloading(false);
+      }
+  };
 
 
   if (isLoading) {
@@ -209,11 +304,16 @@ export default function SesionDetallePage() {
   
   const sessionDate = (session.date as Timestamp)?.toDate();
   const teamName = teamSnapshot?.name || 'No especificado';
+  
+  const sessionDataForPreview = {
+      ...session,
+      date: sessionDate,
+  };
+
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8">
-      <div id="session-pro-layout">
+      <div className="container mx-auto px-4 py-8" id="session-pro-layout">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
@@ -264,7 +364,6 @@ export default function SesionDetallePage() {
           </div>
         </div>
         
-        {/* Este es el contenedor que se imprimirá */}
         <div className="max-w-4xl mx-auto space-y-8 bg-background">
             <Card>
                 <CardHeader>
@@ -315,9 +414,14 @@ export default function SesionDetallePage() {
                 <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} />
             </div>
         </div>
-        </div>
       </div>
+
+       {/* Hidden div for PDF generation */}
+       <div className="hidden">
+           <SessionProPreview ref={proLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
+       </div>
     </>
   );
 }
+
 
