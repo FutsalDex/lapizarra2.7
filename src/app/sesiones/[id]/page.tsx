@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useParams } from 'next/navigation';
@@ -39,7 +40,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
         <Card key={exercise.id} className="overflow-hidden">
              <div className="grid grid-cols-10 gap-6 p-6">
                 <div className="col-span-10 md:col-span-3 space-y-4">
-                    <div className="relative min-h-[190px] bg-muted rounded-md aspect-video">
+                    <div className="relative min-h-[190px] bg-muted rounded-md aspect-video w-4/5 mx-auto">
                         <Image
                         src={exercise['Imagen']}
                         alt={`Táctica para ${exercise['Ejercicio']}`}
