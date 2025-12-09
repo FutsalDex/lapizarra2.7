@@ -319,7 +319,7 @@ export default function SesionDetallePage() {
   return (
     <>
       <div className="container mx-auto px-4 py-8">
-        <div id="session-pro-layout">
+        <div id="session-visible-layout">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
@@ -425,11 +425,14 @@ export default function SesionDetallePage() {
 
        {/* Hidden div for PDF generation */}
        <div className="hidden">
-           <SessionProPreview ref={proLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
+           <div id="session-pro-layout">
+             <SessionProPreview ref={proLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
+           </div>
        </div>
     </>
   );
 }
+
 
 
 
