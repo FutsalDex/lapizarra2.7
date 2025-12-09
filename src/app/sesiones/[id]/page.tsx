@@ -193,7 +193,6 @@ export default function SesionDetallePage() {
       if (layout === 'pro') {
           element = document.getElementById("session-pro-layout");
       } else {
-          // Temporarily render the basic layout for capture if it's different
           element = document.getElementById("session-pro-layout");
       }
 
@@ -233,6 +232,9 @@ export default function SesionDetallePage() {
                   pdf.addPage();
               }
               try {
+                if (canvas.width === 0 || canvas.height === 0) {
+                    throw new Error("Canvas is empty, likely due to image loading issues.");
+                }
                 const imgData = canvas.toDataURL('image/png');
                 const ratio = canvas.width / canvas.height;
                 const imgWidth = pdfWidth;
@@ -432,8 +434,3 @@ export default function SesionDetallePage() {
     </>
   );
 }
-
-
-
-
-
