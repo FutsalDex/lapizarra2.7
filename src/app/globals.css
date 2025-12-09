@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: var(--font-body), sans-serif;
-}
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -14,7 +10,7 @@ body {
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 169 34% 53%; /* #59B3A2 from image */
+    --primary: 169 34% 53%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 240 5.9% 10%;
@@ -69,13 +65,13 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-body), sans-serif;
     -webkit-text-size-adjust: 100%;
   }
 }
 
-
 /* ----------------------------- */
-/* OCULTAR TODO AL IMPRIMIR MENOS #print-area */
+/* OCULTAR TODO MENOS #print-area */
 /* ----------------------------- */
 @media print {
   body * {
@@ -90,96 +86,108 @@ body {
   #print-area {
     position: static !important;
     inset: 0;
-    margin: 0;
-    padding: 0;
     width: 100%;
+    padding: 0;
+    margin: 0;
   }
 
-  /* Evitar cortes */
-  .print-exercise,
-  .print-page-grid,
-  .print-card {
+  .first-page,
+  .page-grid,
+  .exercise-block,
+  .card {
     page-break-inside: avoid !important;
+  }
+
+  .first-page {
+    page-break-after: always;
+  }
+
+  .page-grid {
+    page-break-after: always;
   }
 }
 
 /* ----------------------------- */
-/* ESTILO PÁGINA 1 */
+/* PRIMERA PÁGINA */
 /* ----------------------------- */
 
-.print-exercise {
-  page-break-after: always;
-  display: flex;
-  gap: 20px;
+.first-page {
   padding: 20px;
 }
 
-.print-img {
-  width: 45%;
-  border-radius: 8px;
+.session-title {
+  font-size: 26px;
+  font-weight: bold;
+  margin-bottom: 10px;
 }
 
-.print-info {
+.exercise-block {
+  display: flex;
+  gap: 20px;
+  margin-top: 24px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 15px;
+}
+
+.exercise-img {
+  width: 45%;
+  border-radius: 6px;
+}
+
+.exercise-info {
   width: 55%;
 }
 
-.print-title {
-  font-size: 22px;
+.exercise-title {
+  font-size: 20px;
   font-weight: bold;
 }
 
-.print-sub {
-  font-size: 18px;
-  margin-top: 10px;
+.exercise-sub {
+  font-size: 16px;
+  margin-top: 6px;
+  font-weight: 600;
 }
 
-.print-text {
-  font-size: 14px;
-  margin-bottom: 15px;
-}
-
-.print-meta p {
-  margin-bottom: 6px;
-  font-size: 14px;
+.exercise-meta p {
+  margin: 3px 0;
 }
 
 /* ----------------------------- */
-/* PÁGINAS SIGUIENTES (4 por página) */
+/* RESTO DE PÁGINAS: 3 EJER POR PÁGINA */
 /* ----------------------------- */
 
-.print-page-grid {
+.page-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  padding: 18px;
-  page-break-after: always;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 20px;
 }
 
-.print-card {
-  border: 1px solid #ccc;
+.card {
   padding: 12px;
+  border: 1px solid #ccc;
   border-radius: 8px;
-  background: white;
 }
 
-.print-card-img {
+.card-img {
   width: 100%;
   border-radius: 6px;
   margin-bottom: 6px;
 }
 
-.print-card-title {
-  font-size: 16px;
-  font-weight: 600;
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
   margin-bottom: 4px;
 }
 
-.print-card-desc {
-  font-size: 13px;
-  margin-bottom: 8px;
+.card-desc {
+  font-size: 14px;
+  margin-bottom: 6px;
 }
 
-.print-card-meta p {
-  font-size: 12px;
-  margin-bottom: 3px;
+.card-meta p {
+  font-size: 13px;
+  margin: 3px 0;
 }
