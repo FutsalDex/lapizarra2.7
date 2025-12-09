@@ -231,17 +231,21 @@ export default function SesionDetallePage() {
               if (index > 0) {
                   pdf.addPage();
               }
-              const imgData = canvas.toDataURL('image/png');
-              const ratio = canvas.width / canvas.height;
-              const imgWidth = pdfWidth;
-              const imgHeight = imgWidth / ratio;
-              
-              let height = imgHeight;
-              if (imgHeight > pdfHeight) {
-                height = pdfHeight;
+              try {
+                const imgData = canvas.toDataURL('image/png');
+                const ratio = canvas.width / canvas.height;
+                const imgWidth = pdfWidth;
+                const imgHeight = imgWidth / ratio;
+                
+                let height = imgHeight;
+                if (imgHeight > pdfHeight) {
+                  height = pdfHeight;
+                }
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, height);
+              } catch (e) {
+                console.error("Error adding image to PDF for one canvas. Skipping.", e);
               }
-              
-              pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, height);
           });
           
           pdf.save(`sesion-${layout}-${sessionId}.pdf`);
@@ -313,105 +317,107 @@ export default function SesionDetallePage() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8" id="session-pro-layout">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
-            <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div id="session-pro-layout">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
+                <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
+              </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
-            </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" asChild>
+                  <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
+                </Button>
+                
+                <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button>
+                          <Printer className="mr-2" />
+                          Descargar PDF
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-xl">
+                        <DialogHeader>
+                            <DialogTitle>Elige Formato de Ficha</DialogTitle>
+                            <DialogDescription>
+                                Selecciona la plantilla para descargar tu sesión en formato PDF.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid grid-cols-2 gap-4 pt-4">
+                            <div className="flex flex-col gap-2 items-center">
+                                <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
+                                <Button className="w-full" onClick={() => handleDownloadPdf('basic')} disabled={isDownloading}>
+                                    {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
+                                    Descargar Básica
+                                </Button>
+                            </div>
+                            <div className="flex flex-col gap-2 items-center">
+                                <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
+                                <Button className="w-full" onClick={() => handleDownloadPdf('pro')} disabled={isDownloading}>
+                                    {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
+                                    Descargar Pro
+                                </Button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                <Button asChild>
+                  <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
+                </Button>
+              </div>
+            </div>
             
-            <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-                <DialogTrigger asChild>
-                    <Button>
-                      <Printer className="mr-2" />
-                      Descargar PDF
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-xl">
-                    <DialogHeader>
-                        <DialogTitle>Elige Formato de Ficha</DialogTitle>
-                        <DialogDescription>
-                            Selecciona la plantilla para descargar tu sesión en formato PDF.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-2 gap-4 pt-4">
-                        <div className="flex flex-col gap-2 items-center">
-                            <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                            <Button className="w-full" onClick={() => handleDownloadPdf('basic')} disabled={isDownloading}>
-                                {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
-                                Descargar Básica
-                            </Button>
+            <div className="max-w-4xl mx-auto space-y-8 bg-background">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Detalles y Objetivos de la Sesión</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-10 gap-6">
+                            <div className="col-span-10 md:col-span-3 space-y-2 text-sm">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-semibold w-24">Equipo:</span>
+                                    <span className="text-muted-foreground">{teamName}</span>
+                                </div>
+                                 <div className="flex items-center gap-2">
+                                    <span className="font-semibold w-24">Instalación:</span>
+                                    <span className="text-muted-foreground">{session.facility}</span>
+                                </div>
+                                 <div className="flex items-center gap-2">
+                                    <span className="font-semibold w-24">Microciclo:</span>
+                                    <span className="text-muted-foreground">{session.microcycle || '-'}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-semibold w-24">Nº Sesión:</span>
+                                    <span className="text-muted-foreground">{session.sessionNumber || '-'}</span>
+                                </div>
+                            </div>
+                            <div className="col-span-10 md:col-span-7">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <ListChecks className="w-5 h-5 text-primary" />
+                                    <h4 className="font-semibold">Objetivos</h4>
+                                </div>
+                                {Array.isArray(session.objectives) && session.objectives.length > 0 ? (
+                                    <ul className="space-y-2 list-disc pl-5 text-sm">
+                                        {session.objectives.map((obj: string, index: number) => (
+                                            <li key={index} className="text-muted-foreground">{obj}</li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-muted-foreground text-sm">No hay objetivos específicos definidos.</p>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex flex-col gap-2 items-center">
-                            <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                            <Button className="w-full" onClick={() => handleDownloadPdf('pro')} disabled={isDownloading}>
-                                {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
-                                Descargar Pro
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+                    </CardContent>
+                </Card>
 
-            <Button asChild>
-              <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
-            </Button>
-          </div>
-        </div>
-        
-        <div className="max-w-4xl mx-auto space-y-8 bg-background">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Detalles y Objetivos de la Sesión</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-10 gap-6">
-                        <div className="col-span-10 md:col-span-3 space-y-2 text-sm">
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold w-24">Equipo:</span>
-                                <span className="text-muted-foreground">{teamName}</span>
-                            </div>
-                             <div className="flex items-center gap-2">
-                                <span className="font-semibold w-24">Instalación:</span>
-                                <span className="text-muted-foreground">{session.facility}</span>
-                            </div>
-                             <div className="flex items-center gap-2">
-                                <span className="font-semibold w-24">Microciclo:</span>
-                                <span className="text-muted-foreground">{session.microcycle || '-'}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold w-24">Nº Sesión:</span>
-                                <span className="text-muted-foreground">{session.sessionNumber || '-'}</span>
-                            </div>
-                        </div>
-                        <div className="col-span-10 md:col-span-7">
-                            <div className="flex items-center gap-2 mb-2">
-                                <ListChecks className="w-5 h-5 text-primary" />
-                                <h4 className="font-semibold">Objetivos</h4>
-                            </div>
-                            {Array.isArray(session.objectives) && session.objectives.length > 0 ? (
-                                <ul className="space-y-2 list-disc pl-5 text-sm">
-                                    {session.objectives.map((obj: string, index: number) => (
-                                        <li key={index} className="text-muted-foreground">{obj}</li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="text-muted-foreground text-sm">No hay objetivos específicos definidos.</p>
-                            )}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <div className="space-y-12">
-                <PhaseSection title="Fase Inicial (Calentamiento)" exercises={initialExercises} />
-                <PhaseSection title="Fase Principal" exercises={mainExercises} />
-                <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} />
+                <div className="space-y-12">
+                    <PhaseSection title="Fase Inicial (Calentamiento)" exercises={initialExercises} />
+                    <PhaseSection title="Fase Principal" exercises={mainExercises} />
+                    <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} />
+                </div>
             </div>
         </div>
       </div>
@@ -423,5 +429,6 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
 
