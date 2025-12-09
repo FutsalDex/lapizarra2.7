@@ -18,6 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import React, { useRef, useState, useMemo } from 'react';
 import type { Exercise } from '@/lib/data';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 const db = getFirestore(app);
@@ -186,25 +188,62 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
+    toast({
+        title: "Preparando la impresión...",
+        description: "Esto puede tardar unos segundos. Se abrirá el diálogo de impresión de tu navegador.",
+    });
+
+    const layoutId = `session-pro-layout-for-print`;
+    const printableElement = document.getElementById(layoutId);
+
+    if (!printableElement) {
+        toast({ variant: 'destructive', title: 'Error', description: `No se encontró el layout ${layout}.` });
+        return;
+    }
+
     setIsDownloading(true);
     setIsPrintDialogOpen(false);
     
+    // Use a short timeout to ensure the printable element is rendered if it was hidden
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    try {
-      window.print();
-    } catch (error) {
-       console.error("Error al intentar imprimir", error);
-       toast({
-           variant: "destructive",
-           title: "Error de Impresión",
-           description: "No se pudo abrir el diálogo de impresión.",
-       });
-    } finally {
-        setIsDownloading(false);
+    const pages = printableElement.querySelectorAll('.print-page');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    for (let i = 0; i < pages.length; i++) {
+        const page = pages[i] as HTMLElement;
+        try {
+            const canvas = await html2canvas(page, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = pdfWidth;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            if (i > 0) {
+                pdf.addPage();
+            }
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+        } catch (error) {
+            console.error(`Error processing page ${i}:`, error);
+            toast({
+                variant: 'destructive',
+                title: `Error en página ${i + 1}`,
+                description: 'No se pudo procesar una de las páginas para el PDF.'
+            });
+        }
     }
-};
+    
+    pdf.save(`sesion-${layout}-${sessionId}.pdf`);
+    setIsDownloading(false);
+  };
 
 
   if (isLoading) {
@@ -291,14 +330,14 @@ export default function SesionDetallePage() {
                         <div className="grid grid-cols-2 gap-4 pt-4">
                             <div className="flex flex-col gap-2 items-center">
                                 <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                <Button className="w-full" onClick={() => handleDownloadPdf()} disabled={isDownloading}>
+                                <Button className="w-full" onClick={() => handleDownloadPdf('basic')} disabled={isDownloading}>
                                     {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
                                     Descargar Básica
                                 </Button>
                             </div>
                             <div className="flex flex-col gap-2 items-center">
                                 <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                <Button className="w-full" onClick={() => handleDownloadPdf()} disabled={isDownloading}>
+                                <Button className="w-full" onClick={() => handleDownloadPdf('pro')} disabled={isDownloading}>
                                     {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
                                     Descargar Pro
                                 </Button>
@@ -375,6 +414,7 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
 
 

@@ -78,15 +78,8 @@
     visibility: hidden;
   }
 
-  #session-visible-layout, #session-visible-layout * {
+  #session-pro-layout-for-print, #session-pro-layout-for-print * {
     visibility: visible;
-  }
-
-  #session-visible-layout {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
   }
   
   .no-print {
@@ -95,10 +88,6 @@
   
   .print-page {
     page-break-after: always;
-  }
-
-  .exercise-block {
-    page-break-inside: avoid;
   }
 }
 
