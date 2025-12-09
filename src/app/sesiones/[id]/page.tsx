@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { Clock, Users, Target, ListChecks, Edit, Printer, Download, ArrowLeft, Loader2 } from 'lucide-react';
+import { Clock, Users, Target, ListChecks, Edit, Printer, Download, ArrowLeft, Loader2, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import React, { useRef, useState } from 'react';
@@ -37,8 +37,8 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
       <h2 className="text-2xl font-bold font-headline text-primary">{title}</h2>
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
-             <div className="grid grid-cols-12 gap-6 p-6">
-                <div className="col-span-12 md:col-span-3 space-y-4">
+             <div className="grid grid-cols-10 gap-6 p-6">
+                <div className="col-span-10 md:col-span-3 space-y-4">
                     <div className="relative min-h-[190px] bg-muted rounded-md aspect-video">
                         <Image
                         src={exercise['Imagen']}
@@ -47,14 +47,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
                         className="object-contain p-2"
                         />
                     </div>
-                </div>
-                <div className="col-span-12 md:col-span-9 space-y-4">
-                    <h3 className="text-xl font-bold font-headline break-words">{exercise['Ejercicio']}</h3>
-                    <div>
-                        <h4 className="font-semibold text-lg">Descripción</h4>
-                        <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
-                    </div>
-                     <div className="grid grid-cols-2 gap-4 text-sm pt-2">
+                     <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-muted-foreground" />
                             <span><span className="font-semibold">Duración:</span> {exercise['Duración (min)']} min</span>
@@ -63,6 +56,17 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
                             <Users className="w-4 h-4 text-muted-foreground" />
                             <span><span className="font-semibold">Jugadores:</span> {exercise['Número de jugadores']}</span>
                         </div>
+                         <div className="flex items-start gap-2">
+                            <Package className="w-4 h-4 text-muted-foreground mt-1" />
+                            <span><span className="font-semibold">Material:</span> {exercise['Espacio y materiales necesarios']}</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-span-10 md:col-span-7 space-y-4">
+                    <h3 className="text-xl font-bold font-headline break-words">{exercise['Ejercicio']}</h3>
+                    <div>
+                        <h4 className="font-semibold text-lg">Descripción</h4>
+                        <p className="text-sm text-muted-foreground mt-2 text-justify">{exercise['Descripción de la tarea']}</p>
                     </div>
                     <div className="pt-2">
                         <div className="flex items-center gap-2 mb-2">
