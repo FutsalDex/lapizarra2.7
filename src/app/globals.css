@@ -75,26 +75,30 @@
 /* --------------------------- */
 @media print {
   body * {
-    visibility: hidden !important;
+    visibility: hidden;
   }
 
-  #print-area,
-  #print-area * {
-    visibility: visible !important;
+  #session-visible-layout, #session-visible-layout * {
+    visibility: visible;
   }
 
-  #print-area {
-    position: absolute !important;
-    top: 0; left: 0;
+  #session-visible-layout {
+    position: absolute;
+    left: 0;
+    top: 0;
     width: 100%;
   }
-
+  
+  .no-print {
+    display: none;
+  }
+  
   .print-page {
-    page-break-after: always !important;
+    page-break-after: always;
   }
 
   .exercise-block {
-    page-break-inside: avoid !important;
+    page-break-inside: avoid;
   }
 }
 
@@ -184,4 +188,3 @@
   font-size: 13px;
   margin: 3px 0;
 }
-

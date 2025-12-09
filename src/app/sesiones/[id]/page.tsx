@@ -18,8 +18,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import React, { useRef, useState, useMemo } from 'react';
 import type { Exercise } from '@/lib/data';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 
 const db = getFirestore(app);
@@ -188,69 +186,27 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
-const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
-    let element = document.getElementById("session-pro-layout");
-
-    if (!element) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "No se pudo encontrar el contenido para generar el PDF.",
-        });
-        return;
-    }
-
+  const handleDownloadPdf = async () => {
     setIsDownloading(true);
-    setIsPrintDialogOpen(false);
+    setIsPrintDialogOpen(false); // Close the dialog
+    
+    // Give browser time to close dialog and prepare for printing
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const pages = element.querySelectorAll<HTMLElement>('.print-page');
-
-        for (let i = 0; i < pages.length; i++) {
-            const page = pages[i];
-            
-            // Wait for images on the current page to load
-            const images = Array.from(page.querySelectorAll('img'));
-            await Promise.all(images.map(img => new Promise((resolve) => {
-                if (img.complete) return resolve(true);
-                img.onload = img.onerror = () => resolve(true);
-            })));
-
-            const canvas = await html2canvas(page, { scale: 2, useCORS: true });
-            
-            if (i > 0) {
-                pdf.addPage();
-            }
-            
-            const imgData = canvas.toDataURL('image/png');
-            const ratio = canvas.width / canvas.height;
-            const imgWidth = pdfWidth;
-            let imgHeight = imgWidth / ratio;
-
-            if (imgHeight > pdfHeight) {
-                imgHeight = pdfHeight;
-            }
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        }
-        
-        pdf.save(`sesion-${layout}-${sessionId}.pdf`);
-        toast({ title: "El archivo PDF se ha descargado" });
+      window.print();
+      toast({ title: "Preparando la impresión...", description: "Selecciona 'Guardar como PDF' en el diálogo de impresión." });
     } catch (error) {
-        console.error("Error al generar PDF", error);
-        toast({
-            variant: "destructive",
-            title: "Fallo al descargar",
-            description: "No se pudo generar el PDF. Algunas imágenes pueden estar causando problemas.",
-        });
+       console.error("Error al intentar imprimir", error);
+       toast({
+           variant: "destructive",
+           title: "Error de Impresión",
+           description: "No se pudo abrir el diálogo de impresión.",
+       });
     } finally {
         setIsDownloading(false);
     }
 };
-
 
 
   if (isLoading) {
@@ -309,7 +265,7 @@ const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
     <>
       <div className="container mx-auto px-4 py-8">
         <div id="session-visible-layout">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-6 no-print">
               <div>
                 <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
                 <p className="text-lg text-muted-foreground mt-1">{sessionDate ? format(sessionDate, "eeee, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no especificada'}</p>
@@ -331,20 +287,20 @@ const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
                         <DialogHeader>
                             <DialogTitle>Elige Formato de Ficha</DialogTitle>
                             <DialogDescription>
-                                Selecciona la plantilla para descargar tu sesión en formato PDF.
+                                Selecciona la plantilla para descargar tu sesión en formato PDF. La descarga utilizará la función de impresión de tu navegador.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid grid-cols-2 gap-4 pt-4">
                             <div className="flex flex-col gap-2 items-center">
                                 <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                <Button className="w-full" onClick={() => handleDownloadPdf('basic')} disabled={isDownloading}>
+                                <Button className="w-full" onClick={() => handleDownloadPdf()} disabled={isDownloading}>
                                     {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
                                     Descargar Básica
                                 </Button>
                             </div>
                             <div className="flex flex-col gap-2 items-center">
                                 <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                <Button className="w-full" onClick={() => handleDownloadPdf('pro')} disabled={isDownloading}>
+                                <Button className="w-full" onClick={() => handleDownloadPdf()} disabled={isDownloading}>
                                     {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
                                     Descargar Pro
                                 </Button>
@@ -412,14 +368,15 @@ const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
         </div>
       </div>
 
-       {/* Hidden div for PDF generation */}
+       {/* Hidden div for PDF generation content, not directly used by JS but targeted by print styles */}
        <div className="hidden">
-           <div id="session-pro-layout">
+           <div id="session-pro-layout-for-print">
              <SessionProPreview ref={proLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
            </div>
        </div>
     </>
   );
 }
+
 
 
