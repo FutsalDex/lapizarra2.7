@@ -6,30 +6,121 @@ import { doc, Timestamp, getFirestore, collection } from 'firebase/firestore';
 import app from '@/firebase/config';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
-import { ArrowLeft, BarChart, History, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMemo } from 'react';
 import Image from 'next/image';
-import { Clock, Users, Target, ListChecks, Edit, Printer, Download } from 'lucide-react';
+import { Clock, Users, Target, ListChecks, Edit, Printer, Download, ArrowLeft, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import React, { useRef, useState } from 'react';
 import type { Exercise } from '@/lib/data';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 const db = getFirestore(app);
 
+const SessionProPreview = React.forwardRef<HTMLDivElement, { session: any; exercises: Exercise[]; teamName: string }>(
+  ({ session, exercises, teamName }, ref) => {
+    // build flat exercise list
+    const getByIds = (ids: string[] = []) =>
+      ids.map((id) => exercises.find((e) => e.id === id)).filter(Boolean) as Exercise[];
 
-const SessionView = ({ exercises }: { exercises: Exercise[] }) => {
-  if (!exercises || exercises.length === 0) return null;
+    const all = [...getByIds(session.initialExercises), ...getByIds(session.mainExercises), ...getByIds(session.finalExercises)];
+
+    // first page: header + 2 exercises
+    const firstPageEx = all.slice(0, 2);
+    
+    // chunk rest into groups of 3
+    const rest = all.slice(2);
+    const chunks: Exercise[][] = [];
+    for (let i = 0; i < rest.length; i += 3) {
+        chunks.push(rest.slice(i, i + 3));
+    }
+    
+    return (
+      <div ref={ref} aria-hidden style={{ width: "210mm" }}>
+        {/* Page 1 */}
+        <div className="print-page first-page">
+           <h2 className="session-title">Detalles y Objetivos de la Sesión</h2>
+           <table style={{width: '100%'}}>
+               <tbody>
+                   <tr>
+                       <td style={{width: '30%', verticalAlign: 'top'}}>
+                           <p><strong>Equipo:</strong> {teamName}</p>
+                           <p><strong>Instalación:</strong> {session.facility}</p>
+                           <p><strong>Microciclo:</strong> {session.microcycle}</p>
+                           <p><strong>Nº Sesión:</strong> {session.sessionNumber}</p>
+                       </td>
+                       <td style={{width: '70%', verticalAlign: 'top'}}>
+                           <h3 style={{fontWeight: 'bold'}}>Objetivos</h3>
+                           <ul style={{margin: 0, paddingLeft: '20px'}}>
+                               {(session.objectives || []).map((o: string, i: number) => <li key={i}>{o}</li>)}
+                           </ul>
+                       </td>
+                   </tr>
+               </tbody>
+           </table>
+
+           <h2 className="phase-header">Fase Inicial (Calentamiento)</h2>
+           {firstPageEx.map((ex) => (
+             <div key={ex.id} className="exercise-block">
+                <img src={ex.Imagen} className="exercise-img" alt={ex.Ejercicio} />
+                <div className="exercise-info">
+                    <h3 className="exercise-title">{ex.Ejercicio}</h3>
+                    <h4 className="exercise-sub">Descripción</h4>
+                    <p>{ex['Descripción de la tarea']}</p>
+                    <h4 className="exercise-sub">Objetivos del Ejercicio</h4>
+                    <p>{ex.Objetivos}</p>
+                    <div className="exercise-meta">
+                        <p><strong>Duración:</strong> {ex['Duración (min)']} min</p>
+                        <p><strong>Jugadores:</strong> {ex['Número de jugadores']}</p>
+                        <p><strong>Material:</strong> {ex['Espacio y materiales necesarios']}</p>
+                    </div>
+                </div>
+             </div>
+           ))}
+        </div>
+
+        {/* Following pages */}
+        {chunks.map((group, pageIndex) => (
+          <div key={pageIndex} className="print-page page-grid">
+            {group.map((ex) => (
+              <div key={ex.id} className="card">
+                <img src={ex.Imagen} className="card-img" alt={ex.Ejercicio} />
+                <h2 className="card-title">{ex.Ejercicio}</h2>
+                <p className="card-desc">{ex['Descripción de la tarea']}</p>
+                <div className="card-meta">
+                  <p><strong>🕒</strong> {ex['Duración (min)']} min</p>
+                  <p><strong>👥</strong> {ex['Número de jugadores']}</p>
+                  <p><strong>🎒</strong> {ex['Espacio y materiales necesarios']}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
+);
+SessionProPreview.displayName = "SessionProPreview";
+
+
+const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise[] }) => {
+  if (!exercises || exercises.length === 0) {
+    return (
+         <div className="space-y-6">
+            <h2 className="text-2xl font-bold font-headline text-primary">{title}</h2>
+            <p className="text-muted-foreground text-sm">No hay ejercicios asignados a esta fase.</p>
+        </div>
+    )
+  };
   
   return (
     <div className="space-y-6">
+      <h2 className="text-2xl font-bold font-headline text-primary">{title}</h2>
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
              <div className="grid grid-cols-10 gap-6 p-6">
@@ -75,28 +166,13 @@ const SessionView = ({ exercises }: { exercises: Exercise[] }) => {
 };
 
 
-const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise[] }) => {
-  if (!exercises || exercises.length === 0) {
-    return (
-         <div className="space-y-6">
-            <h2 className="text-2xl font-bold font-headline text-primary">{title}</h2>
-            <p className="text-muted-foreground text-sm">No hay ejercicios asignados a esta fase.</p>
-        </div>
-    )
-  };
-  
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold font-headline text-primary">{title}</h2>
-      <SessionView exercises={exercises} />
-    </div>
-  );
-};
-
-
 export default function SesionDetallePage() {
   const params = useParams();
   const sessionId = params.id as string;
+  const { toast } = useToast();
+  const proPrintRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   
   const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
@@ -105,6 +181,47 @@ export default function SesionDetallePage() {
   const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
+  
+  const handleDownloadPdf = async (type: 'pro' | 'basic') => {
+    const root = proPrintRef.current;
+    if (!root) return;
+
+    setIsDownloading(true);
+    setIsPrintDialogOpen(false);
+
+    try {
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const elementPages = Array.from(root.children).filter(
+            (node): node is HTMLElement => node.classList.contains('print-page')
+        );
+        
+        for (let i = 0; i < elementPages.length; i++) {
+            const page = elementPages[i];
+            const canvas = await html2canvas(page, { scale: 2, useCORS: true });
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = pdf.internal.pageSize.getWidth();
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            if (i > 0) { 
+                pdf.addPage();
+            }
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        }
+
+        pdf.save(`sesion-${type}-${sessionId}.pdf`);
+        toast({ title: "El archivo PDF se ha descargado" });
+    } catch (error) {
+        console.error("Error al generar PDF", error);
+        toast({
+            variant: "destructive",
+            title: "Fallo al descargar",
+            description: "No se pudo generar el PDF.",
+        });
+    } finally {
+        setIsDownloading(false);
+    }
+};
 
 
   if (isLoading) {
@@ -167,6 +284,39 @@ export default function SesionDetallePage() {
               <Link href="/sesiones"><ArrowLeft className="mr-2" />Volver</Link>
             </Button>
             
+            <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button>
+                      <Printer className="mr-2" />
+                      Descargar PDF
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>Elige Formato de Ficha</DialogTitle>
+                        <DialogDescription>
+                            Selecciona la plantilla para descargar tu sesión en formato PDF.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-2 gap-4 pt-4">
+                        <div className="flex flex-col gap-2 items-center">
+                            <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
+                            <Button className="w-full" onClick={() => alert('Próximamente')} disabled>
+                                <Download className="mr-2" />
+                                Descargar Básica
+                            </Button>
+                        </div>
+                        <div className="flex flex-col gap-2 items-center">
+                            <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
+                            <Button className="w-full" onClick={() => handleDownloadPdf('pro')} disabled={isDownloading}>
+                                {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
+                                Descargar Pro
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <Button asChild>
               <Link href={`/sesiones/${sessionId}/editar`}><Edit className="mr-2" />Editar</Link>
             </Button>
@@ -226,6 +376,10 @@ export default function SesionDetallePage() {
             </div>
           </div>
         </div>
+      </div>
+      
+      <div style={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -100 }}>
+        <SessionProPreview ref={proPrintRef} session={session} exercises={allExercises} teamName={teamName} />
       </div>
     </>
   );
