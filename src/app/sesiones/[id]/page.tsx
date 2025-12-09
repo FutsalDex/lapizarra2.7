@@ -40,7 +40,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
         <Card key={exercise.id} className="overflow-hidden">
              <div className="grid grid-cols-10 gap-6 p-6">
                 <div className="col-span-10 md:col-span-3 space-y-4">
-                    <div className="relative min-h-[190px] bg-muted rounded-md aspect-video w-4/5 mx-auto">
+                    <div className="relative aspect-video bg-muted rounded-md w-4/5 mx-auto">
                         <Image
                         src={exercise['Imagen']}
                         alt={`Táctica para ${exercise['Ejercicio']}`}
@@ -102,9 +102,11 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
-  const handleDownloadPdf = async () => {
-    const proLayoutElement = document.getElementById('session-pro-layout');
-    if (!proLayoutElement) {
+  const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
+    const layoutId = layout === 'pro' ? 'session-pro-layout' : 'session-pro-layout';
+    const element = document.getElementById(layoutId);
+
+    if (!element) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -117,11 +119,11 @@ export default function SesionDetallePage() {
     setIsPrintDialogOpen(false);
 
     try {
-        const canvas = await html2canvas(proLayoutElement, {
+        const canvas = await html2canvas(element, {
             scale: 2,
             useCORS: true,
-            windowWidth: proLayoutElement.scrollWidth,
-            windowHeight: proLayoutElement.scrollHeight,
+            windowWidth: element.scrollWidth,
+            windowHeight: element.scrollHeight,
         });
 
         const imgData = canvas.toDataURL('image/png');
@@ -149,7 +151,7 @@ export default function SesionDetallePage() {
             heightLeft -= pdfHeight;
         }
 
-        pdf.save(`sesion-pro-${sessionId}.pdf`);
+        pdf.save(`sesion-${layout}-${sessionId}.pdf`);
         toast({ title: "El archivo PDF se ha descargado" });
     } catch (error) {
         console.error("Error al generar PDF", error);
@@ -241,14 +243,14 @@ export default function SesionDetallePage() {
                     <div className="grid grid-cols-2 gap-4 pt-4">
                         <div className="flex flex-col gap-2 items-center">
                             <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                            <Button className="w-full" onClick={() => alert('Próximamente')} disabled>
-                                <Download className="mr-2" />
+                            <Button className="w-full" onClick={() => handleDownloadPdf('basic')} disabled={isDownloading}>
+                                {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
                                 Descargar Básica
                             </Button>
                         </div>
                         <div className="flex flex-col gap-2 items-center">
                             <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                            <Button className="w-full" onClick={handleDownloadPdf} disabled={isDownloading}>
+                            <Button className="w-full" onClick={() => handleDownloadPdf('pro')} disabled={isDownloading}>
                                 {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
                                 Descargar Pro
                             </Button>
