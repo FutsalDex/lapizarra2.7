@@ -171,13 +171,11 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
           // CONTENEDOR DE CADA PÁGINA A4 con SALTO DE PÁGINA FORZADO
           <div 
             key={pageIdx} 
-            className="bg-white text-gray-900 p-8" 
+            className="print-page bg-white text-gray-900 p-8" 
             style={{ 
               width: '210mm', 
               minHeight: '297mm',
               boxSizing: 'border-box',
-              // Forzar el salto de página en todos excepto en el último
-              pageBreakAfter: pageIdx < pages.length - 1 ? 'always' : 'auto' 
             }}
           >
             
@@ -215,7 +213,6 @@ const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any; e
             </div>
 
             <p className="text-center text-xs mt-8 text-gray-500">
-                {/* Mostrar "Powered by LaPizarra" solo en la última página */}
                 {pageIdx === pages.length - 1 ? 'Powered by LaPizarra' : ''}
             </p>
           </div>
@@ -313,6 +310,7 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
 
+  // CORRECCIÓN CLAVE: FILTRAR NODOS DE TEXTO y usar i > 0
   const handleDownloadPdf = async (type: 'basic' | 'pro') => {
     const root = type === 'basic' ? basicPrintRef.current : proPrintRef.current;
     if (!root) return;
@@ -323,7 +321,7 @@ export default function SesionDetallePage() {
     try {
         const pdf = new jsPDF('p', 'mm', 'a4');
         
-        // CORRECCIÓN CRUCIAL: Filtrar solo nodos de elemento (los divs de página A4)
+        // CORRECCIÓN: Filtrar solo nodos de elemento (los divs de página A4)
         const elementPages = Array.from(root.children).filter(
             (node): node is HTMLElement => node.nodeType === 1
         ) as HTMLElement[];
