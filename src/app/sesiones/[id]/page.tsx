@@ -40,7 +40,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
         <Card key={exercise.id} className="overflow-hidden">
              <div className="grid grid-cols-10 gap-6 p-6">
                 <div className="col-span-10 md:col-span-3 space-y-4">
-                    <div className="relative aspect-video bg-muted rounded-md w-4/5 mx-auto">
+                    <div className="relative aspect-video bg-muted rounded-md w-full mx-auto">
                         <Image
                         src={exercise['Imagen']}
                         alt={`Táctica para ${exercise['Ejercicio']}`}
@@ -213,6 +213,7 @@ export default function SesionDetallePage() {
   return (
     <>
       <div className="container mx-auto px-4 py-8">
+      <div id="session-pro-layout">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
@@ -264,7 +265,7 @@ export default function SesionDetallePage() {
         </div>
         
         {/* Este es el contenedor que se imprimirá */}
-        <div id="session-pro-layout" className="max-w-4xl mx-auto space-y-8 bg-background">
+        <div className="max-w-4xl mx-auto space-y-8 bg-background">
             <Card>
                 <CardHeader>
                     <CardTitle>Detalles y Objetivos de la Sesión</CardTitle>
@@ -314,7 +315,9 @@ export default function SesionDetallePage() {
                 <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} />
             </div>
         </div>
+        </div>
       </div>
     </>
   );
 }
+
