@@ -188,27 +188,22 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
-  const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
-      let element;
-      if (layout === 'pro') {
-          element = document.getElementById("session-pro-layout");
-      } else {
-          element = document.getElementById("session-pro-layout");
-      }
+const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
+    let element = document.getElementById("session-pro-layout");
 
-      if (!element) {
-          toast({
-              variant: "destructive",
-              title: "Error",
-              description: "No se pudo encontrar el contenido para generar el PDF.",
-          });
-          return;
-      }
+    if (!element) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudo encontrar el contenido para generar el PDF.",
+        });
+        return;
+    }
 
-      setIsDownloading(true);
-      setIsPrintDialogOpen(false);
+    setIsDownloading(true);
+    setIsPrintDialogOpen(false);
 
-      try {
+    try {
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -217,17 +212,12 @@ export default function SesionDetallePage() {
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i];
             
+            // Wait for images on the current page to load
             const images = Array.from(page.querySelectorAll('img'));
-            const promises = images.map(img => new Promise((resolve, reject) => {
-                if (img.complete) {
-                    resolve(true);
-                } else {
-                    img.onload = () => resolve(true);
-                    img.onerror = () => reject(new Error(`Could not load image: ${img.src}`));
-                }
-            }));
-
-            await Promise.all(promises);
+            await Promise.all(images.map(img => new Promise((resolve) => {
+                if (img.complete) return resolve(true);
+                img.onload = img.onerror = () => resolve(true);
+            })));
 
             const canvas = await html2canvas(page, { scale: 2, useCORS: true });
             
@@ -246,20 +236,21 @@ export default function SesionDetallePage() {
             
             pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
         }
-          
+        
         pdf.save(`sesion-${layout}-${sessionId}.pdf`);
         toast({ title: "El archivo PDF se ha descargado" });
-      } catch (error) {
-          console.error("Error al generar PDF", error);
-          toast({
-              variant: "destructive",
-              title: "Fallo al descargar",
-              description: "No se pudo generar el PDF.",
-          });
-      } finally {
-          setIsDownloading(false);
-      }
-  };
+    } catch (error) {
+        console.error("Error al generar PDF", error);
+        toast({
+            variant: "destructive",
+            title: "Fallo al descargar",
+            description: "No se pudo generar el PDF. Algunas imágenes pueden estar causando problemas.",
+        });
+    } finally {
+        setIsDownloading(false);
+    }
+};
+
 
 
   if (isLoading) {
@@ -430,4 +421,5 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
