@@ -188,14 +188,12 @@ export default function SesionDetallePage() {
   
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
-    setIsPrintDialogOpen(false); // Close the dialog
+    setIsPrintDialogOpen(false);
     
-    // Give browser time to close dialog and prepare for printing
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
       window.print();
-      toast({ title: "Preparando la impresión...", description: "Selecciona 'Guardar como PDF' en el diálogo de impresión." });
     } catch (error) {
        console.error("Error al intentar imprimir", error);
        toast({
@@ -377,6 +375,7 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
 
 
