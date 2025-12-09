@@ -38,7 +38,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
       {exercises.map((exercise) => (
         <Card key={exercise.id} className="overflow-hidden">
              <div className="grid grid-cols-12 gap-6 p-6">
-                <div className="col-span-12 md:col-span-4 space-y-4">
+                <div className="col-span-12 md:col-span-3 space-y-4">
                     <div className="relative min-h-[190px] bg-muted rounded-md aspect-video">
                         <Image
                         src={exercise['Imagen']}
@@ -48,7 +48,7 @@ const PhaseSection = ({ title, exercises }: { title: string; exercises: Exercise
                         />
                     </div>
                 </div>
-                <div className="col-span-12 md:col-span-8 space-y-4">
+                <div className="col-span-12 md:col-span-9 space-y-4">
                     <h3 className="text-xl font-bold font-headline break-words">{exercise['Ejercicio']}</h3>
                     <div>
                         <h4 className="font-semibold text-lg">Descripción</h4>
