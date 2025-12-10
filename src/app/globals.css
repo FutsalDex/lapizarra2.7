@@ -74,20 +74,40 @@
 /* ESTILOS DE IMPRESIÓN       */
 /* --------------------------- */
 @media print {
-  body * {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body.printing * {
     visibility: hidden;
   }
 
-  #session-pro-layout-for-print, #session-pro-layout-for-print * {
+  body.printing-basic #session-visible-layout,
+  body.printing-basic #session-visible-layout * {
     visibility: visible;
   }
-  
+
+  body.printing-pro #session-pro-layout-for-print,
+  body.printing-pro #session-pro-layout-for-print * {
+    visibility: visible;
+  }
+
+  body.printing #session-visible-layout,
+  body.printing #session-pro-layout-for-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
   .no-print {
     display: none !important;
   }
   
   .print-page {
     page-break-after: always;
+    break-after: page;
   }
 }
 

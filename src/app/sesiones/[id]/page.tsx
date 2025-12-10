@@ -190,65 +190,21 @@ export default function SesionDetallePage() {
   
   const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
     setIsPrintDialogOpen(false);
-    setIsDownloading(true);
-    toast({
-      title: 'Preparando PDF...',
-      description: 'Esto puede tardar unos segundos. Por favor, espera.',
-    });
-  
-    const layoutId =
-      layout === 'pro' ? 'session-pro-layout-for-print' : 'session-visible-layout';
-    const printContent = document.getElementById(layoutId);
-  
-    if (!printContent) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo encontrar el contenido para imprimir.',
-      });
-      setIsDownloading(false);
-      return;
-    }
-  
-    const pages = printContent.querySelectorAll('.print-page');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-  
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i] as HTMLElement;
-      
-      const images = Array.from(page.getElementsByTagName('img'));
-      const promises = images.map(img => {
-          if (img.complete) return Promise.resolve();
-          return new Promise<void>(resolve => {
-              img.onload = () => resolve();
-              img.onerror = () => {
-                  console.warn(`Could not load image: ${img.src}. Skipping.`);
-                  resolve(); 
-              };
-          });
-      });
-  
-      await Promise.all(promises);
-  
-      const canvas = await html2canvas(page, {
-        scale: 2,
-        allowTaint: true,
-        useCORS: true, 
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const ratio = canvas.height / canvas.width;
-      const height = pdfWidth * ratio;
-  
-      if (i > 0) {
-        pdf.addPage();
-      }
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, height);
-    }
     
-    pdf.save(`sesion-${layout}-${sessionId}.pdf`);
-    setIsDownloading(false);
+    const printContentId = layout === 'pro' ? 'session-pro-layout-for-print' : 'session-visible-layout';
+    const content = document.getElementById(printContentId);
+    
+    if (content) {
+        document.body.classList.add('printing', `printing-${layout}`);
+        window.print();
+        document.body.classList.remove('printing', `printing-${layout}`);
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudo encontrar el contenido para imprimir."
+        });
+    }
   };
 
 
@@ -306,8 +262,8 @@ export default function SesionDetallePage() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8">
-        <div id="session-visible-layout" className="print-page">
+      <div id="session-visible-layout" className="container mx-auto px-4 py-8">
+        <div className="print-page">
             <div className="flex justify-between items-center mb-6 no-print">
               <div>
                 <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
@@ -412,10 +368,8 @@ export default function SesionDetallePage() {
       </div>
 
        {/* Hidden div for PDF generation content */}
-       <div className="hidden">
-           <div id="session-pro-layout-for-print">
-             <SessionProPreview ref={proLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
-           </div>
+       <div id="session-pro-layout-for-print" className="hidden">
+         <SessionProPreview ref={proLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
        </div>
     </>
   );
