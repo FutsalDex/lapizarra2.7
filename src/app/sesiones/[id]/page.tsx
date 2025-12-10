@@ -192,80 +192,86 @@ export default function SesionDetallePage() {
     setIsPrintDialogOpen(false);
     setIsDownloading(true);
     toast({
-        title: 'Preparando descarga...',
-        description: 'El PDF se está generando y la descarga comenzará en breve.',
+      title: 'Preparando descarga...',
+      description: 'El PDF se está generando y la descarga comenzará en breve.',
     });
-
+  
     const elementId = layout === 'basic' ? 'session-visible-layout' : 'session-pro-layout-for-print';
-    const content = document.getElementById(elementId);
-    if (!content) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo encontrar el contenido para generar el PDF.' });
-        setIsDownloading(false);
-        return;
+    const contentToPrint = document.getElementById(elementId);
+  
+    if (!contentToPrint) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo encontrar el contenido para generar el PDF.',
+      });
+      setIsDownloading(false);
+      return;
     }
-    
-    // Make pro layout visible for rendering
-    let proLayoutContainer: HTMLElement | null = null;
-    if (layout === 'pro') {
-        proLayoutContainer = document.getElementById('session-pro-layout-for-print-container');
-        if (proLayoutContainer) {
-            proLayoutContainer.style.display = 'block';
-        }
-    }
-
+  
     try {
-        const pages = content.querySelectorAll('.print-page');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-
-        for (let i = 0; i < pages.length; i++) {
-            const page = pages[i] as HTMLElement;
-            
-            const images = Array.from(page.getElementsByTagName('img'));
-            const imagePromises = images.map(img => new Promise<void>((resolve, reject) => {
-                if (img.complete && img.naturalHeight !== 0) {
-                    resolve();
-                } else {
-                    img.onload = () => resolve();
-                    img.onerror = () => reject(new Error(`Failed to load image: ${img.src}`));
-                }
-            }));
-            
-            await Promise.all(imagePromises);
-            
-            const canvas = await html2canvas(page, {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-            });
-
-            const imgData = canvas.toDataURL('image/png');
-            const height = (canvas.height * pdfWidth) / canvas.width;
-
-            if (i > 0) {
-                pdf.addPage();
-            }
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, height);
-        }
-        
-        pdf.save(`sesion-${layout}-${sessionId}.pdf`);
-    } catch (error) {
-        console.error('PDF generation error:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Error al generar el PDF',
-            description: 'Hubo un problema al crear el archivo. Por favor, inténtalo de nuevo.',
+      const allImages = Array.from(contentToPrint.getElementsByTagName('img'));
+      const imagePromises = allImages.map(img => {
+        return new Promise<void>((resolve, reject) => {
+          if (img.complete && img.naturalHeight !== 0) {
+            resolve();
+          } else {
+            img.onload = () => resolve();
+            img.onerror = () => {
+              // Even if one image fails, we try to continue.
+              console.warn(`Could not load image: ${img.src}`);
+              resolve();
+            };
+          }
         });
-    } finally {
-        if (proLayoutContainer) {
-            proLayoutContainer.style.display = 'none';
+      });
+  
+      await Promise.all(imagePromises);
+  
+      const canvas = await html2canvas(contentToPrint, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+      });
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const ratio = canvasWidth / pdfWidth;
+      const totalPages = Math.ceil(canvasHeight / (ratio * pdfHeight));
+  
+      for (let i = 0; i < totalPages; i++) {
+        if (i > 0) {
+          pdf.addPage();
         }
-        setIsDownloading(false);
+        const yPos = -i * (ratio * pdfHeight);
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvasWidth;
+        pageCanvas.height = ratio * pdfHeight;
+        const pageCtx = pageCanvas.getContext('2d');
+        if (pageCtx) {
+          pageCtx.drawImage(canvas, 0, yPos);
+          const imgData = pageCanvas.toDataURL('image/png');
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        }
+      }
+      
+      pdf.save(`sesion-${layout}-${sessionId}.pdf`);
+  
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al generar el PDF',
+        description: 'Hubo un problema al crear el archivo. Por favor, inténtalo de nuevo.',
+      });
+    } finally {
+      setIsDownloading(false);
     }
-};
+  };
 
 
   if (isLoading) {
@@ -425,7 +431,7 @@ export default function SesionDetallePage() {
             </div>
       </div>
 
-       <div id="session-pro-layout-for-print-container" style={{ position: 'absolute', left: '-9999px', top: 0, width: '210mm' }}>
+       <div id="session-pro-layout-for-print" className="absolute -z-10 -left-[9999px] top-0 opacity-0 w-[210mm]">
             <SessionProPreview ref={proLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
        </div>
     </>
