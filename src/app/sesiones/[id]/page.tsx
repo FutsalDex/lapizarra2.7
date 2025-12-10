@@ -189,58 +189,66 @@ export default function SesionDetallePage() {
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
   const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
+    setIsPrintDialogOpen(false);
+    setIsDownloading(true);
     toast({
-        title: "Preparando la impresión...",
-        description: "Esto puede tardar unos segundos. Se abrirá el diálogo de impresión de tu navegador.",
+      title: 'Generando PDF...',
+      description: 'Esto puede tardar unos segundos.',
     });
 
     const layoutId = `session-pro-layout-for-print`;
     const printableElement = document.getElementById(layoutId);
 
     if (!printableElement) {
-        toast({ variant: 'destructive', title: 'Error', description: `No se encontró el layout ${layout}.` });
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: `No se encontró el layout ${layout}.`,
+      });
+      setIsDownloading(false);
+      return;
     }
 
-    setIsDownloading(true);
-    setIsPrintDialogOpen(false);
-    
-    // Use a short timeout to ensure the printable element is rendered if it was hidden
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const pages = printableElement.querySelectorAll('.print-page');
+    const pages = Array.from(printableElement.querySelectorAll('.print-page'));
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
     for (let i = 0; i < pages.length; i++) {
-        const page = pages[i] as HTMLElement;
-        try {
-            const canvas = await html2canvas(page, {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-            });
+      const page = pages[i] as HTMLElement;
+      try {
+        const canvas = await html2canvas(page, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+        });
 
-            const imgData = canvas.toDataURL('image/png');
-            const imgWidth = pdfWidth;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const imgData = canvas.toDataURL('image/png');
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+        let height = imgHeight;
+        let position = 0;
 
-            if (i > 0) {
-                pdf.addPage();
-            }
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-
-        } catch (error) {
-            console.error(`Error processing page ${i}:`, error);
-            toast({
-                variant: 'destructive',
-                title: `Error en página ${i + 1}`,
-                description: 'No se pudo procesar una de las páginas para el PDF.'
-            });
+        if (i > 0) {
+          pdf.addPage();
         }
+
+        // This is a rough approximation. For precise splitting, a more complex logic is needed.
+        if (height > pdfHeight) {
+          height = pdfHeight;
+        }
+
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, height);
+      } catch (error) {
+        console.error(`Error processing page ${i + 1}:`, error);
+        toast({
+          variant: 'destructive',
+          title: `Error en página ${i + 1}`,
+          description: 'No se pudo procesar una de las páginas.',
+        });
+      }
     }
-    
+
     pdf.save(`sesion-${layout}-${sessionId}.pdf`);
     setIsDownloading(false);
   };
@@ -405,7 +413,7 @@ export default function SesionDetallePage() {
         </div>
       </div>
 
-       {/* Hidden div for PDF generation content, not directly used by JS but targeted by print styles */}
+       {/* Hidden div for PDF generation content */}
        <div className="hidden">
            <div id="session-pro-layout-for-print">
              <SessionProPreview ref={proLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
@@ -414,6 +422,7 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
 
 
