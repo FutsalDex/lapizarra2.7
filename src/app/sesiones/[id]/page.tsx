@@ -194,9 +194,12 @@ export default function SesionDetallePage() {
     
     window.print();
     
-    document.body.classList.remove('printing');
-    document.body.classList.remove('printing-pro');
-    document.body.classList.remove('printing-basic');
+    // Cleanup classes after print dialog is handled
+    // Note: This might run before the user interacts with the dialog.
+    // A better approach might be using onafterprint, but it's not universally supported.
+    setTimeout(() => {
+        document.body.classList.remove('printing', 'printing-pro', 'printing-basic');
+    }, 1000);
   };
 
 
@@ -284,15 +287,15 @@ export default function SesionDetallePage() {
                         <div className="grid grid-cols-2 gap-4 pt-4">
                             <div className="flex flex-col gap-2 items-center">
                                 <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                <Button className="w-full" onClick={() => handleDownloadPdf('basic')} disabled={isDownloading}>
-                                    {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
+                                <Button className="w-full" onClick={() => handleDownloadPdf('basic')}>
+                                    <Download className="mr-2" />
                                     Descargar Básica
                                 </Button>
                             </div>
                             <div className="flex flex-col gap-2 items-center">
                                 <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                <Button className="w-full" onClick={() => handleDownloadPdf('pro')} disabled={isDownloading}>
-                                    {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2" />}
+                                <Button className="w-full" onClick={() => handleDownloadPdf('pro')}>
+                                    <Download className="mr-2" />
                                     Descargar Pro
                                 </Button>
                             </div>
