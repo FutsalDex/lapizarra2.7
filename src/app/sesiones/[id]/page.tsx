@@ -188,66 +188,15 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
-  const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
-    toast({
-        title: 'Preparando PDF...',
-        description: 'La descarga comenzará en breve. Por favor, espera.',
-    });
-    setIsDownloading(true);
-    setIsPrintDialogOpen(false);
-
-    const content = layout === 'pro'
-        ? document.querySelector('#session-pro-layout-for-print')
-        : document.querySelector('#session-visible-layout');
-
-    if (!content) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'No se pudo encontrar el contenido para generar el PDF.',
-        });
-        setIsDownloading(false);
-        return;
-    }
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-
-    const pagesToPrint = content.querySelectorAll('.print-page');
-
-    for (let i = 0; i < pagesToPrint.length; i++) {
-        const page = pagesToPrint[i] as HTMLElement;
-
-        // Wait for images on the current page to load
-        const images = Array.from(page.getElementsByTagName('img'));
-        const promises = images.map(img => {
-            if (img.complete) return Promise.resolve();
-            return new Promise<void>(resolve => {
-                img.onload = () => resolve();
-                img.onerror = () => resolve(); // Resolve even if image fails to load
-            });
-        });
-        await Promise.all(promises);
-        
-        const canvas = await html2canvas(page, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            logging: false,
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-        const height = (canvas.height * pdfWidth) / canvas.width;
-
-        if (i > 0) {
-            pdf.addPage();
-        }
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, height);
-    }
+  const handleDownloadPdf = (layout: 'basic' | 'pro') => {
+    document.body.classList.add('printing');
+    document.body.classList.add(layout === 'pro' ? 'printing-pro' : 'printing-basic');
     
-    pdf.save(`sesion-${layout}-${sessionId}.pdf`);
-    setIsDownloading(false);
+    window.print();
+    
+    document.body.classList.remove('printing');
+    document.body.classList.remove('printing-pro');
+    document.body.classList.remove('printing-basic');
   };
 
 
