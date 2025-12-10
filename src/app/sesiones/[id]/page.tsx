@@ -189,17 +189,13 @@ export default function SesionDetallePage() {
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
   const handleDownloadPdf = (layout: 'basic' | 'pro') => {
-    document.body.classList.add('printing');
-    document.body.classList.add(layout === 'pro' ? 'printing-pro' : 'printing-basic');
+    document.body.classList.add('printing', `printing-${layout}`);
     
     window.print();
     
-    // Cleanup classes after print dialog is handled
-    // Note: This might run before the user interacts with the dialog.
-    // A better approach might be using onafterprint, but it's not universally supported.
     setTimeout(() => {
         document.body.classList.remove('printing', 'printing-pro', 'printing-basic');
-    }, 1000);
+    }, 500); // Cleanup classes after a short delay
   };
 
 
