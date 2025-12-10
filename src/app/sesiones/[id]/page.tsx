@@ -190,21 +190,71 @@ export default function SesionDetallePage() {
   
   const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
     setIsPrintDialogOpen(false);
-    
+    setIsDownloading(true);
+    toast({
+        title: "Preparando la descarga...",
+        description: "Esto puede tardar unos segundos.",
+    });
+
     const printContentId = layout === 'pro' ? 'session-pro-layout-for-print' : 'session-visible-layout';
     const content = document.getElementById(printContentId);
-    
-    if (content) {
-        document.body.classList.add('printing', `printing-${layout}`);
-        window.print();
-        document.body.classList.remove('printing', `printing-${layout}`);
-    } else {
+
+    if (!content) {
         toast({
             variant: "destructive",
             title: "Error",
             description: "No se pudo encontrar el contenido para imprimir."
         });
+        setIsDownloading(false);
+        return;
     }
+    
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pages = content.querySelectorAll('.print-page');
+
+    for (let i = 0; i < pages.length; i++) {
+        const page = pages[i] as HTMLElement;
+
+        // Wait for images on the current page to load
+        const images = Array.from(page.getElementsByTagName('img'));
+        const promises = images.map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise<void>(resolve => {
+                img.onload = () => resolve();
+                img.onerror = () => resolve(); // Resolve even on error to not block pdf generation
+            });
+        });
+        await Promise.all(promises);
+
+        const canvas = await html2canvas(page, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = canvasWidth / canvasHeight;
+        const imgWidth = pdfWidth;
+        const imgHeight = imgWidth / ratio;
+        
+        let height = imgHeight;
+        if (height > pdfHeight) {
+            height = pdfHeight;
+        }
+
+        if (i > 0) {
+            pdf.addPage();
+        }
+
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, height);
+    }
+    
+    pdf.save(`sesion-${layout}-${sessionId}.pdf`);
+    setIsDownloading(false);
   };
 
 
@@ -286,7 +336,7 @@ export default function SesionDetallePage() {
                         <DialogHeader>
                             <DialogTitle>Elige Formato de Ficha</DialogTitle>
                             <DialogDescription>
-                                Selecciona la plantilla para descargar tu sesión en formato PDF. La descarga utilizará la función de impresión de tu navegador.
+                                Selecciona la plantilla para descargar tu sesión en formato PDF.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid grid-cols-2 gap-4 pt-4">
