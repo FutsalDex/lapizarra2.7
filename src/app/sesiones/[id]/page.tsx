@@ -188,69 +188,9 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
-  const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
+ const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
     setIsPrintDialogOpen(false);
-    setIsDownloading(true);
-    toast({
-      title: 'Generando PDF...',
-      description: 'Esto puede tardar unos segundos.',
-    });
-
-    const layoutId = `session-pro-layout-for-print`;
-    const printableElement = document.getElementById(layoutId);
-
-    if (!printableElement) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: `No se encontró el layout ${layout}.`,
-      });
-      setIsDownloading(false);
-      return;
-    }
-
-    const pages = Array.from(printableElement.querySelectorAll('.print-page'));
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i] as HTMLElement;
-      try {
-        const canvas = await html2canvas(page, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          logging: false,
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-        let height = imgHeight;
-        let position = 0;
-
-        if (i > 0) {
-          pdf.addPage();
-        }
-
-        // This is a rough approximation. For precise splitting, a more complex logic is needed.
-        if (height > pdfHeight) {
-          height = pdfHeight;
-        }
-
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, height);
-      } catch (error) {
-        console.error(`Error processing page ${i + 1}:`, error);
-        toast({
-          variant: 'destructive',
-          title: `Error en página ${i + 1}`,
-          description: 'No se pudo procesar una de las páginas.',
-        });
-      }
-    }
-
-    pdf.save(`sesion-${layout}-${sessionId}.pdf`);
-    setIsDownloading(false);
+    window.print();
   };
 
 
@@ -308,7 +248,7 @@ export default function SesionDetallePage() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 no-print">
         <div id="session-visible-layout">
             <div className="flex justify-between items-center mb-6 no-print">
               <div>
@@ -422,6 +362,7 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
 
 
 
