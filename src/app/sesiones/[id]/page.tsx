@@ -111,7 +111,7 @@ const SessionProPreview = React.forwardRef<
 
   const ExerciseCard = ({ exercise }: { exercise: Exercise }) => (
     <div className="exercise-block">
-        <img src={exercise['Imagen']} alt={exercise['Ejercicio']} className="exercise-img" />
+        <img src={exercise['Imagen']} alt={exercise['Ejercicio']} className="exercise-img" crossOrigin="anonymous"/>
         <div className="exercise-info">
             <p className="exercise-title">{exercise['Ejercicio']}</p>
             <div className="exercise-meta">
@@ -188,18 +188,84 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
-  const handleDownloadPdf = (layout: 'basic' | 'pro') => {
-    document.body.classList.add('printing', `printing-${layout}`);
-    
-    // Close the dialog first
+  const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
     setIsPrintDialogOpen(false);
+    setIsDownloading(true);
+    toast({
+        title: 'Preparando descarga...',
+        description: 'El PDF se está generando y la descarga comenzará en breve.',
+    });
 
-    // Use a short timeout to allow the dialog to close before printing
-    setTimeout(() => {
-        window.print();
-        document.body.classList.remove('printing', 'printing-pro', 'printing-basic');
-    }, 100);
-  };
+    const elementId = layout === 'basic' ? 'session-visible-layout' : 'session-pro-layout-for-print';
+    const content = document.getElementById(elementId);
+    if (!content) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo encontrar el contenido para generar el PDF.' });
+        setIsDownloading(false);
+        return;
+    }
+    
+    // Make pro layout visible for rendering
+    let proLayoutContainer: HTMLElement | null = null;
+    if (layout === 'pro') {
+        proLayoutContainer = document.getElementById('session-pro-layout-for-print-container');
+        if (proLayoutContainer) {
+            proLayoutContainer.style.display = 'block';
+        }
+    }
+
+    try {
+        const pages = content.querySelectorAll('.print-page');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i] as HTMLElement;
+            
+            const images = Array.from(page.getElementsByTagName('img'));
+            const imagePromises = images.map(img => new Promise<void>((resolve, reject) => {
+                if (img.complete && img.naturalHeight !== 0) {
+                    resolve();
+                } else {
+                    img.onload = () => resolve();
+                    img.onerror = () => reject(new Error(`Failed to load image: ${img.src}`));
+                }
+            }));
+            
+            await Promise.all(imagePromises);
+            
+            const canvas = await html2canvas(page, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const height = (canvas.height * pdfWidth) / canvas.width;
+
+            if (i > 0) {
+                pdf.addPage();
+            }
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, height);
+        }
+        
+        pdf.save(`sesion-${layout}-${sessionId}.pdf`);
+    } catch (error) {
+        console.error('PDF generation error:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error al generar el PDF',
+            description: 'Hubo un problema al crear el archivo. Por favor, inténtalo de nuevo.',
+        });
+    } finally {
+        if (proLayoutContainer) {
+            proLayoutContainer.style.display = 'none';
+        }
+        setIsDownloading(false);
+    }
+};
 
 
   if (isLoading) {
@@ -257,7 +323,6 @@ export default function SesionDetallePage() {
   return (
     <>
       <div id="session-visible-layout" className="container mx-auto px-4 py-8">
-        <div className="print-page">
             <div className="flex justify-between items-center mb-6 no-print">
               <div>
                 <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
@@ -271,9 +336,9 @@ export default function SesionDetallePage() {
                 
                 <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button>
-                          <Printer className="mr-2" />
-                          Descargar PDF
+                        <Button disabled={isDownloading}>
+                            {isDownloading ? <Loader2 className="mr-2 animate-spin" /> : <Printer className="mr-2" />}
+                            Descargar PDF
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-xl">
@@ -358,12 +423,10 @@ export default function SesionDetallePage() {
                     <PhaseSection title="Fase Final (Vuelta a la Calma)" exercises={finalExercises} />
                 </div>
             </div>
-        </div>
       </div>
 
-       {/* Hidden div for PDF generation content */}
-       <div id="session-pro-layout-for-print" className="hidden">
-         <SessionProPreview ref={proLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
+       <div id="session-pro-layout-for-print-container" style={{ position: 'absolute', left: '-9999px', top: 0, width: '210mm' }}>
+            <SessionProPreview ref={proLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
        </div>
     </>
   );
