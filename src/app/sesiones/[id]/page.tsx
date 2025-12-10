@@ -191,11 +191,14 @@ export default function SesionDetallePage() {
   const handleDownloadPdf = (layout: 'basic' | 'pro') => {
     document.body.classList.add('printing', `printing-${layout}`);
     
-    window.print();
-    
+    // Close the dialog first
+    setIsPrintDialogOpen(false);
+
+    // Use a short timeout to allow the dialog to close before printing
     setTimeout(() => {
+        window.print();
         document.body.classList.remove('printing', 'printing-pro', 'printing-basic');
-    }, 500); // Cleanup classes after a short delay
+    }, 100);
   };
 
 
