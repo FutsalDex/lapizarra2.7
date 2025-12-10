@@ -190,7 +190,59 @@ export default function SesionDetallePage() {
   
  const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
     setIsPrintDialogOpen(false);
-    window.print();
+    setIsDownloading(true);
+    toast({
+        title: "Preparando PDF...",
+        description: "Esto puede tardar unos segundos. Por favor, espera.",
+    });
+
+    const layoutId = layout === 'pro' ? 'session-pro-layout-for-print' : 'session-visible-layout';
+    const printContent = document.getElementById(layoutId);
+
+    if (!printContent) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo encontrar el contenido para imprimir.' });
+      setIsDownloading(false);
+      return;
+    }
+
+    const pages = printContent.querySelectorAll('.print-page');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i] as HTMLElement;
+      
+      const images = Array.from(page.querySelectorAll('img'));
+      const promises = images.map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise<void>(resolve => {
+              img.onload = () => resolve();
+              img.onerror = () => resolve(); // Resolve even on error to not block pdf generation
+          });
+      });
+
+      await Promise.all(promises);
+
+      const canvas = await html2canvas(page, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const ratio = canvas.height / canvas.width;
+      const height = pdfWidth * ratio;
+
+      if (i > 0) {
+        pdf.addPage();
+      }
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, height);
+    }
+    
+    pdf.save(`sesion-${layout}-${sessionId}.pdf`);
+    setIsDownloading(false);
   };
 
 
@@ -248,8 +300,8 @@ export default function SesionDetallePage() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8 no-print">
-        <div id="session-visible-layout">
+      <div className="container mx-auto px-4 py-8">
+        <div id="session-visible-layout" className="print-page">
             <div className="flex justify-between items-center mb-6 no-print">
               <div>
                 <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
@@ -362,10 +414,3 @@ export default function SesionDetallePage() {
     </>
   );
 }
-
-
-
-
-
-
-
