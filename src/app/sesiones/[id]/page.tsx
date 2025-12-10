@@ -192,86 +192,93 @@ export default function SesionDetallePage() {
     setIsPrintDialogOpen(false);
     setIsDownloading(true);
     toast({
-      title: 'Preparando descarga...',
-      description: 'El PDF se está generando y la descarga comenzará en breve.',
+        title: 'Preparando descarga...',
+        description: 'El PDF se está generando y la descarga comenzará en breve.',
     });
-  
-    const elementId = layout === 'basic' ? 'session-visible-layout' : 'session-pro-layout-for-print';
-    const contentToPrint = document.getElementById(elementId);
-  
-    if (!contentToPrint) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo encontrar el contenido para generar el PDF.',
-      });
-      setIsDownloading(false);
-      return;
-    }
-  
-    try {
-      const allImages = Array.from(contentToPrint.getElementsByTagName('img'));
-      const imagePromises = allImages.map(img => {
-        return new Promise<void>((resolve, reject) => {
-          if (img.complete && img.naturalHeight !== 0) {
-            resolve();
-          } else {
-            img.onload = () => resolve();
-            img.onerror = () => {
-              // Even if one image fails, we try to continue.
-              console.warn(`Could not load image: ${img.src}`);
-              resolve();
-            };
-          }
+
+    const originalElement = document.getElementById(layout === 'basic' ? 'session-visible-layout' : 'session-pro-layout-for-print');
+
+    if (!originalElement) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'No se pudo encontrar el contenido para generar el PDF.',
         });
-      });
-  
-      await Promise.all(imagePromises);
-  
-      const canvas = await html2canvas(contentToPrint, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-      });
-      
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const ratio = canvasWidth / pdfWidth;
-      const totalPages = Math.ceil(canvasHeight / (ratio * pdfHeight));
-  
-      for (let i = 0; i < totalPages; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
-        const yPos = -i * (ratio * pdfHeight);
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvasWidth;
-        pageCanvas.height = ratio * pdfHeight;
-        const pageCtx = pageCanvas.getContext('2d');
-        if (pageCtx) {
-          pageCtx.drawImage(canvas, 0, yPos);
-          const imgData = pageCanvas.toDataURL('image/png');
-          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        }
-      }
-      
-      pdf.save(`sesion-${layout}-${sessionId}.pdf`);
-  
-    } catch (error) {
-      console.error('PDF generation error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error al generar el PDF',
-        description: 'Hubo un problema al crear el archivo. Por favor, inténtalo de nuevo.',
-      });
-    } finally {
-      setIsDownloading(false);
+        setIsDownloading(false);
+        return;
     }
-  };
+
+    // Clone the element
+    const clone = originalElement.cloneNode(true) as HTMLElement;
+
+    // Style and append the clone to the body
+    clone.style.position = 'fixed';
+    clone.style.top = '-9999px';
+    clone.style.left = '0';
+    clone.style.width = '210mm'; // A4 width
+    clone.style.height = 'auto';
+    document.body.appendChild(clone);
+
+    const pages = clone.querySelectorAll('.print-page');
+
+    try {
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i] as HTMLElement;
+
+            const allImages = Array.from(page.getElementsByTagName('img'));
+            await Promise.all(
+                allImages.map(img => new Promise<void>(resolve => {
+                    if (img.complete && img.naturalHeight !== 0) {
+                        resolve();
+                    } else {
+                        img.onload = () => resolve();
+                        img.onerror = () => {
+                            console.warn(`Could not load image: ${img.src}`);
+                            resolve(); // Continue even if an image fails
+                        };
+                    }
+                }))
+            );
+
+            const canvas = await html2canvas(page, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+                width: page.offsetWidth,
+                height: page.offsetHeight,
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const ratio = imgWidth / pdfWidth;
+            const height = imgHeight / ratio;
+
+            if (i > 0) {
+                pdf.addPage();
+            }
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, height);
+        }
+        
+        pdf.save(`sesion-${layout}-${sessionId}.pdf`);
+
+    } catch (error) {
+        console.error('PDF generation error:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error al generar el PDF',
+            description: 'Hubo un problema al crear el archivo. Por favor, inténtalo de nuevo.',
+        });
+    } finally {
+        document.body.removeChild(clone); // Clean up the clone
+        setIsDownloading(false);
+    }
+};
 
 
   if (isLoading) {
@@ -328,7 +335,7 @@ export default function SesionDetallePage() {
 
   return (
     <>
-      <div id="session-visible-layout" className="container mx-auto px-4 py-8">
+      <div id="session-visible-layout" className="container mx-auto px-4 py-8 print-page">
             <div className="flex justify-between items-center mb-6 no-print">
               <div>
                 <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
