@@ -188,53 +188,59 @@ export default function SesionDetallePage() {
 
   const isLoading = loadingSession || loadingExercises || loadingTeam;
   
- const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
+  const handleDownloadPdf = async (layout: 'basic' | 'pro') => {
     setIsPrintDialogOpen(false);
     setIsDownloading(true);
     toast({
-        title: "Preparando PDF...",
-        description: "Esto puede tardar unos segundos. Por favor, espera.",
+      title: 'Preparando PDF...',
+      description: 'Esto puede tardar unos segundos. Por favor, espera.',
     });
-
-    const layoutId = layout === 'pro' ? 'session-pro-layout-for-print' : 'session-visible-layout';
+  
+    const layoutId =
+      layout === 'pro' ? 'session-pro-layout-for-print' : 'session-visible-layout';
     const printContent = document.getElementById(layoutId);
-
+  
     if (!printContent) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo encontrar el contenido para imprimir.' });
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo encontrar el contenido para imprimir.',
+      });
       setIsDownloading(false);
       return;
     }
-
+  
     const pages = printContent.querySelectorAll('.print-page');
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
+  
     for (let i = 0; i < pages.length; i++) {
       const page = pages[i] as HTMLElement;
       
-      const images = Array.from(page.querySelectorAll('img'));
+      const images = Array.from(page.getElementsByTagName('img'));
       const promises = images.map(img => {
           if (img.complete) return Promise.resolve();
           return new Promise<void>(resolve => {
               img.onload = () => resolve();
-              img.onerror = () => resolve(); // Resolve even on error to not block pdf generation
+              img.onerror = () => {
+                  console.warn(`Could not load image: ${img.src}. Skipping.`);
+                  resolve(); 
+              };
           });
       });
-
+  
       await Promise.all(promises);
-
+  
       const canvas = await html2canvas(page, {
         scale: 2,
-        useCORS: true,
         allowTaint: true,
-        logging: false,
+        useCORS: true, 
       });
-
+      
       const imgData = canvas.toDataURL('image/png');
       const ratio = canvas.height / canvas.width;
       const height = pdfWidth * ratio;
-
+  
       if (i > 0) {
         pdf.addPage();
       }
