@@ -206,12 +206,7 @@ export function Header() {
                 <>
                   {isAdmin && (
                       <>
-                          <Button variant="ghost" size="icon" className="relative hover:bg-primary/80" asChild>
-                              <Link href="https://console.firebase.google.com/project/lapizarra-95eqd" target="_blank">
-                                  <FirebaseLogo />
-                                  <span className="sr-only">Proyecto de Firebase</span>
-                              </Link>
-                          </Button>
+                          
                           <Button variant="ghost" size="icon" className="relative hover:bg-primary/80" asChild>
                             <Link href="/admin/invitations">
                               <Gift className="h-5 w-5" />
