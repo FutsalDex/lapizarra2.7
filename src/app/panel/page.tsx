@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Shield, Calendar, BookUser, CalendarClock, BarChart3, MessageSquare } from 'lucide-react';
+import { ArrowRight, Shield, Calendar, BookUser, BarChart3, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 
 const panelItems = [
@@ -25,13 +25,6 @@ const panelItems = [
     description: 'Aporta ejercicios a la comunidad, gestiónalos y gana puntos para tu suscripción.',
     buttonText: 'Ir a Mis Ejercicios',
     href: '/ejercicios/mis-ejercicios',
-  },
-  {
-    icon: <CalendarClock className="w-8 h-8 text-primary" />,
-    title: 'Mis Eventos',
-    description: 'Visualiza la cronología de todos tus partidos y sesiones de entrenamiento guardados.',
-    buttonText: 'Ir a Mis Eventos',
-    href: '/eventos',
   },
   {
     icon: <BarChart3 className="w-8 h-8 text-primary" />,
