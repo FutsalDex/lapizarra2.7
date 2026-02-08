@@ -469,7 +469,7 @@ export default function CrearSesionPage() {
     try {
         const docRef = await addDoc(collection(db, 'sessions'), sessionData);
         toast({ title: "Sesión guardada", description: "Tu sesión de entrenamiento ha sido creada con éxito." });
-        router.push(`/sesiones/${docRef.id}`);
+        router.push(`/sesiones/${docRef.id}/editar`);
     } catch (error: any) {
         toast({ variant: "destructive", title: "Error al guardar", description: error.message });
         setIsSaving(false);
