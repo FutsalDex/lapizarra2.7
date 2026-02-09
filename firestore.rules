@@ -118,7 +118,9 @@ service cloud.firestore {
 
 
     match /sessions/{sessionId} {
-      allow get, list, create, update, delete: if isSignedIn();
+      allow get, list: if isSignedIn();
+      allow create: if request.resource.data.userId == request.auth.uid;
+      allow update, delete: if resource.data.userId == request.auth.uid;
     }
 
     match /invitations/{invitationId} {
