@@ -79,27 +79,49 @@ export default function SoportePage() {
     }
   };
   
-  const AssistantMessage = ({ content }: { content: MisterGlobalOutput }) => (
-    <Card className="bg-muted/50 border-none shadow-none">
-        <CardContent className="p-4 space-y-4">
-            {content.contextAnalysis && (
-                 <div>
-                    <h4 className="font-bold text-primary mb-2">Análisis del Contexto</h4>
-                    <p className="text-sm text-muted-foreground">{content.contextAnalysis}</p>
+  const AssistantMessage = ({ content }: { content: MisterGlobalOutput }) => {
+    const renderFormattedText = (text: string, baseClassName: string) => {
+      if (!text) return null;
+      return text.split('\n').map((line, index) => {
+        if (line.trim() === '') {
+          return <div key={index} className="h-2" />; // Represents a blank line
+        }
+        const parts = line.split(/(\*\*.*?\*\*)/g);
+        return (
+          <p key={index} className={cn(baseClassName)}>
+            {parts.map((part, i) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+              }
+              return part;
+            })}
+          </p>
+        );
+      });
+    };
+
+    return (
+        <Card className="bg-muted/50 border-none shadow-none">
+            <CardContent className="p-4 space-y-4">
+                {content.contextAnalysis && (
+                     <div>
+                        <h4 className="font-bold text-primary mb-2">Análisis del Contexto</h4>
+                        <div className="space-y-2">{renderFormattedText(content.contextAnalysis, "text-sm text-muted-foreground")}</div>
+                    </div>
+                )}
+                {content.misterNuance && (
+                    <div>
+                        <h4 className="font-bold text-primary mb-2">El Matiz del Míster</h4>
+                        <div className="space-y-2">{renderFormattedText(content.misterNuance, "text-sm text-muted-foreground")}</div>
+                    </div>
+                )}
+                 <div className={cn({"border-t pt-4 mt-4": content.contextAnalysis || content.misterNuance})}>
+                    <div className="space-y-2">{renderFormattedText(content.answer, "text-sm text-foreground")}</div>
                 </div>
-            )}
-            {content.misterNuance && (
-                <div>
-                    <h4 className="font-bold text-primary mb-2">El Matiz del Míster</h4>
-                    <p className="text-sm text-muted-foreground">{content.misterNuance}</p>
-                </div>
-            )}
-             <div className={cn({"border-t pt-4 mt-4": content.contextAnalysis || content.misterNuance})}>
-                <p className="text-sm font-semibold text-foreground">{content.answer}</p>
-            </div>
-        </CardContent>
-    </Card>
-  );
+            </CardContent>
+        </Card>
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 flex flex-col h-[calc(100vh-4rem)]">
