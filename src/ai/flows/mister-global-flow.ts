@@ -11,12 +11,12 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const MisterGlobalInputSchema = z.object({
+const MisterGlobalInputSchema = z.object({
   question: z.string().describe('The user question for the futsal coach.'),
 });
 export type MisterGlobalInput = z.infer<typeof MisterGlobalInputSchema>;
 
-export const MisterGlobalOutputSchema = z.object({
+const MisterGlobalOutputSchema = z.object({
   contextAnalysis: z.string().describe("A brief reflection combining Spanish, Brazilian, and Argentine visions on the problem posed."),
   tacticalProposal: z.object({
       objective: z.string().describe("What we want to achieve."),
