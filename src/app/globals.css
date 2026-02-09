@@ -116,97 +116,48 @@
 /* --------------------------- */
 /* ESTILOS GENERALES PDF      */
 /* --------------------------- */
-.session-title {
-    font-size: 26px;
-    font-weight: bold;
-    margin-bottom: 10px;
-    border-bottom: 2px solid black;
-    padding-bottom: 5px;
-}
-.phase-header {
-  margin-top: 15px;
-  background: #0b426f;
-  color: white;
-  padding: 5px 10px;
-  font-size: 18px;
-  font-weight: bold;
-}
-.exercise-block {
-  display: flex;
-  gap: 20px;
-  margin-top: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #ccc;
-}
-.exercise-img {
-  width: 45%;
-  border-radius: 8px;
-  object-fit: cover;
-  align-self: flex-start;
-}
-.exercise-info {
-  width: 55%;
-}
-.exercise-title {
-  font-size: 20px;
-  font-weight: bold;
-}
-.exercise-sub {
-  font-size: 16px;
-  margin-top: 10px;
-  font-weight: 600;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 2px;
-}
-.exercise-meta {
-    margin-top: 10px;
-}
-.exercise-meta p {
-  margin: 4px 0;
-}
-
-/* New Basic PDF Layout Styles */
+/* Basic PDF Layout Styles */
 .pdf-page-layout {
   padding: 10mm;
   display: flex;
   flex-direction: column;
-  height: 297mm; /* A4 height */
+  height: 277mm; /* A4 height with margin*/
   width: 210mm;  /* A4 width */
   box-sizing: border-box;
   background-color: white;
   color: black;
 }
 .session-title-basic {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: bold;
-  margin-bottom: 4mm;
+  margin-bottom: 2mm;
   border-bottom: 1px solid black;
-  padding-bottom: 2mm;
+  padding-bottom: 1mm;
   text-align: center;
   flex-shrink: 0;
 }
 .phase-section {
   width: 100%;
-  margin-bottom: 2mm;
+  margin-bottom: 1mm;
   flex-shrink: 0;
 }
 .phase-section:last-child {
   margin-bottom: 0;
 }
 .phase-title-basic {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: bold;
   background: #f0f0f0;
-  padding: 1.5mm;
+  padding: 1mm;
   text-align: center;
-  margin-bottom: 2mm;
+  margin-bottom: 1mm;
   border: 1px solid #ccc;
 }
 .exercise-row {
   display: flex;
   justify-content: space-between;
-  gap: 4mm;
-  margin-bottom: 2mm;
+  gap: 3mm;
+  margin-bottom: 1.5mm;
 }
 .exercise-row:last-child {
   margin-bottom: 0;
@@ -218,7 +169,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: 57mm;
+  height: 52mm;
 }
 .pdf-card-placeholder {
   border-style: dashed;
@@ -227,7 +178,7 @@
 .pdf-card-img {
   display: block;
   width: 100%;
-  height: 49mm;
+  height: 45mm;
   object-fit: contain;
   padding: 1mm;
   box-sizing: border-box;
@@ -245,11 +196,125 @@
   border-top: 1px solid #eee;
   background-color: #f8f8f8;
   flex-shrink: 0;
-  min-height: 8mm;
+  min-height: 7mm;
   display: flex;
   align-items: center;
   justify-content: center;
   word-break: break-word;
 }
 
+/* New Pro PDF Layout Styles */
+.pdf-pro-page {
+  padding: 10mm;
+  display: flex;
+  flex-direction: column;
+  height: 297mm; /* A4 height */
+  width: 210mm;  /* A4 width */
+  box-sizing: border-box;
+  background-color: white;
+  color: black;
+}
+.pdf-pro-header {
+  border-bottom: 2px solid black;
+  padding-bottom: 4mm;
+  margin-bottom: 6mm;
+  flex-shrink: 0;
+}
+.pdf-pro-header-title {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 4mm;
+}
+.pdf-pro-header-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  font-size: 9px;
+  gap: 2mm;
+}
+.pdf-pro-header-details p {
+  margin: 0;
+}
+.pdf-pro-objectives {
+  font-size: 9px;
+  margin-top: 3mm;
+}
+.pdf-pro-objectives h4 {
+  font-weight: bold;
+  text-align: center;
+  font-size: 11px;
+  margin-bottom: 1.5mm;
+}
+.pdf-pro-objectives ul {
+  list-style-position: inside;
+  padding-left: 0;
+  margin: 0;
+  columns: 2;
+  -webkit-columns: 2;
+  -moz-columns: 2;
+}
+.exercise-block-pro {
+  display: flex;
+  gap: 5mm;
+  height: 125mm; 
+  overflow: hidden;
+  page-break-inside: avoid;
+}
+.exercise-block-pro:not(:last-child) {
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5mm;
+    margin-bottom: 5mm;
+}
+.exercise-image-and-meta-pro {
+  width: 35%;
+  display: flex;
+  flex-direction: column;
+}
+.exercise-image-pro {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  object-fit: contain;
+  margin-bottom: 4mm;
+  aspect-ratio: 4 / 3;
+}
+.exercise-meta-pro {
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.exercise-meta-pro > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.exercise-meta-pro svg {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.exercise-meta-pro .font-bold {
+  font-weight: bold;
+}
+.exercise-main-content-pro {
+  width: 65%;
+}
+.exercise-title-pro {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 2mm;
+}
+.exercise-subtitle-pro {
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 3mm;
+  margin-bottom: 1.5mm;
+}
+.exercise-text-pro {
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: justify;
+}
     

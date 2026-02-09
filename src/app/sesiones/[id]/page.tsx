@@ -100,69 +100,86 @@ const SessionProPreview = React.forwardRef<
     ...getExercisesByIds(sessionData.finalExercises),
   ];
 
-  const firstPageExercises = allSessionExercises.slice(0, 3);
-  const remainingExercises = allSessionExercises.slice(3);
   const exercisePages: Exercise[][] = [];
-  for (let i = 0; i < remainingExercises.length; i += 4) {
-    exercisePages.push(remainingExercises.slice(i, i + 4));
+  for (let i = 0; i < allSessionExercises.length; i += 2) {
+    exercisePages.push(allSessionExercises.slice(i, i + 2));
   }
 
   const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
-  const ExerciseCard = ({ exercise }: { exercise: Exercise }) => (
-    <div className="exercise-block">
-        <img src={exercise['Imagen']} alt={exercise['Ejercicio']} className="exercise-img" crossOrigin="anonymous"/>
-        <div className="exercise-info">
-            <p className="exercise-title">{exercise['Ejercicio']}</p>
-            <div className="exercise-meta">
-                <p><strong>Duración:</strong> {exercise['Duración (min)']} min</p>
-                <p><strong>Jugadores:</strong> {exercise['Número de jugadores']}</p>
-            </div>
-            <p className="exercise-sub">Descripción</p>
-            <p>{exercise['Descripción de la tarea']}</p>
-            <p className="exercise-sub">Objetivos</p>
-            <p>{exercise['Objetivos']}</p>
+  const PageHeader = () => (
+    <div className="pdf-pro-header">
+      <h2 className="pdf-pro-header-title">Sesión de Entrenamiento</h2>
+      <div className="pdf-pro-header-details">
+        <div><p><strong>Equipo:</strong> {teamName}</p></div>
+        <div><p><strong>Instalación:</strong> {sessionData.facility || 'N/A'}</p></div>
+        <div><p><strong>Fecha:</strong> {sessionDateFormatted}</p></div>
+        <div><p><strong>Microciclo:</strong> {sessionData.microcycle || 'N/A'}</p></div>
+        <div><p><strong>Nº Sesión:</strong> {sessionData.sessionNumber || 'N/A'}</p></div>
+      </div>
+      {(sessionData.objectives && sessionData.objectives.length > 0) && (
+        <div className="pdf-pro-objectives">
+          <h4>Objetivos de la Sesión</h4>
+          <ul>
+            {(sessionData.objectives).map((obj: string, index: number) => (
+                <li key={index}>{obj}</li>
+            ))}
+          </ul>
         </div>
+      )}
     </div>
   );
 
-  return (
-    <div ref={ref}>
-        {/* First Page */}
-        <div className="print-page p-8 bg-white text-black">
-            <div className="session-title">Sesión de Entrenamiento</div>
-            <div className="grid grid-cols-10 gap-x-4 mb-4 text-sm">
-                <div className="col-span-3 space-y-1">
-                    <p><strong>Equipo:</strong> {teamName}</p>
-                    <p><strong>Instalación:</strong> {sessionData.facility || 'N/A'}</p>
-                </div>
-                <div className="col-span-3 space-y-1">
-                     <p><strong>Microciclo:</strong> {sessionData.microcycle || 'N/A'}</p>
-                    <p><strong>Nº Sesión:</strong> {sessionData.sessionNumber || 'N/A'}</p>
-                </div>
-                <div className="col-span-4 space-y-1">
-                    <p><strong>Fecha:</strong> {sessionDateFormatted}</p>
-                </div>
-            </div>
-            <div className="border-t-2 border-b-2 border-black py-2 mb-4">
-                <h4 className="font-bold text-center">Objetivos de la Sesión</h4>
-                 <ul className="list-disc list-inside text-sm mt-1">
-                    {(sessionData.objectives || []).map((obj: string, index: number) => (
-                        <li key={index}>{obj}</li>
-                    ))}
-                </ul>
-            </div>
-            <div className="space-y-4">
-                {firstPageExercises.map(ex => <ExerciseCard key={ex.id} exercise={ex} />)}
+  const ExerciseContent = ({ exercise }: { exercise: Exercise }) => (
+    <div className="exercise-block-pro">
+      <div className="exercise-image-and-meta-pro">
+          <img src={exercise['Imagen']} alt={exercise['Ejercicio']} className="exercise-image-pro" crossOrigin="anonymous"/>
+          <div className="exercise-meta-pro">
+              <div className="flex items-start gap-2">
+                <Clock className="w-4 h-4 mt-1" />
+                <div><span className="font-bold">Duración:</span> {exercise['Duración (min)']} min</div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Users className="w-4 h-4 mt-1" />
+                <div><span className="font-bold">Jugadores:</span> {exercise['Número de jugadores']}</div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Package className="w-4 h-4 mt-1" />
+                <div><span className="font-bold">Material:</span> {exercise['Espacio y materiales necesarios']}</div>
+              </div>
+          </div>
+      </div>
+      <div className="exercise-main-content-pro">
+          <h3 className="exercise-title-pro">{exercise['Ejercicio']}</h3>
+          
+          <h4 className="exercise-subtitle-pro">Descripción</h4>
+          <p className="exercise-text-pro">{exercise['Descripción de la tarea']}</p>
+
+          <h4 className="exercise-subtitle-pro">Objetivos del Ejercicio</h4>
+          <p className="exercise-text-pro">{exercise['Objetivos']}</p>
+      </div>
+    </div>
+  );
+
+  if (!exercisePages || exercisePages.length === 0) {
+    return (
+        <div ref={ref}>
+            <div className="print-page pdf-pro-page">
+                <PageHeader />
+                <p className="text-center mt-8">No hay ejercicios en esta sesión.</p>
             </div>
         </div>
+    )
+  }
 
-        {/* Subsequent Pages */}
+  return (
+    <div ref={ref}>
         {exercisePages.map((page, pageIndex) => (
-            <div key={pageIndex} className="print-page p-8 bg-white text-black">
-                 <div className="space-y-4">
-                    {page.map(ex => <ExerciseCard key={ex.id} exercise={ex} />)}
-                </div>
+            <div key={pageIndex} className="print-page pdf-pro-page">
+                 <PageHeader />
+                 <div className="flex-grow flex flex-col justify-around">
+                    {page.map(ex => <ExerciseContent key={ex.id} exercise={ex} />)}
+                 </div>
             </div>
         ))}
     </div>
@@ -556,3 +573,4 @@ export default function SesionDetallePage() {
     </>
   );
 }
+
