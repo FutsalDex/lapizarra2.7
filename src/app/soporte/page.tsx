@@ -171,33 +171,15 @@ function SoporteChat() {
         if (!input.trim() || isAiLoading || !user) return;
     
         const userMessageContent = input;
-        const userMessage: Message = { role: 'user', content: userMessageContent, createdAt: Timestamp.now() };
-        
-        let currentMessages = [...messages, userMessage];
-        setMessages(currentMessages);
-        setInput('');
+        setInput(''); // Clear input immediately
         setIsAiLoading(true);
-
-        let currentChatId = chatId;
-
+        
+        // Optimistic UI update for user's message
+        const userMessage: Message = { role: 'user', content: userMessageContent, createdAt: Timestamp.now() };
+        setMessages(prev => [...prev, userMessage]);
+        
         try {
-            if (!currentChatId) {
-                const newConvRef = await addDoc(collection(db, 'conversations'), {
-                    userId: user.uid,
-                    title: userMessageContent.substring(0, 40) + (userMessageContent.length > 40 ? '...' : ''),
-                    createdAt: Timestamp.now(),
-                    messages: [userMessage],
-                });
-                currentChatId = newConvRef.id;
-                router.replace(`/soporte?chatId=${currentChatId}`, { scroll: false });
-            } else {
-                await updateDoc(doc(db, 'conversations', currentChatId), {
-                    messages: arrayUnion(userMessage),
-                    updatedAt: Timestamp.now(),
-                });
-            }
-
-            const historyForAI = currentMessages.map(msg => ({
+            const historyForAI = [...messages, userMessage].map(msg => ({
                 role: msg.role,
                 content: typeof msg.content === 'string' ? msg.content : stringifyAssistantMessage(msg.content as MisterGlobalOutput)
             }));
@@ -209,13 +191,28 @@ function SoporteChat() {
 
             const assistantMessage: Message = { role: 'assistant', content: response, createdAt: Timestamp.now() };
 
-            await updateDoc(doc(db, 'conversations', currentChatId!), {
-                messages: arrayUnion(assistantMessage)
-            });
-
+            if (!chatId) {
+                // New conversation: create with both messages
+                const newConvRef = await addDoc(collection(db, 'conversations'), {
+                    userId: user.uid,
+                    title: userMessageContent.substring(0, 40) + (userMessageContent.length > 40 ? '...' : ''),
+                    createdAt: Timestamp.now(),
+                    messages: [userMessage, assistantMessage],
+                });
+                router.push(`/soporte?chatId=${newConvRef.id}`, { scroll: false });
+            } else {
+                // Existing conversation: update with both messages
+                await updateDoc(doc(db, 'conversations', chatId), {
+                    messages: arrayUnion(userMessage, assistantMessage),
+                    updatedAt: Timestamp.now(),
+                });
+            }
         } catch (error: any) {
+            console.error("Error sending message:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar el mensaje o recibir respuesta.' });
-            setMessages(prev => prev.slice(0, -1)); // Rollback optimistic update
+            // Rollback optimistic update
+            setMessages(prev => prev.filter(m => m !== userMessage));
+            setInput(userMessageContent); // Put the message back in the input on error
         } finally {
             setIsAiLoading(false);
         }
@@ -311,4 +308,3 @@ export default function SoportePage() {
         </Suspense>
     )
 }
-
