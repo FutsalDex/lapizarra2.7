@@ -97,7 +97,7 @@ export default function SoporteLayout({
         <aside className="hidden md:block border-r h-full">
             <HistorySidebar />
         </aside>
-        <main className="flex-1 overflow-hidden h-full">
+        <main className="flex-1 h-full">
             {children}
         </main>
     </div>
