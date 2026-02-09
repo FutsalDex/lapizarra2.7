@@ -173,43 +173,101 @@ SessionProPreview.displayName = 'SessionProPreview';
 
 const SessionBasicPreview = React.forwardRef<
   HTMLDivElement,
-  { sessionData: any; exercises: Exercise[]; teamName: string; }
+  { sessionData: any; exercises: Exercise[]; teamName: string }
 >(({ sessionData, exercises, teamName }, ref) => {
-  
   const getExercisesByIds = (ids: string[] = []): Exercise[] => {
-    return ids.map(id => exercises.find(ex => ex.id === id)).filter((ex): ex is Exercise => !!ex);
+    return ids
+      .map((id) => exercises.find((ex) => ex.id === id))
+      .filter((ex): ex is Exercise => !!ex);
   };
 
-  const allSessionExercises = [
-    ...getExercisesByIds(sessionData.initialExercises),
-    ...getExercisesByIds(sessionData.mainExercises),
-    ...getExercisesByIds(sessionData.finalExercises),
-  ];
+  const initialExercises = getExercisesByIds(sessionData.initialExercises);
+  const mainExercises = getExercisesByIds(sessionData.mainExercises);
+  const finalExercises = getExercisesByIds(sessionData.finalExercises);
 
-  const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
+  const sessionDateFormatted = sessionData.date
+    ? format(new Date(sessionData.date), "dd/MM/yyyy", { locale: es })
+    : "N/A";
 
-  const exercisePages: Exercise[][] = [];
-  for (let i = 0; i < allSessionExercises.length; i += 8) { 
-    exercisePages.push(allSessionExercises.slice(i, i + 8));
-  }
-  
+  const ExerciseCard = ({ exercise }: { exercise: Exercise }) => (
+    <div className="pdf-card">
+      <img
+        src={exercise["Imagen"]}
+        alt={exercise["Ejercicio"]}
+        className="pdf-card-img"
+        crossOrigin="anonymous"
+      />
+      <p className="pdf-card-title">{exercise["Ejercicio"]}</p>
+    </div>
+  );
+
   return (
     <div ref={ref}>
-      {exercisePages.map((page, pageIndex) => (
-        <div key={pageIndex} className="print-page page-grid">
-            {pageIndex === 0 && (
-                <div className="session-title col-span-2">
-                    Sesión: {teamName} - {sessionDateFormatted}
-                </div>
-            )}
-            {page.map(exercise => (
-                <div key={exercise.id} className="card">
-                    <img src={exercise['Imagen']} alt={exercise['Ejercicio']} className="card-img" crossOrigin="anonymous"/>
-                    <p className="card-title">{exercise['Ejercicio']}</p>
-                </div>
-            ))}
+      <div className="print-page pdf-page-layout">
+        <div className="session-title-basic">
+          Sesión: {teamName} - {sessionDateFormatted}
         </div>
-      ))}
+
+        <div className="phase-section">
+          <h3 className="phase-title-basic">Fase Inicial</h3>
+          <div className="exercise-row">
+            {initialExercises.length > 0 ? (
+              <ExerciseCard exercise={initialExercises[0]} />
+            ) : (
+              <div className="pdf-card-placeholder" />
+            )}
+            {initialExercises.length > 1 ? (
+              <ExerciseCard exercise={initialExercises[1]} />
+            ) : (
+              <div className="pdf-card-placeholder" />
+            )}
+          </div>
+        </div>
+
+        <div className="phase-section">
+          <h3 className="phase-title-basic">Fase Principal</h3>
+          <div className="exercise-row">
+            {mainExercises.length > 0 ? (
+              <ExerciseCard exercise={mainExercises[0]} />
+            ) : (
+              <div className="pdf-card-placeholder" />
+            )}
+            {mainExercises.length > 1 ? (
+              <ExerciseCard exercise={mainExercises[1]} />
+            ) : (
+              <div className="pdf-card-placeholder" />
+            )}
+          </div>
+          <div className="exercise-row">
+            {mainExercises.length > 2 ? (
+              <ExerciseCard exercise={mainExercises[2]} />
+            ) : (
+              <div className="pdf-card-placeholder" />
+            )}
+            {mainExercises.length > 3 ? (
+              <ExerciseCard exercise={mainExercises[3]} />
+            ) : (
+              <div className="pdf-card-placeholder" />
+            )}
+          </div>
+        </div>
+
+        <div className="phase-section">
+          <h3 className="phase-title-basic">Fase Final</h3>
+          <div className="exercise-row">
+            {finalExercises.length > 0 ? (
+              <ExerciseCard exercise={finalExercises[0]} />
+            ) : (
+              <div className="pdf-card-placeholder" />
+            )}
+            {finalExercises.length > 1 ? (
+              <ExerciseCard exercise={finalExercises[1]} />
+            ) : (
+              <div className="pdf-card-placeholder" />
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 });
