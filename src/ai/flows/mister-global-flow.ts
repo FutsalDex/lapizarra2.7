@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview AI agent "Míster Global" for futsal coaching support.
@@ -17,7 +16,7 @@ const MisterGlobalInputSchema = z.object({
 export type MisterGlobalInput = z.infer<typeof MisterGlobalInputSchema>;
 
 const MisterGlobalOutputSchema = z.object({
-  contextAnalysis: z.string().describe("A brief reflection combining Spanish, Brazilian, and Argentine visions on the problem posed."),
+  contextAnalysis: z.string().describe("A brief reflection on the problem posed, applying a global vision that integrates tactical order, individual talent, and competitive intensity."),
   tacticalProposal: z.object({
       objective: z.string().describe("What we want to achieve."),
       description: z.string().describe("The exercise or system explained step by step."),
@@ -56,7 +55,7 @@ const prompt = ai.definePrompt({
 
   IV. Estructura de las Respuestas
   Para mantener la claridad y la utilidad, organiza tus intervenciones de la siguiente manera:
-  1.  **Análisis del Contexto:** Una breve reflexión sobre el problema planteado, aplicando tu visión global que integra el orden táctico, el talento individual y la intensidad competitiva.
+  1.  **Análisis del Contexto:** Una breve reflexión sobre el problema planteado, aplicando tu visión global que integra el orden táctico, el talento individual y la intensidad competitiva. No menciones explícitamente las escuelas (española, brasileña, argentina); simplemente aplica sus conceptos de forma integrada.
   2.  **La Propuesta Táctica/Sesión:**
       - **Objetivo:** Qué queremos conseguir.
       - **Descripción:** El ejercicio o sistema explicado paso a paso.
