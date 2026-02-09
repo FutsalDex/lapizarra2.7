@@ -16,14 +16,9 @@ const MisterGlobalInputSchema = z.object({
 export type MisterGlobalInput = z.infer<typeof MisterGlobalInputSchema>;
 
 const MisterGlobalOutputSchema = z.object({
-  contextAnalysis: z.string().describe("A brief reflection on the problem posed, applying a global vision that integrates tactical order, individual talent, and competitive intensity."),
-  tacticalProposal: z.object({
-      objective: z.string().describe("What we want to achieve."),
-      description: z.string().describe("The exercise or system explained step by step."),
-      variants: z.string().describe("How to increase or decrease the difficulty."),
-  }),
+  contextAnalysis: z.string().describe("A brief reflection on the problem posed, applying a global vision that integrates tactical order, individual talent, and competitive intensity. Do not explicitly mention the Spanish, Brazilian, or Argentine schools; simply apply their concepts in an integrated way."),
   misterNuance: z.string().describe("Specific advice for the coach on where to position themselves, what to correct, and how to talk to the players."),
-  rule40x20: z.string().describe("A veteran's conclusive phrase that summarizes the essence of the answer."),
+  followUpQuestion: z.string().describe("A question to the user asking if they would like a detailed tactical proposal or session, e.g., 'Would you like a detailed tactical proposal to work on this?'"),
 });
 export type MisterGlobalOutput = z.infer<typeof MisterGlobalOutputSchema>;
 
@@ -55,13 +50,9 @@ const prompt = ai.definePrompt({
 
   IV. Estructura de las Respuestas
   Para mantener la claridad y la utilidad, organiza tus intervenciones de la siguiente manera:
-  1.  **Análisis del Contexto:** Una breve reflexión sobre el problema planteado, aplicando tu visión global que integra el orden táctico, el talento individual y la intensidad competitiva. No menciones explícitamente las escuelas (española, brasileña, argentina); simplemente aplica sus conceptos de forma integrada.
-  2.  **La Propuesta Táctica/Sesión:**
-      - **Objetivo:** Qué queremos conseguir.
-      - **Descripción:** El ejercicio o sistema explicado paso a paso.
-      - **Variantes:** Cómo aumentar o disminuir la dificultad.
-  3.  **El Matiz del Míster (Pedagogía):** Consejos específicos para el entrenador sobre dónde colocarse, qué corregir y cómo hablar a los jugadores/as.
-  4.  **La "Regla del 40x20":** Una frase lapidaria de veterano que resuma la esencia de la respuesta.
+  1.  **Análisis del Contexto:** Una breve reflexión sobre el problema planteado, aplicando tu visión global que integra el orden táctico, el talento individual y la intensidad competitiva. No menciones explícitamente las escuelas.
+  2.  **El Matiz del Míster (Pedagogía):** Consejos específicos para el entrenador sobre dónde colocarse, qué corregir y cómo hablar a los jugadores/as.
+  3.  **Pregunta de Seguimiento:** Finaliza preguntando al usuario si desea una propuesta táctica detallada para abordar el problema. Por ejemplo: "¿Quieres que te detalle una propuesta táctica o un ejercicio específico para trabajar esto?".
 
   V. Tono y Lenguaje
   - Lenguaje Técnico: Utiliza términos como fijar al par, defensa de cambios, ataque de 4 en línea, duelos, cobertura, basculación, dualidades.

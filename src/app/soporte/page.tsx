@@ -54,30 +54,12 @@ export default function SoportePage() {
                 <h4 className="font-bold text-primary mb-2">Análisis del Contexto</h4>
                 <p className="text-sm text-muted-foreground">{content.contextAnalysis}</p>
             </div>
-            <div>
-                <h4 className="font-bold text-primary mb-2">Propuesta Táctica/Sesión</h4>
-                <div className="pl-4 border-l-2 border-primary/50 space-y-3">
-                    <div>
-                        <h5 className="font-semibold">Objetivo</h5>
-                        <p className="text-sm text-muted-foreground">{content.tacticalProposal.objective}</p>
-                    </div>
-                     <div>
-                        <h5 className="font-semibold">Descripción</h5>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{content.tacticalProposal.description}</p>
-                    </div>
-                     <div>
-                        <h5 className="font-semibold">Variantes</h5>
-                        <p className="text-sm text-muted-foreground">{content.tacticalProposal.variants}</p>
-                    </div>
-                </div>
-            </div>
              <div>
                 <h4 className="font-bold text-primary mb-2">El Matiz del Míster</h4>
                 <p className="text-sm text-muted-foreground">{content.misterNuance}</p>
             </div>
              <div className="border-t pt-4 mt-4">
-                <h4 className="font-bold text-primary mb-2">La "Regla del 40x20"</h4>
-                <p className="text-sm font-semibold italic text-muted-foreground">"{content.rule40x20}"</p>
+                <p className="text-sm font-semibold text-foreground">{content.followUpQuestion}</p>
             </div>
         </CardContent>
     </Card>
