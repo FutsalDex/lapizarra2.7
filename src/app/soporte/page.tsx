@@ -187,31 +187,36 @@ function SoporteChat() {
                 question: userMessageContent,
             });
 
-            const assistantMessage: Message = { role: 'assistant', content: response, createdAt: Timestamp.now() };
+            // Ensure the response is a plain JSON-serializable object
+            const assistantContent = JSON.parse(JSON.stringify(response));
+            const assistantMessage: Message = { role: 'assistant', content: assistantContent, createdAt: Timestamp.now() };
 
             if (!chatId) {
+                // Create new conversation
                 const newConvRef = await addDoc(collection(db, 'conversations'), {
                     userId: user.uid,
                     title: userMessageContent.substring(0, 40) + (userMessageContent.length > 40 ? '...' : ''),
                     createdAt: userMessage.createdAt,
-                    updatedAt: userMessage.createdAt,
+                    updatedAt: assistantMessage.createdAt, // Use latest timestamp
                     messages: [userMessage, assistantMessage],
                 });
                 router.push(`/soporte?chatId=${newConvRef.id}`, { scroll: false });
             } else {
+                // Update existing conversation
                 const convRef = doc(db, 'conversations', chatId);
                 const convSnap = await getDoc(convRef);
                 if (convSnap.exists()) {
                     const existingMessages = convSnap.data().messages || [];
                     await updateDoc(convRef, {
                         messages: [...existingMessages, userMessage, assistantMessage],
-                        updatedAt: Timestamp.now(),
+                        updatedAt: assistantMessage.createdAt, // Use latest timestamp
                     });
                 }
             }
         } catch (error: any) {
             console.error("Error sending message:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar el mensaje o recibir respuesta.' });
+            // Revert optimistic UI update on error
             setMessages(prev => prev.filter(m => m.createdAt.toMillis() !== userMessage.createdAt.toMillis())); 
         } finally {
             setIsAiLoading(false);
