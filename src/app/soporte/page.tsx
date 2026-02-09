@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,33 +9,66 @@ import { Send, Loader2, MessageSquare, ArrowLeft, Bot, User } from 'lucide-react
 import { askMisterGlobal, MisterGlobalOutput } from '@/ai/flows/mister-global-flow';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
+
 
 type Message = {
   role: 'user' | 'assistant';
   content: string | MisterGlobalOutput;
 };
 
+function stringifyAssistantMessage(content: MisterGlobalOutput): string {
+    let result = "";
+    if (content.contextAnalysis) {
+        result += `Análisis del Contexto: ${content.contextAnalysis}\n`;
+    }
+    if (content.misterNuance) {
+        result += `El Matiz del Mister: ${content.misterNuance}\n`;
+    }
+    result += `Respuesta: ${content.answer}`;
+    return result;
+}
+
+
 export default function SoportePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const messagesEndRef = useRef<null | HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+  useEffect(scrollToBottom, [messages, loading]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
     const userMessage: Message = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
+    const currentMessages = [...messages, userMessage];
+    setMessages(currentMessages);
     setInput('');
     setLoading(true);
 
     try {
-      const response = await askMisterGlobal({ question: input });
+      const history = currentMessages.slice(0, -1).map(msg => ({
+          role: msg.role,
+          content: typeof msg.content === 'string' ? msg.content : stringifyAssistantMessage(msg.content)
+      }));
+
+      const response = await askMisterGlobal({
+        history: history,
+        question: input 
+      });
+
       const assistantMessage: Message = { role: 'assistant', content: response };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error: any) {
       console.error(error);
+      const errorMessage: Message = { role: 'assistant', content: { answer: "Lo siento, he tenido un problema y no puedo responder ahora mismo." } };
+       setMessages(prev => [...prev, errorMessage]);
       toast({
         variant: 'destructive',
         title: 'Error del Asistente',
@@ -48,18 +80,22 @@ export default function SoportePage() {
   };
   
   const AssistantMessage = ({ content }: { content: MisterGlobalOutput }) => (
-    <Card className="bg-muted/50">
-        <CardContent className="p-6 space-y-4">
-            <div>
-                <h4 className="font-bold text-primary mb-2">Análisis del Contexto</h4>
-                <p className="text-sm text-muted-foreground">{content.contextAnalysis}</p>
-            </div>
-             <div>
-                <h4 className="font-bold text-primary mb-2">El Matiz del Míster</h4>
-                <p className="text-sm text-muted-foreground">{content.misterNuance}</p>
-            </div>
-             <div className="border-t pt-4 mt-4">
-                <p className="text-sm font-semibold text-foreground">{content.followUpQuestion}</p>
+    <Card className="bg-muted/50 border-none shadow-none">
+        <CardContent className="p-4 space-y-4">
+            {content.contextAnalysis && (
+                 <div>
+                    <h4 className="font-bold text-primary mb-2">Análisis del Contexto</h4>
+                    <p className="text-sm text-muted-foreground">{content.contextAnalysis}</p>
+                </div>
+            )}
+            {content.misterNuance && (
+                <div>
+                    <h4 className="font-bold text-primary mb-2">El Matiz del Míster</h4>
+                    <p className="text-sm text-muted-foreground">{content.misterNuance}</p>
+                </div>
+            )}
+             <div className={cn({"border-t pt-4 mt-4": content.contextAnalysis || content.misterNuance})}>
+                <p className="text-sm font-semibold text-foreground">{content.answer}</p>
             </div>
         </CardContent>
     </Card>
@@ -102,7 +138,7 @@ export default function SoportePage() {
                                 <AvatarFallback><Bot /></AvatarFallback>
                             </Avatar>
                          )}
-                        <div className={`max-w-2xl rounded-lg px-4 py-2 ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                        <div className={`max-w-2xl rounded-lg ${message.role === 'user' ? 'bg-primary text-primary-foreground px-4 py-2' : 'bg-transparent'}`}>
                              {typeof message.content === 'string' ? (
                                 <p>{message.content}</p>
                             ) : (
@@ -127,6 +163,7 @@ export default function SoportePage() {
                         </div>
                     </div>
                 )}
+                 <div ref={messagesEndRef} />
             </CardContent>
             <CardFooter className="p-4 border-t">
                 <form onSubmit={handleSendMessage} className="flex w-full items-center space-x-2">
@@ -139,7 +176,7 @@ export default function SoportePage() {
                         onChange={(e) => setInput(e.target.value)}
                         disabled={loading}
                     />
-                    <Button type="submit" size="icon" disabled={loading}>
+                    <Button type="submit" size="icon" disabled={loading || !input.trim()}>
                         <Send className="h-4 w-4" />
                         <span className="sr-only">Enviar mensaje</span>
                     </Button>

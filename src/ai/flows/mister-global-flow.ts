@@ -10,15 +10,22 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const MessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string(),
+})
+export type Message = z.infer<typeof MessageSchema>;
+
 const MisterGlobalInputSchema = z.object({
+  history: z.array(MessageSchema).optional().describe("Previous messages in the conversation."),
   question: z.string().describe('The user question for the futsal coach.'),
 });
 export type MisterGlobalInput = z.infer<typeof MisterGlobalInputSchema>;
 
 const MisterGlobalOutputSchema = z.object({
-  contextAnalysis: z.string().describe("A brief reflection on the problem posed, applying a global vision that integrates tactical order, individual talent, and competitive intensity. Do not explicitly mention the Spanish, Brazilian, or Argentine schools; simply apply their concepts in an integrated way."),
-  misterNuance: z.string().describe("Specific advice for the coach on where to position themselves, what to correct, and how to talk to the players."),
-  followUpQuestion: z.string().describe("A question to the user asking if they would like a detailed tactical proposal or session, e.g., 'Would you like a detailed tactical proposal to work on this?'"),
+  contextAnalysis: z.string().optional().describe("A brief reflection on the problem posed, applying a global vision that integrates tactical order, individual talent, and competitive intensity. Do not explicitly mention any schools; simply apply their concepts in an integrated way."),
+  misterNuance: z.string().optional().describe("Specific advice for the coach on where to position themselves, what to correct, and how to talk to the players."),
+  answer: z.string().describe("The main response, which could be a follow-up question or the final tactical proposal."),
 });
 export type MisterGlobalOutput = z.infer<typeof MisterGlobalOutputSchema>;
 
@@ -49,10 +56,8 @@ const prompt = ai.definePrompt({
   - Transferencia: Todos los ejercicios deben tener relación con el juego real (evitar filas de espera largas).
 
   IV. Estructura de las Respuestas
-  Para mantener la claridad y la utilidad, organiza tus intervenciones de la siguiente manera:
-  1.  **Análisis del Contexto:** Una breve reflexión sobre el problema planteado, aplicando tu visión global que integra el orden táctico, el talento individual y la intensidad competitiva. No menciones explícitamente las escuelas.
-  2.  **El Matiz del Míster (Pedagogía):** Consejos específicos para el entrenador sobre dónde colocarse, qué corregir y cómo hablar a los jugadores/as.
-  3.  **Pregunta de Seguimiento:** Finaliza preguntando al usuario si desea una propuesta táctica detallada para abordar el problema. Por ejemplo: "¿Quieres que te detalle una propuesta táctica o un ejercicio específico para trabajar esto?".
+  - **First message**: If this is the start of a conversation (no history), you MUST structure your response with all three parts: 'contextAnalysis', 'misterNuance', and an 'answer' that is a follow-up question. For example: "¿Quieres que te detalle una propuesta táctica o un ejercicio específico para trabajar esto?".
+  - **Follow-up messages**: If there is conversation history and the user is answering your question (e.g., they say "sí" or provide the age category), you MUST respond ONLY with the 'answer' field. DO NOT include 'contextAnalysis' or 'misterNuance'. Your answer should be the next logical question or a detailed tactical proposal if you have enough information.
 
   V. Tono y Lenguaje
   - Lenguaje Técnico: Utiliza términos como fijar al par, defensa de cambios, ataque de 4 en línea, duelos, cobertura, basculación, dualidades.
@@ -62,8 +67,15 @@ const prompt = ai.definePrompt({
   - No des consejos médicos o nutricionales complejos; limítate a la preparación física integrada y la táctica.
   - Si una consulta es ambigua, pregunta siempre la categoría (edad) y el nivel del equipo antes de profundizar.
 
-  Ahora, responde a la siguiente pregunta del entrenador:
-  {{{question}}}
+  {{#if history}}
+  CONVERSATION HISTORY:
+  {{#each history}}
+  - {{this.role}}: {{this.content}}
+  {{/each}}
+  {{/if}}
+
+  Now, respond to the latest user message:
+  User: {{{question}}}
   `,
 });
 
