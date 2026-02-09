@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect, Suspense } from 'react';
@@ -27,7 +26,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
-
 
 type Message = {
     role: 'user' | 'assistant';
@@ -66,9 +64,7 @@ const AssistantMessage = ({ content }: { content: MisterGlobalOutput }) => {
       return (
         <div className="space-y-2">
           {blocks.map((block, index) => {
-            if (block.trim() === '') {
-              return null;
-            }
+            if (block.trim() === '') return null;
             
             const numberedMatch = block.match(/^(\d+\.)\s*(.*)/);
             if (numberedMatch) {
@@ -131,7 +127,7 @@ const AssistantMessage = ({ content }: { content: MisterGlobalOutput }) => {
     );
   };
 
-
+// 🔹 COMPONENTE INTERNO: Maneja la lógica que depende de searchParams
 function SoporteChat() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -187,36 +183,32 @@ function SoporteChat() {
                 question: userMessageContent,
             });
 
-            // Ensure the response is a plain JSON-serializable object
             const assistantContent = JSON.parse(JSON.stringify(response));
             const assistantMessage: Message = { role: 'assistant', content: assistantContent, createdAt: Timestamp.now() };
 
             if (!chatId) {
-                // Create new conversation
                 const newConvRef = await addDoc(collection(db, 'conversations'), {
                     userId: user.uid,
                     title: userMessageContent.substring(0, 40) + (userMessageContent.length > 40 ? '...' : ''),
                     createdAt: userMessage.createdAt,
-                    updatedAt: assistantMessage.createdAt, // Use latest timestamp
+                    updatedAt: assistantMessage.createdAt,
                     messages: [userMessage, assistantMessage],
                 });
                 router.push(`/soporte?chatId=${newConvRef.id}`, { scroll: false });
             } else {
-                // Update existing conversation
                 const convRef = doc(db, 'conversations', chatId);
                 const convSnap = await getDoc(convRef);
                 if (convSnap.exists()) {
                     const existingMessages = convSnap.data().messages || [];
                     await updateDoc(convRef, {
                         messages: [...existingMessages, userMessage, assistantMessage],
-                        updatedAt: assistantMessage.createdAt, // Use latest timestamp
+                        updatedAt: assistantMessage.createdAt,
                     });
                 }
             }
         } catch (error: any) {
             console.error("Error sending message:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar el mensaje o recibir respuesta.' });
-            // Revert optimistic UI update on error
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar el mensaje.' });
             setMessages(prev => prev.filter(m => m.createdAt.toMillis() !== userMessage.createdAt.toMillis())); 
         } finally {
             setIsAiLoading(false);
@@ -236,12 +228,12 @@ function SoporteChat() {
              <div className="h-full flex flex-col items-center justify-center bg-background p-4 text-center">
                 <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h2 className="mt-4 text-2xl font-semibold">Míster Global</h2>
-                <p className="mt-2 text-muted-foreground">Selecciona una conversación o comienza un nuevo chat para recibir consejos.</p>
+                <p className="mt-2 text-muted-foreground">Escribe tu pregunta para comenzar un nuevo chat.</p>
                 <div className="mt-6 w-full max-w-md">
                      <form onSubmit={handleSendMessage} className="flex w-full items-center space-x-2">
                         <Input
                             id="message"
-                            placeholder="Escribe tu pregunta a Míster Global..."
+                            placeholder="¿En qué puedo ayudarte hoy?"
                             autoComplete="off"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
@@ -288,7 +280,7 @@ function SoporteChat() {
                     <form onSubmit={handleSendMessage} className="flex w-full items-center space-x-2">
                         <Input
                             id="message"
-                            placeholder="Escribe tu pregunta a Míster Global..."
+                            placeholder="Escribe tu pregunta..."
                             className="flex-1"
                             autoComplete="off"
                             value={input}
@@ -297,7 +289,7 @@ function SoporteChat() {
                         />
                         <Button type="submit" size="icon" disabled={isAiLoading || !input.trim()}>
                             <Send className="h-4 w-4" />
-                            <span className="sr-only">Enviar mensaje</span>
+                            <span className="sr-only">Enviar</span>
                         </Button>
                     </form>
                 </CardFooter>
@@ -306,10 +298,15 @@ function SoporteChat() {
     );
 }
 
+// 🔹 COMPONENTE DE PÁGINA: Envuelve todo en Suspense
 export default function SoportePage() {
     return (
-        <Suspense fallback={<div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+        <Suspense fallback={
+            <div className="flex justify-center items-center h-full bg-background">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
             <SoporteChat />
         </Suspense>
-    )
+    );
 }
