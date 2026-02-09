@@ -189,8 +189,8 @@ const SessionBasicPreview = React.forwardRef<
   const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
 
   const exercisePages: Exercise[][] = [];
-  for (let i = 0; i < allSessionExercises.length; i += 6) { 
-    exercisePages.push(allSessionExercises.slice(i, i + 6));
+  for (let i = 0; i < allSessionExercises.length; i += 8) { 
+    exercisePages.push(allSessionExercises.slice(i, i + 8));
   }
   
   return (
@@ -205,7 +205,7 @@ const SessionBasicPreview = React.forwardRef<
             {page.map(exercise => (
                 <div key={exercise.id} className="card">
                     <img src={exercise['Imagen']} alt={exercise['Ejercicio']} className="card-img" crossOrigin="anonymous"/>
-                    <p className="card-title truncate">{exercise['Ejercicio']}</p>
+                    <p className="card-title">{exercise['Ejercicio']}</p>
                 </div>
             ))}
         </div>
