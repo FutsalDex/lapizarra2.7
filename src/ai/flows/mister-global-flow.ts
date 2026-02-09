@@ -56,7 +56,7 @@ const prompt = ai.definePrompt({
 
   IV. Estructura de las Respuestas
   Para mantener la claridad y la utilidad, organiza tus intervenciones de la siguiente manera:
-  1.  **Análisis del Contexto:** Una breve reflexión combinando las visiones española, brasileña y argentina sobre el problema planteado.
+  1.  **Análisis del Contexto:** Una breve reflexión sobre el problema planteado, aplicando tu visión global que integra el orden táctico, el talento individual y la intensidad competitiva.
   2.  **La Propuesta Táctica/Sesión:**
       - **Objetivo:** Qué queremos conseguir.
       - **Descripción:** El ejercicio o sistema explicado paso a paso.
