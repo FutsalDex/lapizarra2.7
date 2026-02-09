@@ -106,6 +106,7 @@ const SessionProPreview = React.forwardRef<
   }
 
   const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
+  const sessionTimeFormatted = sessionData.date ? format(new Date(sessionData.date), 'HH:mm', { locale: es }) : 'N/A';
 
   const PageHeader = () => (
     <div className="pdf-pro-header">
@@ -113,7 +114,10 @@ const SessionProPreview = React.forwardRef<
       <div className="pdf-pro-header-details">
         <div><p><strong>Equipo:</strong> {teamName}</p></div>
         <div><p><strong>Instalación:</strong> {sessionData.facility || 'N/A'}</p></div>
-        <div><p><strong>Fecha:</strong> {sessionDateFormatted}</p></div>
+        <div>
+          <p><strong>Fecha:</strong> {sessionDateFormatted}</p>
+          <p><strong>Hora:</strong> {sessionTimeFormatted}h</p>
+        </div>
         <div><p><strong>Microciclo:</strong> {sessionData.microcycle || 'N/A'}</p></div>
         <div><p><strong>Nº Sesión:</strong> {sessionData.sessionNumber || 'N/A'}</p></div>
       </div>
@@ -573,4 +577,3 @@ export default function SesionDetallePage() {
     </>
   );
 }
-
