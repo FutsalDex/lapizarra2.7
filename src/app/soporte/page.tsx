@@ -11,11 +11,9 @@ import { askMisterGlobal, MisterGlobalOutput } from '@/ai/flows/mister-global-fl
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
+import { useDocumentData } from 'react-firebase-hooks/firestore';
 import {
     collection,
-    query,
-    where,
     doc,
     addDoc,
     updateDoc,
@@ -172,38 +170,43 @@ function SoporteChat() {
     
         const userMessageContent = input;
         setInput(''); // Clear input immediately
+        
+        // 1. Prepare the message
+        const userMessage: Message = { role: 'user', content: userMessageContent, createdAt: Timestamp.now() };
+        
+        // 2. Prepare the history for the AI from the current state
+        const historyForAI = messages.map(msg => ({
+            role: msg.role,
+            content: typeof msg.content === 'string' ? msg.content : stringifyAssistantMessage(msg.content as MisterGlobalOutput)
+        }));
+        
+        // 3. Optimistic UI update for user's message
+        setMessages(prev => [...prev, userMessage]);
         setIsAiLoading(true);
         
-        // Optimistic UI update for user's message
-        const userMessage: Message = { role: 'user', content: userMessageContent, createdAt: Timestamp.now() };
-        setMessages(prev => [...prev, userMessage]);
-        
         try {
-            const historyForAI = [...messages, userMessage].map(msg => ({
-                role: msg.role,
-                content: typeof msg.content === 'string' ? msg.content : stringifyAssistantMessage(msg.content as MisterGlobalOutput)
-            }));
-            
+            // 4. Call AI
             const response = await askMisterGlobal({
-                history: historyForAI.slice(0, -1),
+                history: historyForAI,
                 question: userMessageContent,
             });
 
             const assistantMessage: Message = { role: 'assistant', content: response, createdAt: Timestamp.now() };
 
+            // 5. Write to DB
             if (!chatId) {
-                // New conversation: create with both messages
+                // New conversation
                 const newConvRef = await addDoc(collection(db, 'conversations'), {
                     userId: user.uid,
                     title: userMessageContent.substring(0, 40) + (userMessageContent.length > 40 ? '...' : ''),
                     createdAt: Timestamp.now(),
-                    messages: [userMessage, assistantMessage],
+                    messages: [userMessage, assistantMessage], // save both messages
                 });
                 router.push(`/soporte?chatId=${newConvRef.id}`, { scroll: false });
             } else {
-                // Existing conversation: update with both messages
+                // Existing conversation
                 await updateDoc(doc(db, 'conversations', chatId), {
-                    messages: arrayUnion(userMessage, assistantMessage),
+                    messages: arrayUnion(userMessage, assistantMessage), // save both messages
                     updatedAt: Timestamp.now(),
                 });
             }
@@ -211,8 +214,8 @@ function SoporteChat() {
             console.error("Error sending message:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar el mensaje o recibir respuesta.' });
             // Rollback optimistic update
-            setMessages(prev => prev.filter(m => m !== userMessage));
-            setInput(userMessageContent); // Put the message back in the input on error
+            setMessages(prev => prev.filter(m => m.createdAt !== userMessage.createdAt));
+            setInput(userMessageContent);
         } finally {
             setIsAiLoading(false);
         }
