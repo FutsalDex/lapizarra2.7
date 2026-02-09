@@ -80,24 +80,68 @@ export default function SoportePage() {
   };
   
   const AssistantMessage = ({ content }: { content: MisterGlobalOutput }) => {
-    const renderFormattedText = (text: string, baseClassName: string) => {
+    const renderFormattedText = (text: string | undefined, baseClassName: string) => {
       if (!text) return null;
-      return text.split('\n').map((line, index) => {
-        if (line.trim() === '') {
-          return <div key={index} className="h-2" />; // Represents a blank line
-        }
+
+      const renderInline = (line: string) => {
         const parts = line.split(/(\*\*.*?\*\*)/g);
-        return (
-          <p key={index} className={cn(baseClassName)}>
-            {parts.map((part, i) => {
-              if (part.startsWith('**') && part.endsWith('**')) {
-                return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
-              }
-              return part;
-            })}
-          </p>
-        );
-      });
+        return parts.map((part, i) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={i}>{part.slice(2, -2)}</strong>;
+          }
+          return part;
+        });
+      };
+
+      const blocks = text.split('\n');
+
+      return (
+        <div className="space-y-2">
+          {blocks.map((block, index) => {
+            if (block.trim() === '') {
+              return null; // Skip empty lines, space-y-2 will handle spacing
+            }
+            
+            // Numbered list item: "1. some text"
+            const numberedMatch = block.match(/^(\d+\.)\s*(.*)/);
+            if (numberedMatch) {
+              return (
+                <div key={index} className="flex text-sm ml-2">
+                  <span className="font-bold w-6">{numberedMatch[1]}</span>
+                  <p className={baseClassName}>{renderInline(numberedMatch[2])}</p>
+                </div>
+              );
+            }
+
+            // Bulleted list item: "- some text"
+            const bulletMatch = block.match(/^- \s*(.*)/);
+            if (bulletMatch) {
+              return (
+                <div key={index} className="flex text-sm ml-2">
+                  <span className="font-bold w-6">&bull;</span>
+                  <p className={baseClassName}>{renderInline(bulletMatch[1])}</p>
+                </div>
+              );
+            }
+            
+            // Heading: "Some Title:"
+            if (block.endsWith(':') && block.length < 100) {
+                return (
+                    <h4 key={index} className="font-semibold text-md mt-4 mb-1 text-foreground">
+                        {renderInline(block.slice(0, -1))}
+                    </h4>
+                );
+            }
+
+            // Default paragraph
+            return (
+              <p key={index} className={baseClassName}>
+                {renderInline(block)}
+              </p>
+            );
+          })}
+        </div>
+      );
     };
 
     return (
@@ -105,18 +149,18 @@ export default function SoportePage() {
             <CardContent className="p-4 space-y-4">
                 {content.contextAnalysis && (
                      <div>
-                        <h4 className="font-bold text-primary mb-2">Análisis del Contexto</h4>
-                        <div className="space-y-2">{renderFormattedText(content.contextAnalysis, "text-sm text-muted-foreground")}</div>
+                        <h3 className="font-bold text-primary mb-2">Análisis del Contexto</h3>
+                        {renderFormattedText(content.contextAnalysis, "text-sm text-muted-foreground")}
                     </div>
                 )}
                 {content.misterNuance && (
                     <div>
-                        <h4 className="font-bold text-primary mb-2">El Matiz del Míster</h4>
-                        <div className="space-y-2">{renderFormattedText(content.misterNuance, "text-sm text-muted-foreground")}</div>
+                        <h3 className="font-bold text-primary mb-2">El Matiz del Míster</h3>
+                        {renderFormattedText(content.misterNuance, "text-sm text-muted-foreground")}
                     </div>
                 )}
                  <div className={cn({"border-t pt-4 mt-4": content.contextAnalysis || content.misterNuance})}>
-                    <div className="space-y-2">{renderFormattedText(content.answer, "text-sm text-foreground")}</div>
+                    {renderFormattedText(content.answer, "text-sm text-foreground")}
                 </div>
             </CardContent>
         </Card>
