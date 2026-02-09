@@ -236,6 +236,7 @@ export default function PlayerStatsPage() {
             mostTurnovers: getTopPlayer('turnovers'),
             mostFouls: getTopPlayer('fouls'),
             mostYellows: getTopPlayer('yellowCards'),
+            mostReds: getTopPlayer('redCards'),
             mostSaves: getTopPlayer('saves', 'max', 'Portero'),
             bestUnoVsUno: getTopPlayer('unoVsUno', 'max', 'Portero'),
             leastConceded: getTopPlayer('goalsConceded', 'min', 'Portero'),
@@ -355,6 +356,7 @@ export default function PlayerStatsPage() {
                     <StatCard title="Más Pérdidas" playerName={leaders.mostTurnovers.value > 0 ? leaders.mostTurnovers.name : '-'} value={leaders.mostTurnovers.value} icon={<ChevronsRightLeft className="text-primary"/>} />
                     <StatCard title="Más Faltas" playerName={leaders.mostFouls.value > 0 ? leaders.mostFouls.name : '-'} value={leaders.mostFouls.value} icon={<ShieldAlert className="text-orange-500"/>} />
                     <StatCard title="Más T. Amarillas" playerName={leaders.mostYellows.value > 0 ? leaders.mostYellows.name : '-'} value={leaders.mostYellows.value} icon={<SquareIcon className="bg-yellow-400" />} />
+                    <StatCard title="Más T. Rojas" playerName={leaders.mostReds.value > 0 ? leaders.mostReds.name : '-'} value={leaders.mostReds.value} icon={<SquareIcon className="bg-red-600" />} />
                     <StatCard title="Portero con más Paradas" playerName={leaders.mostSaves.value > 0 ? leaders.mostSaves.name : '-'} value={leaders.mostSaves.value} icon={<Shield className="text-primary"/>} />
                     <StatCard title="Portero mejor en 1vs1" playerName={leaders.bestUnoVsUno.value > 0 ? leaders.bestUnoVsUno.name : '-'} value={leaders.bestUnoVsUno.value} icon={<Target className="text-primary"/>} />
                     <StatCard title="Portero Menos Goleado" playerName={leaders.leastConceded.value > 0 ? leaders.leastConceded.name : '-'} value={leaders.leastConceded.value} icon={<Shield className="text-primary"/>} />
