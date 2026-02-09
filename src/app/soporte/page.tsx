@@ -193,7 +193,8 @@ function SoporteChat() {
                 const newConvRef = await addDoc(collection(db, 'conversations'), {
                     userId: user.uid,
                     title: userMessageContent.substring(0, 40) + (userMessageContent.length > 40 ? '...' : ''),
-                    createdAt: Timestamp.now(),
+                    createdAt: userMessage.createdAt,
+                    updatedAt: userMessage.createdAt,
                     messages: [userMessage, assistantMessage],
                 });
                 router.push(`/soporte?chatId=${newConvRef.id}`, { scroll: false });
@@ -208,11 +209,10 @@ function SoporteChat() {
                     });
                 }
             }
-            // Let the listener update the UI from the DB change
         } catch (error: any) {
             console.error("Error sending message:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar el mensaje o recibir respuesta.' });
-            setMessages(prev => prev.filter(m => m.createdAt !== userMessage.createdAt)); // rollback
+            setMessages(prev => prev.filter(m => m.createdAt.toMillis() !== userMessage.createdAt.toMillis())); 
         } finally {
             setIsAiLoading(false);
         }

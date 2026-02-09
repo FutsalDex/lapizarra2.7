@@ -3,7 +3,7 @@
 
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { collection, query, where, orderBy, getFirestore } from 'firebase/firestore';
+import { collection, query, where, orderBy, getFirestore, Timestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { app } from '@/firebase/config';
 import Link from 'next/link';
@@ -20,7 +20,8 @@ const auth = getAuth(app);
 type Conversation = {
   id: string;
   title: string;
-  createdAt: any;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 };
 
 function HistorySidebar() {
@@ -31,7 +32,7 @@ function HistorySidebar() {
     const conversationsQuery = user ? query(
         collection(db, 'conversations'),
         where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
+        orderBy('updatedAt', 'desc')
     ) : null;
     
     const [conversationsSnapshot, loadingConversations] = useCollection(conversationsQuery);
@@ -75,8 +76,8 @@ function HistorySidebar() {
                                 )}
                             >
                                 <span className="text-sm font-medium truncate w-full">{convo.title}</span>
-                                {convo.createdAt && <span className="text-xs text-muted-foreground">
-                                    {formatDistanceToNow(convo.createdAt.toDate(), { addSuffix: true, locale: es })}
+                                {convo.updatedAt && <span className="text-xs text-muted-foreground">
+                                    {formatDistanceToNow(convo.updatedAt.toDate(), { addSuffix: true, locale: es })}
                                 </span>}
                             </Link>
                         ))}
@@ -97,7 +98,7 @@ export default function SoporteLayout({
         <aside className="hidden md:block border-r h-full">
             <HistorySidebar />
         </aside>
-        <main className="flex-1 h-full">
+        <main className="flex-1 h-full overflow-y-auto">
             {children}
         </main>
     </div>
