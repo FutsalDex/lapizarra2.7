@@ -197,177 +197,6 @@ const ExercisePicker = ({ phase, allExercises, allCategories, loadingExercises, 
   );
 };
 
-const SessionBasicPreview = React.forwardRef<HTMLDivElement, { sessionData: any, exercises: Exercise[], teamName: string }>(({ sessionData, exercises, teamName }, ref) => {
-    const getExercisesByIds = (ids: string[]) => {
-        if (!ids || ids.length === 0) return [];
-        return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
-    };
-    
-    const allSessionExercises = [
-        ...getExercisesByIds(sessionData.initialExercises),
-        ...getExercisesByIds(sessionData.mainExercises),
-        ...getExercisesByIds(sessionData.finalExercises)
-    ];
-
-    const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
-
-    return (
-        <div ref={ref} className="bg-white text-gray-900 p-4">
-            <div className="space-y-6">
-                <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4 text-gray-900">
-                    <div className="flex w-full space-x-2">
-                        <div className="flex flex-col gap-1 basis-1/5">
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Microciclo</p>
-                                <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
-                            </div>
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Fecha</p>
-                                <p className="text-sm">{sessionDateFormatted}</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col gap-1 basis-1/5">
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Sesión</p>
-                                <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
-                            </div>
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Instalación</p>
-                                <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
-                            </div>
-                        </div>
-                        <div className="border border-gray-800 text-left p-1 flex-grow">
-                            <p className="text-xs font-bold">Objetivos</p>
-                            <ul className="text-sm space-y-1 mt-1">
-                                {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                    <li key={index} className="list-disc list-inside">{obj}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 pt-0">
-                    {allSessionExercises.map(ex => (
-                        <Card key={ex.id} className="overflow-hidden">
-                            <div className="relative aspect-video w-full bg-muted">
-                                <Image src={ex.Imagen} alt={ex.Ejercicio} layout="fill" objectFit="contain" className="p-2" />
-                            </div>
-                            <CardFooter className="p-2 bg-card border-t">
-                                <p className="text-xs font-semibold truncate text-center w-full">{ex.Ejercicio}</p>
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-});
-SessionBasicPreview.displayName = 'SessionBasicPreview';
-
-
-const SessionProPreview = React.forwardRef<HTMLDivElement, { sessionData: any, exercises: Exercise[] }>(({ sessionData, exercises }, ref) => {
-    const getExercisesByIds = (ids: string[]) => {
-        if (!ids || ids.length === 0) return [];
-        return ids.map(id => exercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
-    };
-    
-    const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
-
-    const PhaseSectionPro = ({ title, exercises }: { title: string; exercises: Exercise[] }) => (
-        <div className="space-y-4">
-            <div className="bg-gray-800 text-white text-center py-1">
-                <h3 className="font-bold tracking-widest">{title}</h3>
-            </div>
-            {exercises.length > 0 ? exercises.map(ex => (
-                <Card key={ex.id} className="overflow-hidden">
-                    <CardHeader className="bg-gray-200 dark:bg-gray-700 p-2">
-                         <CardTitle className="text-sm text-center font-bold">{ex['Ejercicio']}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-2 grid grid-cols-2 gap-2">
-                        <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
-                            <Image src={ex['Imagen']} alt={ex['Ejercicio']} layout="fill" objectFit="contain" />
-                        </div>
-                        <div className="text-xs space-y-2">
-                            <div>
-                                <p className="font-bold">Descripción</p>
-                                <p className="text-gray-600 dark:text-gray-400 text-justify">{ex['Descripción de la tarea']}</p>
-                            </div>
-                            <div>
-                                <p className="font-bold">Objetivos</p>
-                                <p className="text-gray-600 dark:text-gray-400 text-justify">{ex['Objetivos']}</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                     <CardFooter className="p-2 text-xs text-center text-gray-900">
-                        <div className="flex gap-2 w-full items-stretch">
-                            <div className="border p-1 rounded-sm flex flex-col justify-center w-[15%]">
-                                <p className="font-bold">Tiempo</p>
-                                <p>{ex['Duración (min)']}</p>
-                            </div>
-                            <div className="border p-1 rounded-sm flex flex-col justify-center w-[15%]">
-                                <p className="font-bold">Jugadores</p>
-                                <p>{ex['Número de jugadores']}</p>
-                            </div>
-                            <div className="border p-1 rounded-sm flex flex-col justify-center w-[70%]">
-                                <p className="font-bold">Material</p>
-                                <p className="break-words">{ex['Espacio y materiales necesarios']}</p>
-                            </div>
-                        </div>
-                    </CardFooter>
-                </Card>
-            )) : <p className="text-sm text-muted-foreground p-4 text-center">No hay ejercicios en esta fase.</p>}
-        </div>
-    );
-
-    return (
-        <div ref={ref} className="bg-white text-gray-900 p-8">
-            <div className="space-y-6">
-                <div className="flex items-stretch gap-2 border-2 border-gray-800 p-2 mb-4">
-                    <div className="flex w-full space-x-2">
-                        <div className="flex flex-col justify-between gap-1 basis-1/5">
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Microciclo</p>
-                                <p className="text-sm truncate">{sessionData.microcycle || 'N/A'}</p>
-                            </div>
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Fecha</p>
-                                <p className="text-sm">{sessionDateFormatted}</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col justify-between gap-1 basis-1/5">
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Sesión</p>
-                                <p className="text-sm">{sessionData.sessionNumber || 'N/A'}</p>
-                            </div>
-                            <div className="border border-gray-800 text-center p-1 flex-1 flex flex-col justify-center">
-                                <p className="text-xs font-bold">Instalación</p>
-                                <p className="text-sm truncate">{sessionData.facility || 'N/A'}</p>
-                            </div>
-                        </div>
-                        <div className="border border-gray-800 text-left p-1 flex-grow">
-                            <p className="text-xs font-bold">Objetivos</p>
-                            <ul className="text-sm space-y-1 mt-1">
-                                {(sessionData.objectives || []).map((obj: string, index: number) => (
-                                    <li key={index} className='list-disc list-inside'>{obj}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="space-y-6 pt-0">
-                    <PhaseSectionPro title="FASE INICIAL" exercises={getExercisesByIds(sessionData.initialExercises)} />
-                    <PhaseSectionPro title="FASE PRINCIPAL" exercises={getExercisesByIds(sessionData.mainExercises)} />
-                    <PhaseSectionPro title="FASE FINAL" exercises={getExercisesByIds(sessionData.finalExercises)} />
-                </div>
-
-                <p className="text-center text-xs mt-8 text-gray-500 pt-0">Powered by LaPizarra</p>
-            </div>
-        </div>
-    );
-});
-SessionProPreview.displayName = 'SessionProPreview';
-
 export default function CrearSesionPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -476,14 +305,6 @@ export default function CrearSesionPage() {
     }
   };
 
-  const sessionDataForPreview = {
-      ...watchedValues,
-      initialExercises: selectedExercises.initialExercises.map(e => e.id),
-      mainExercises: selectedExercises.mainExercises.map(e => e.id),
-      finalExercises: selectedExercises.finalExercises.map(e => e.id)
-  };
-  const teamNameForPreview = userTeams.find(t => t.id === watchedValues.teamId)?.name || '';
-
   const PhaseSection = ({ phase, title, subtitle }: { phase: SessionPhase; title: string; subtitle: string }) => {
     const exercisesForPhase = selectedExercises[phase];
     const limit = phaseLimits[phase];
@@ -529,7 +350,7 @@ export default function CrearSesionPage() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8 no-print">
+      <div className="container mx-auto px-4 py-8">
         <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8">
           <div className="text-center">
               <h1 className="text-3xl md:text-4xl font-bold font-headline">Crear Sesión</h1>
@@ -650,48 +471,6 @@ export default function CrearSesionPage() {
           <Card>
               <CardContent className="p-6">
                   <div className="flex justify-end items-center gap-4">
-                      <Dialog>
-                          <DialogTrigger asChild>
-                              <Button variant="outline">
-                                  <Eye className="mr-2" />
-                                  Ver Ficha de Sesión
-                              </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                              <DialogHeader>
-                                  <DialogTitle>Elige el tipo de ficha</DialogTitle>
-                              </DialogHeader>
-                              <div className="grid grid-cols-2 gap-4 pt-4">
-                                  <div className="flex flex-col gap-2 items-center">
-                                      <Image src="https://i.ibb.co/hJ2DscG7/basico.png" alt="Ficha Básica" width={200} height={283} className="rounded-md border"/>
-                                        <Button className="w-full" onClick={() => window.print()}>
-                                            <Download className="mr-2" />
-                                            Descargar Básica
-                                        </Button>
-                                  </div>
-                                  <div className="flex flex-col gap-2 items-center">
-                                      <Image src="https://i.ibb.co/pBKy6D20/pro.png" alt="Ficha Pro" width={200} height={283} className="rounded-md border"/>
-                                      <TooltipProvider>
-                                          <Tooltip>
-                                              <TooltipTrigger asChild>
-                                                    <div className="w-full">
-                                                        <Button className="w-full" disabled={!isProUser} onClick={() => window.print()}>
-                                                            <Download className="mr-2" />
-                                                            Descargar Pro
-                                                        </Button>
-                                                    </div>
-                                              </TooltipTrigger>
-                                              {!isProUser && (
-                                                  <TooltipContent>
-                                                      <p>Mejora al Plan Pro para acceder a esta función.</p>
-                                                  </TooltipContent>
-                                              )}
-                                          </Tooltip>
-                                      </TooltipProvider>
-                                  </div>
-                              </div>
-                          </DialogContent>
-                      </Dialog>
                       <Button type="submit" size="lg" disabled={isSaving}>
                           {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
                           Guardar Sesión
@@ -700,10 +479,6 @@ export default function CrearSesionPage() {
               </CardContent>
           </Card>
         </form>
-      </div>
-       <div className="printable-content">
-        <SessionBasicPreview sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamNameForPreview} />
-        <SessionProPreview sessionData={sessionDataForPreview} exercises={allExercises} />
       </div>
     </>
   );
