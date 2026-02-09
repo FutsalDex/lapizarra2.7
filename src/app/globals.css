@@ -266,7 +266,7 @@
     margin-bottom: 5mm;
 }
 .exercise-image-and-meta-pro {
-  width: 45%;
+  width: 50%;
   display: flex;
   flex-direction: column;
 }
@@ -299,7 +299,7 @@
   font-weight: bold;
 }
 .exercise-main-content-pro {
-  width: 55%;
+  width: 50%;
 }
 .exercise-title-pro {
   font-size: 14px;
