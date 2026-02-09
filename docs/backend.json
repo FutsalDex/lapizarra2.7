@@ -158,6 +158,49 @@
             "createdAt": { "type": "string", "format": "date-time" },
             "completedAt": { "type": "string", "format": "date-time" }
         }
+    },
+    "Conversation": {
+      "title": "AI Conversation",
+      "description": "Represents a conversation thread with an AI agent.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns the conversation."
+        },
+        "title": {
+          "type": "string",
+          "description": "A title for the conversation, often from the first user message."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": ["user", "assistant"]
+              },
+              "content": {
+                "oneOf": [
+                  { "type": "string" },
+                  { "type": "object" }
+                ]
+              },
+               "createdAt": {
+                 "type": "string",
+                 "format": "date-time"
+               }
+            },
+            "required": ["role", "content", "createdAt"]
+          }
+        }
+      },
+      "required": ["userId", "title", "createdAt"]
     }
   },
   "auth": {
@@ -203,6 +246,10 @@
     "/invitations/{invitationId}": {
         "schema": { "$ref": "#/entities/Invitation" },
         "description": "Tracks user invitations for the loyalty program."
+    },
+    "/conversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/Conversation" },
+      "description": "Stores conversation histories with the AI assistant."
     }
   }
 }
