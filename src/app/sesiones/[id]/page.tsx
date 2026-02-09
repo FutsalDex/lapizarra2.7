@@ -171,6 +171,51 @@ const SessionProPreview = React.forwardRef<
 SessionProPreview.displayName = 'SessionProPreview';
 
 
+const SessionBasicPreview = React.forwardRef<
+  HTMLDivElement,
+  { sessionData: any; exercises: Exercise[]; teamName: string; }
+>(({ sessionData, exercises, teamName }, ref) => {
+  
+  const getExercisesByIds = (ids: string[] = []): Exercise[] => {
+    return ids.map(id => exercises.find(ex => ex.id === id)).filter((ex): ex is Exercise => !!ex);
+  };
+
+  const allSessionExercises = [
+    ...getExercisesByIds(sessionData.initialExercises),
+    ...getExercisesByIds(sessionData.mainExercises),
+    ...getExercisesByIds(sessionData.finalExercises),
+  ];
+
+  const sessionDateFormatted = sessionData.date ? format(new Date(sessionData.date), 'dd/MM/yyyy', { locale: es }) : 'N/A';
+
+  const exercisePages: Exercise[][] = [];
+  for (let i = 0; i < allSessionExercises.length; i += 6) { 
+    exercisePages.push(allSessionExercises.slice(i, i + 6));
+  }
+  
+  return (
+    <div ref={ref}>
+      {exercisePages.map((page, pageIndex) => (
+        <div key={pageIndex} className="print-page page-grid">
+            {pageIndex === 0 && (
+                <div className="session-title col-span-2">
+                    Sesión: {teamName} - {sessionDateFormatted}
+                </div>
+            )}
+            {page.map(exercise => (
+                <div key={exercise.id} className="card">
+                    <img src={exercise['Imagen']} alt={exercise['Ejercicio']} className="card-img" crossOrigin="anonymous"/>
+                    <p className="card-title truncate">{exercise['Ejercicio']}</p>
+                </div>
+            ))}
+        </div>
+      ))}
+    </div>
+  );
+});
+SessionBasicPreview.displayName = 'SessionBasicPreview';
+
+
 export default function SesionDetallePage() {
   const params = useParams();
   const sessionId = params.id as string;
@@ -179,6 +224,7 @@ export default function SesionDetallePage() {
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   
   const proLayoutRef = useRef<HTMLDivElement>(null);
+  const basicLayoutRef = useRef<HTMLDivElement>(null);
   
   const [sessionSnapshot, loadingSession, errorSession] = useDocumentData(doc(db, 'sessions', sessionId));
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
@@ -196,7 +242,12 @@ export default function SesionDetallePage() {
         description: 'El PDF se está generando y la descarga comenzará en breve.',
     });
 
-    const originalElement = document.getElementById(layout === 'basic' ? 'session-visible-layout' : 'session-pro-layout-for-print');
+    const elementId = layout === 'basic' 
+        ? 'session-basic-layout-for-print' 
+        : 'session-pro-layout-for-print';
+    document.body.classList.add(layout === 'basic' ? 'printing-basic' : 'printing-pro');
+
+    const originalElement = document.getElementById(elementId);
 
     if (!originalElement) {
         toast({
@@ -205,17 +256,16 @@ export default function SesionDetallePage() {
             description: 'No se pudo encontrar el contenido para generar el PDF.',
         });
         setIsDownloading(false);
+        document.body.classList.remove('printing-basic', 'printing-pro');
         return;
     }
 
-    // Clone the element
     const clone = originalElement.cloneNode(true) as HTMLElement;
 
-    // Style and append the clone to the body
     clone.style.position = 'fixed';
     clone.style.top = '-9999px';
     clone.style.left = '0';
-    clone.style.width = '210mm'; // A4 width
+    clone.style.width = '210mm';
     clone.style.height = 'auto';
     document.body.appendChild(clone);
 
@@ -237,7 +287,7 @@ export default function SesionDetallePage() {
                         img.onload = () => resolve();
                         img.onerror = () => {
                             console.warn(`Could not load image: ${img.src}`);
-                            resolve(); // Continue even if an image fails
+                            resolve();
                         };
                     }
                 }))
@@ -275,7 +325,8 @@ export default function SesionDetallePage() {
             description: 'Hubo un problema al crear el archivo. Por favor, inténtalo de nuevo.',
         });
     } finally {
-        document.body.removeChild(clone); // Clean up the clone
+        document.body.removeChild(clone);
+        document.body.classList.remove('printing-basic', 'printing-pro');
         setIsDownloading(false);
     }
 };
@@ -335,7 +386,7 @@ export default function SesionDetallePage() {
 
   return (
     <>
-      <div id="session-visible-layout" className="container mx-auto px-4 py-8 print-page">
+      <div id="session-visible-layout" className="container mx-auto px-4 py-8">
             <div className="flex justify-between items-center mb-6 no-print">
               <div>
                 <h1 className="text-4xl font-bold font-headline">Sesión de entrenamiento</h1>
@@ -437,7 +488,10 @@ export default function SesionDetallePage() {
                 </div>
             </div>
       </div>
-
+      
+       <div id="session-basic-layout-for-print" className="absolute -z-10 -left-[9999px] top-0 opacity-0 w-[210mm]">
+            <SessionBasicPreview ref={basicLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
+       </div>
        <div id="session-pro-layout-for-print" className="absolute -z-10 -left-[9999px] top-0 opacity-0 w-[210mm]">
             <SessionProPreview ref={proLayoutRef} sessionData={sessionDataForPreview} exercises={allExercises} teamName={teamName} />
        </div>

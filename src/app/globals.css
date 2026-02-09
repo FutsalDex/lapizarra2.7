@@ -83,8 +83,8 @@
     visibility: hidden;
   }
 
-  body.printing-basic #session-visible-layout,
-  body.printing-basic #session-visible-layout * {
+  body.printing-basic #session-basic-layout-for-print,
+  body.printing-basic #session-basic-layout-for-print * {
     visibility: visible;
   }
 
@@ -93,7 +93,7 @@
     visibility: visible;
   }
 
-  body.printing #session-visible-layout,
+  body.printing #session-basic-layout-for-print,
   body.printing #session-pro-layout-for-print {
     position: absolute;
     left: 0;
@@ -165,14 +165,19 @@
 }
 .page-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
   padding: 20px;
+}
+.page-grid .session-title {
+  grid-column: span 2;
 }
 .card {
   padding: 12px;
   border: 1px solid #ccc;
   border-radius: 8px;
+  display: flex;
+  flex-direction: column;
 }
 .card-img {
   width: 100%;
@@ -182,18 +187,8 @@
   object-fit: cover;
 }
 .card-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  margin-bottom: 4px;
-}
-.card-desc {
-  font-size: 14px;
-  margin-bottom: 6px;
-}
-.card-meta {
-    margin-top: auto;
-}
-.card-meta p {
-  font-size: 13px;
-  margin: 3px 0;
+  margin-top: auto;
+  text-align: center;
 }
