@@ -1,11 +1,18 @@
-# https://firebase.google.com/docs/app-hosting/configure
-
+# apphosting.yaml
 runConfig:
   runtime: nodejs20
-  build:
-    command: npm run build
-  source: .
-  framework:
-    type: nextjs
   maxInstances: 1
 
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyA2XHO-VnkYuAwx3-cQ8xrWb3gzdzvTSow"
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "lapizarra-95eqd.firebaseapp.com"
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "lapizarra-95eqd"
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "lapizarra-95eqd.firebasestorage.app"
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "303306895935"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:303306895935:web:8111132726548fb6ccfe8a"
