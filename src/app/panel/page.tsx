@@ -36,10 +36,10 @@ const panelItems = [
   {
     icon: <MessageSquare className="w-8 h-8 text-primary" />,
     title: 'Soporte Técnico',
-    description: 'Chatea con nuestro entrenador por IA configurado para darte respuestas sobre dudas, órdenes, etc.',
-    buttonText: 'Próximamente',
-    href: '#',
-    disabled: true,
+    description: 'Chatea con Míster Global, nuestro entrenador por IA, para resolver tus dudas tácticas.',
+    buttonText: 'Chatear con el Míster',
+    href: '/soporte',
+    disabled: false,
   },
 ];
 
