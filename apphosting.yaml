@@ -15,3 +15,6 @@ env:
     value: "303306895935"
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     value: "1:303306895935:web:8111132726548fb6ccfe8a"
+
+scripts:
+  build: npm run build

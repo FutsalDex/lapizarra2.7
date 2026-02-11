@@ -1,9 +1,13 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Quitamos standalone por ahora para que Firebase use su comportamiento por defecto
-  typescript: { ignoreBuildErrors: true },
-  eslint: { ignoreDuringBuilds: true },
+  typescript: { 
+    ignoreBuildErrors: true 
+  },
+  eslint: { 
+    ignoreDuringBuilds: true 
+  },
+  trailingSlash: true,
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'placehold.co' },
