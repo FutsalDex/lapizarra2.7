@@ -1,13 +1,18 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* Ignoramos errores para permitir el despliegue */
+  /* 1. Optimizamos la salida para Firebase App Hosting */
+  output: 'standalone',
+
+  /* 2. Ignoramos errores para desbloquear el despliegue en entornos estrictos */
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
+
+  /* 3. Configuración de imágenes remotas */
   images: {
     remotePatterns: [
       {
