@@ -12,7 +12,6 @@ const nextConfig: NextConfig = {
   // 2. Configuración de salida y directorios
   output: 'standalone',
   distDir: '.next',
-  trailingSlash: true,
 
   // 3. Configuración de paquetes externos (Nueva sintaxis de Next.js 15)
   // Eliminamos transpilePackages para evitar el conflicto
