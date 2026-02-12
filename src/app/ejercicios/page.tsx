@@ -1,11 +1,13 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, query, getFirestore } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { collection, query, getFirestore, limit } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import app from '@/firebase/config';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Exercise, favoriteExerciseIdsStore } from '@/lib/data';
 import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const ITEMS_PER_PAGE = 12;
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 export default function EjerciciosPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,13 +32,30 @@ export default function EjerciciosPage() {
   const [favoriteIds, setFavoriteIds] = useState(favoriteExerciseIdsStore);
   const { toast } = useToast();
 
-  const [exercisesSnapshot, loading, error] = useCollection(
-    query(collection(db, 'exercises'))
-  );
+  const [user, loadingAuth] = useAuthState(auth);
+
+  const exercisesQuery = useMemo(() => {
+    if (loadingAuth) return null;
+    if (user) {
+      return query(collection(db, 'exercises'));
+    } else {
+      return query(collection(db, 'exercises'), limit(10));
+    }
+  }, [user, loadingAuth]);
+
+  const [exercisesSnapshot, loadingExercises, error] = useCollection(exercisesQuery);
 
   const exercises = exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [];
 
   const handleFavoriteToggle = (exerciseId: string) => {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Función solo para usuarios",
+            description: "Inicia sesión para guardar tus ejercicios favoritos.",
+        });
+        return;
+    }
     const newFavoriteIds = new Set(favoriteIds);
     if (newFavoriteIds.has(exerciseId)) {
       newFavoriteIds.delete(exerciseId);
@@ -61,7 +81,6 @@ export default function EjerciciosPage() {
       "Cadete", "Juvenil", "Senior"
   ];
 
-
   const filteredExercises = exercises.filter(exercise => {
     const matchesSearch = exercise['Ejercicio'].toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (exercise['Descripción de la tarea'] && exercise['Descripción de la tarea'].toLowerCase().includes(searchTerm.toLowerCase()));
@@ -82,14 +101,14 @@ export default function EjerciciosPage() {
     
     const matchesEdad = edadFilter === 'Todos' || (Array.isArray(exercise['Edad']) && exercise['Edad'].includes(edadFilter));
     
-    return matchesSearch && matchesCategory && matchesFase && matchesEdad;
+    return exercise.Visible && matchesSearch && matchesCategory && matchesFase && matchesEdad;
   });
 
   const totalPages = Math.ceil(filteredExercises.length / ITEMS_PER_PAGE);
-  const paginatedExercises = filteredExercises.slice(
+  const paginatedExercises = user ? filteredExercises.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
-  );
+  ) : filteredExercises;
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -104,6 +123,7 @@ export default function EjerciciosPage() {
   };
   
   const allFases = ["Fase Inicial", "Fase Principal", "Fase Final"];
+  const isLoading = loadingAuth || loadingExercises;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -111,6 +131,25 @@ export default function EjerciciosPage() {
         <h1 className="text-4xl font-bold font-headline">Biblioteca de Ejercicios</h1>
         <p className="text-lg text-muted-foreground mt-2">Encuentra la inspiración para tu próximo entrenamiento.</p>
       </div>
+
+      {!user && !loadingAuth && (
+        <Card className="mb-8 bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700">
+            <CardHeader>
+                <CardTitle>Estás viendo una vista previa</CardTitle>
+                <CardDescription>
+                Regístrate o inicia sesión para acceder a la biblioteca completa, guardar favoritos y crear sesiones.
+                </CardDescription>
+            </CardHeader>
+            <CardFooter className="gap-2">
+                <Button asChild>
+                    <Link href="/registro">Crear cuenta gratis</Link>
+                </Button>
+                <Button variant="secondary" asChild>
+                    <Link href="/login">Iniciar Sesión</Link>
+                </Button>
+            </CardFooter>
+        </Card>
+      )}
       
       <div className="mb-8 p-4 bg-card rounded-lg border">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -155,11 +194,17 @@ export default function EjerciciosPage() {
             </Select>
         </div>
         <div className="text-sm text-muted-foreground mt-4">
-          Mostrando {paginatedExercises.length} de {filteredExercises.length} ejercicios. Página {currentPage} de {totalPages}.
+          {isLoading ? (
+            <Skeleton className="h-5 w-48" />
+          ) : user ? (
+            `Mostrando ${paginatedExercises.length} de ${filteredExercises.length} ejercicios. Página ${currentPage} de ${totalPages}.`
+          ) : (
+            `Mostrando ${filteredExercises.length} ejercicios de ejemplo.`
+          )}
         </div>
       </div>
 
-      {loading && (
+      {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
             <Card key={index} className="flex flex-col">
@@ -179,7 +224,7 @@ export default function EjerciciosPage() {
         </div>
       )}
 
-      {!loading && (
+      {!isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedExercises.map((exercise) => (
             <Card key={exercise.id} className="overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col">
@@ -212,10 +257,11 @@ export default function EjerciciosPage() {
                           Ver Ficha
                       </Link>
                    </Button>
-                   <Button variant="ghost" size="icon" onClick={() => handleFavoriteToggle(exercise.id)}>
-                      <Heart className={cn("w-6 h-6 text-destructive/50 transition-colors", {
-                          "fill-destructive text-destructive": favoriteIds.has(exercise.id)
-                      })} />
+                   <Button variant="ghost" size="icon" onClick={() => handleFavoriteToggle(exercise.id)} disabled={!user}>
+                        <Heart className={cn("w-6 h-6 text-destructive/50 transition-colors", {
+                            "fill-destructive text-destructive": user && favoriteIds.has(exercise.id),
+                             "text-muted-foreground/50": !user,
+                        })} />
                    </Button>
                 </div>
               </CardContent>
@@ -224,15 +270,15 @@ export default function EjerciciosPage() {
         </div>
       )}
 
-      {error && <p className="text-center text-destructive py-8">Error: {error.message}</p>}
+      {error && <p className="text-center text-destructive py-8">Error al cargar los ejercicios. Es posible que necesites iniciar sesión para verlos.</p>}
 
-      {!loading && filteredExercises.length === 0 && (
+      {!isLoading && filteredExercises.length === 0 && !error && (
         <div className="text-center py-16 text-muted-foreground">
             <p>No se encontraron ejercicios con los filtros seleccionados.</p>
         </div>
       )}
       
-      {totalPages > 1 && (
+      {user && totalPages > 1 && (
         <div className="flex items-center justify-center mt-8 space-x-2">
             <Button variant="outline" size="icon" onClick={handlePrevPage} disabled={currentPage === 1}>
                 <ChevronLeft className="h-4 w-4" />
