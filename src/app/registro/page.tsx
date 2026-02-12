@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { Chrome, Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { auth, db } from "@/firebase/config";
 import { 
   createUserWithEmailAndPassword, 
@@ -21,7 +21,7 @@ import {
   signInWithPopup,
   updateProfile
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 function RegisterContent() {
@@ -54,13 +54,16 @@ function RegisterContent() {
       const displayName = email.split('@')[0];
       await updateProfile(user, { displayName });
 
+      // Guardar en Firestore
       await setDoc(doc(db, "users", user.uid), {
         displayName: displayName,
         email: user.email,
-        photoURL: user.photoURL,
+        photoURL: user.photoURL || null,
+        createdAt: new Date().toISOString(),
       });
 
       router.push(redirectUrl || "/panel");
+      router.refresh();
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -79,13 +82,20 @@ function RegisterContent() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
-      await setDoc(doc(db, "users", user.uid), {
-        displayName: user.displayName,
-        email: user.email,
-        photoURL: user.photoURL,
-      }, { merge: true }); // Use merge to avoid overwriting existing data if user logs in again
+      // Verificamos si el usuario ya existe para no sobreescribir datos antiguos
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, "users", user.uid), {
+          displayName: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+          createdAt: new Date().toISOString(),
+        });
+      }
       
       router.push(redirectUrl || "/panel");
+      router.refresh(); // Asegura que el estado de la sesión se actualice en toda la app
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -99,9 +109,9 @@ function RegisterContent() {
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] bg-background p-4">
-      <Card className="mx-auto max-w-sm w-full">
-        <CardHeader>
-          <CardTitle className="text-2xl">Crear una cuenta</CardTitle>
+      <Card className="mx-auto max-w-sm w-full shadow-lg">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold">Crear una cuenta</CardTitle>
           <CardDescription>
             Introduce tus datos para registrarte.
           </CardDescription>
@@ -135,7 +145,7 @@ function RegisterContent() {
                  <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -156,23 +166,47 @@ function RegisterContent() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
                 >
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" /> : 'Crear cuenta'}
+              {loading ? <Loader2 className="animate-spin h-4 w-4" /> : 'Crear cuenta'}
             </Button>
           </form>
-          <Button variant="outline" className="w-full mt-4" onClick={handleGoogleSignIn} disabled={loading}>
-               <Chrome className="mr-2 h-4 w-4" />
-              Registrarse con Google
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">O continuar con</span>
+            </div>
+          </div>
+
+          <Button 
+            variant="outline" 
+            type="button"
+            className="w-full" 
+            onClick={handleGoogleSignIn} 
+            disabled={loading}
+          >
+            {!loading && (
+              <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+              </svg>
+            )}
+            {loading ? <Loader2 className="animate-spin h-4 w-4" /> : 'Registrarse con Google'}
           </Button>
-          <div className="mt-4 text-center text-sm">
+
+          <div className="mt-4 text-center text-sm text-muted-foreground">
             ¿Ya tienes una cuenta?{" "}
-            <Link href={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : "/login"} className="underline">
+            <Link 
+              href={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : "/login"} 
+              className="underline text-primary hover:text-primary/80"
+            >
               Inicia sesión
             </Link>
           </div>
@@ -184,7 +218,11 @@ function RegisterContent() {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div>Cargando...</div>}>
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
       <RegisterContent />
     </Suspense>
   );
