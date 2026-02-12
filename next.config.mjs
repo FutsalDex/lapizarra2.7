@@ -1,7 +1,6 @@
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
-  // 1. Ignoramos errores para el build
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // 1. Ignoramos errores menores para asegurar el despliegue
   typescript: { 
     ignoreBuildErrors: true 
   },
@@ -9,12 +8,13 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true 
   },
 
-  // 2. Configuración de salida y directorios
+  // 2. Configuración de salida para Firebase App Hosting
   output: 'standalone',
   distDir: '.next',
+  trailingSlash: true,
 
-  // 3. Configuración de paquetes externos (Nueva sintaxis de Next.js 15)
-  // Eliminamos transpilePackages para evitar el conflicto
+  // 3. Configuración de paquetes externos (Sintaxis oficial Next.js 15)
+  // Nota: Ya NO va dentro de "experimental"
   serverExternalPackages: [
     'genkit', 
     '@genkit-ai/ai', 
@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
     '@genkit-ai/google-genai'
   ],
 
-  // 4. Optimización de imágenes
+  // 4. Optimización de imágenes y dominios permitidos
   images: {
     unoptimized: true,
     remotePatterns: [
