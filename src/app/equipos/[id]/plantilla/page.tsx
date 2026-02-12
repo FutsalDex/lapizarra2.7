@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useParams } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -244,228 +245,230 @@ export default function PlantillaPage() {
     };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-4">
-                <div className="bg-muted p-3 rounded-full">
-                    <Users className="w-8 h-8 text-primary" />
-                </div>
-                <div>
-                    <h1 className="text-4xl font-bold font-headline">Mi Plantilla</h1>
-                    <p className="text-lg text-muted-foreground mt-1">Gestiona la plantilla de tu equipo y sus datos principales.</p>
-                </div>
-            </div>
-            <Button variant="outline" asChild>
-                <Link href={`/equipos/${params.id}`}>
-                    <ArrowLeft className="mr-2" />
-                    Volver al Panel
-                </Link>
-            </Button>
-      </div>
-      
-      <div className="space-y-8">
-        <Card>
-            <CardHeader>
-                <CardTitle>Información del Equipo</CardTitle>
-                <CardDescription>Datos generales del equipo.</CardDescription>
-            </CardHeader>
-            <CardContent>
-            {loadingTeam ? <Skeleton className="h-10 w-full" /> : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                        <Label>Club</Label>
-                        <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold">
-                            {team?.club || ''}
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Equipo</Label>
-                        <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold">
-                           {team?.name || ''}
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Competición</Label>
-                        <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold">
-                            {team?.competition || ''}
-                        </div>
-                    </div>
-                </div>
-            )}
-             {errorTeam && <p className="text-destructive mt-4">{errorTeam.message}</p>}
-            </CardContent>
-        </Card>
+    <AuthGuard>
+      <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-4">
+                  <div className="bg-muted p-3 rounded-full">
+                      <Users className="w-8 h-8 text-primary" />
+                  </div>
+                  <div>
+                      <h1 className="text-4xl font-bold font-headline">Mi Plantilla</h1>
+                      <p className="text-lg text-muted-foreground mt-1">Gestiona la plantilla de tu equipo y sus datos principales.</p>
+                  </div>
+              </div>
+              <Button variant="outline" asChild>
+                  <Link href={`/equipos/${params.id}`}>
+                      <ArrowLeft className="mr-2" />
+                      Volver al Panel
+                  </Link>
+              </Button>
+        </div>
+        
+        <div className="space-y-8">
+          <Card>
+              <CardHeader>
+                  <CardTitle>Información del Equipo</CardTitle>
+                  <CardDescription>Datos generales del equipo.</CardDescription>
+              </CardHeader>
+              <CardContent>
+              {loadingTeam ? <Skeleton className="h-10 w-full" /> : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-2">
+                          <Label>Club</Label>
+                          <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold">
+                              {team?.club || ''}
+                          </div>
+                      </div>
+                      <div className="space-y-2">
+                          <Label>Equipo</Label>
+                          <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold">
+                            {team?.name || ''}
+                          </div>
+                      </div>
+                      <div className="space-y-2">
+                          <Label>Competición</Label>
+                          <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold">
+                              {team?.competition || ''}
+                          </div>
+                      </div>
+                  </div>
+              )}
+              {errorTeam && <p className="text-destructive mt-4">{errorTeam.message}</p>}
+              </CardContent>
+          </Card>
 
-         <Card>
-            <CardHeader>
-                <CardTitle>Staff Técnico</CardTitle>
-                <CardDescription>Gestiona a los miembros del cuerpo técnico. Guarda los cambios para poder enviar la invitación por WhatsApp.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {loadingStaff ? <Skeleton className="h-24 w-full" /> : (
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="px-2 sm:px-4">Nombre</TableHead>
-                                <TableHead className="w-[150px] sm:w-[180px] px-2 sm:px-4">Rol</TableHead>
-                                <TableHead className="px-2 sm:px-4">Email</TableHead>
-                                <TableHead className="w-[100px] sm:w-[120px] text-right px-2 sm:px-4">Acciones</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {staff.map((member, index) => (
-                                <TableRow key={member.id || index}>
-                                    <TableCell className="px-2 sm:px-4">
-                                        <Input 
-                                            value={member.name}
-                                            onChange={(e) => handleStaffChange(index, 'name', e.target.value)}
-                                            placeholder="Nombre"
-                                            disabled={!isOwner}
-                                            className="min-w-[120px]"
-                                        />
-                                    </TableCell>
-                                    <TableCell className="px-2 sm:px-4">
-                                        <Select
-                                            value={member.role}
-                                            onValueChange={(value) => handleStaffChange(index, 'role', value)}
-                                            disabled={!isOwner}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Rol"/>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Entrenador">Entrenador</SelectItem>
-                                                <SelectItem value="Segundo Entrenador">Segundo Entrenador</SelectItem>
-                                                <SelectItem value="Delegado">Delegado</SelectItem>
-                                                <SelectItem value="Asistente">Asistente</SelectItem>
-                                                <SelectItem value="Fisioterapeuta">Fisioterapeuta</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </TableCell>
-                                    <TableCell className="px-2 sm:px-4">
-                                        <Input 
-                                            type="email"
-                                            value={member.email}
-                                            onChange={(e) => handleStaffChange(index, 'email', e.target.value)}
-                                            placeholder="Email"
-                                            disabled={!isOwner}
-                                            className="min-w-[150px]"
-                                        />
-                                    </TableCell>
-                                    <TableCell className="text-right space-x-1 px-2 sm:px-4">
-                                        {isOwner && member.id && (
-                                            <Button variant="ghost" size="icon" onClick={() => handleInviteStaff(member)}>
-                                                 <WhatsAppIcon className="w-5 h-5 text-green-500" />
-                                            </Button>
-                                        )}
-                                        {isOwner && (
-                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveStaffMember(index)}>
-                                                <Trash2 className="w-5 h-5 text-destructive" />
-                                            </Button>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-                )}
-                 {errorStaff && <p className="text-destructive mt-4">{errorStaff.message}</p>}
-            </CardContent>
-            {isOwner && (
-                <CardFooter className="flex justify-between">
-                    <Button variant="outline" onClick={handleAddStaffMember}>
-                        <PlusCircle className="mr-2" />
-                        Añadir Miembro
-                    </Button>
-                    <Button onClick={handleSaveStaff} disabled={isSavingStaff}>
-                    {isSavingStaff ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2" />}
-                        Guardar Staff
-                    </Button>
-                </CardFooter>
-            )}
-        </Card>
+          <Card>
+              <CardHeader>
+                  <CardTitle>Staff Técnico</CardTitle>
+                  <CardDescription>Gestiona a los miembros del cuerpo técnico. Guarda los cambios para poder enviar la invitación por WhatsApp.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  {loadingStaff ? <Skeleton className="h-24 w-full" /> : (
+                  <div className="overflow-x-auto">
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead className="px-2 sm:px-4">Nombre</TableHead>
+                                  <TableHead className="w-[150px] sm:w-[180px] px-2 sm:px-4">Rol</TableHead>
+                                  <TableHead className="px-2 sm:px-4">Email</TableHead>
+                                  <TableHead className="w-[100px] sm:w-[120px] text-right px-2 sm:px-4">Acciones</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {staff.map((member, index) => (
+                                  <TableRow key={member.id || index}>
+                                      <TableCell className="px-2 sm:px-4">
+                                          <Input 
+                                              value={member.name}
+                                              onChange={(e) => handleStaffChange(index, 'name', e.target.value)}
+                                              placeholder="Nombre"
+                                              disabled={!isOwner}
+                                              className="min-w-[120px]"
+                                          />
+                                      </TableCell>
+                                      <TableCell className="px-2 sm:px-4">
+                                          <Select
+                                              value={member.role}
+                                              onValueChange={(value) => handleStaffChange(index, 'role', value)}
+                                              disabled={!isOwner}
+                                          >
+                                              <SelectTrigger>
+                                                  <SelectValue placeholder="Rol"/>
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                  <SelectItem value="Entrenador">Entrenador</SelectItem>
+                                                  <SelectItem value="Segundo Entrenador">Segundo Entrenador</SelectItem>
+                                                  <SelectItem value="Delegado">Delegado</SelectItem>
+                                                  <SelectItem value="Asistente">Asistente</SelectItem>
+                                                  <SelectItem value="Fisioterapeuta">Fisioterapeuta</SelectItem>
+                                              </SelectContent>
+                                          </Select>
+                                      </TableCell>
+                                      <TableCell className="px-2 sm:px-4">
+                                          <Input 
+                                              type="email"
+                                              value={member.email}
+                                              onChange={(e) => handleStaffChange(index, 'email', e.target.value)}
+                                              placeholder="Email"
+                                              disabled={!isOwner}
+                                              className="min-w-[150px]"
+                                          />
+                                      </TableCell>
+                                      <TableCell className="text-right space-x-1 px-2 sm:px-4">
+                                          {isOwner && member.id && (
+                                              <Button variant="ghost" size="icon" onClick={() => handleInviteStaff(member)}>
+                                                  <WhatsAppIcon className="w-5 h-5 text-green-500" />
+                                              </Button>
+                                          )}
+                                          {isOwner && (
+                                              <Button variant="ghost" size="icon" onClick={() => handleRemoveStaffMember(index)}>
+                                                  <Trash2 className="w-5 h-5 text-destructive" />
+                                              </Button>
+                                          )}
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
+                  </div>
+                  )}
+                  {errorStaff && <p className="text-destructive mt-4">{errorStaff.message}</p>}
+              </CardContent>
+              {isOwner && (
+                  <CardFooter className="flex justify-between">
+                      <Button variant="outline" onClick={handleAddStaffMember}>
+                          <PlusCircle className="mr-2" />
+                          Añadir Miembro
+                      </Button>
+                      <Button onClick={handleSaveStaff} disabled={isSavingStaff}>
+                      {isSavingStaff ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2" />}
+                          Guardar Staff
+                      </Button>
+                  </CardFooter>
+              )}
+          </Card>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Plantilla del Equipo</CardTitle>
-                <CardDescription>Introduce los datos de tus jugadores. Máximo 20. Todos los jugadores estarán disponibles para la convocatoria.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {loadingPlayers ? <Skeleton className="h-40 w-full" /> : (
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[80px] px-2 sm:px-4">Dorsal</TableHead>
-                                <TableHead className="px-2 sm:px-4">Nombre</TableHead>
-                                <TableHead className="w-[150px] sm:w-[200px] px-2 sm:px-4">Posición</TableHead>
-                                <TableHead className="w-[80px] text-right px-2 sm:px-4">Acciones</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {players.map((player, index) => (
-                                <TableRow key={player.id || index}>
-                                    <TableCell className="px-2 sm:px-4">
-                                        <Input 
-                                            value={player.number} 
-                                            onChange={(e) => handlePlayerChange(index, 'number', e.target.value)}
-                                            className="w-16 text-center" 
-                                            placeholder="#"
-                                            type="number"
-                                        />
-                                    </TableCell>
-                                    <TableCell className="px-2 sm:px-4">
-                                        <Input 
-                                            value={player.name} 
-                                            onChange={(e) => handlePlayerChange(index, 'name', e.target.value)}
-                                            placeholder="Nombre del jugador"
-                                            className="min-w-[150px]"
-                                        />
-                                    </TableCell>
-                                    <TableCell className="px-2 sm:px-4">
-                                        <Select 
-                                            value={player.position}
-                                            onValueChange={(value) => handlePlayerChange(index, 'position', value)}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Seleccionar" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Portero">Portero</SelectItem>
-                                                <SelectItem value="Cierre">Cierre</SelectItem>
-                                                <SelectItem value="Ala">Ala</SelectItem>
-                                                <SelectItem value="Pívot">Pívot</SelectItem>
-                                                <SelectItem value="Universal">Universal</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </TableCell>
-                                    <TableCell className="text-right px-2 sm:px-4">
-                                        <Button variant="ghost" size="icon" onClick={() => handleRemovePlayer(index)}>
-                                            <Trash2 className="w-5 h-5 text-destructive" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-                )}
-                 {errorPlayers && <div className="text-red-500 bg-red-100 p-4 rounded-md mt-4"><b>Error:</b> {errorPlayers.message}</div>}
-            </CardContent>
-            <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={handleAddPlayer}>
-                    <PlusCircle className="mr-2" />
-                    Añadir Jugador
-                </Button>
-                <Button onClick={handleSavePlayers} disabled={isSavingPlayers}>
-                    {isSavingPlayers ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2" />}
-                    Guardar Plantilla
-                </Button>
-            </CardFooter>
-        </Card>
+          <Card>
+              <CardHeader>
+                  <CardTitle>Plantilla del Equipo</CardTitle>
+                  <CardDescription>Introduce los datos de tus jugadores. Máximo 20. Todos los jugadores estarán disponibles para la convocatoria.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  {loadingPlayers ? <Skeleton className="h-40 w-full" /> : (
+                  <div className="overflow-x-auto">
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead className="w-[80px] px-2 sm:px-4">Dorsal</TableHead>
+                                  <TableHead className="px-2 sm:px-4">Nombre</TableHead>
+                                  <TableHead className="w-[150px] sm:w-[200px] px-2 sm:px-4">Posición</TableHead>
+                                  <TableHead className="w-[80px] text-right px-2 sm:px-4">Acciones</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {players.map((player, index) => (
+                                  <TableRow key={player.id || index}>
+                                      <TableCell className="px-2 sm:px-4">
+                                          <Input 
+                                              value={player.number} 
+                                              onChange={(e) => handlePlayerChange(index, 'number', e.target.value)}
+                                              className="w-16 text-center" 
+                                              placeholder="#"
+                                              type="number"
+                                          />
+                                      </TableCell>
+                                      <TableCell className="px-2 sm:px-4">
+                                          <Input 
+                                              value={player.name} 
+                                              onChange={(e) => handlePlayerChange(index, 'name', e.target.value)}
+                                              placeholder="Nombre del jugador"
+                                              className="min-w-[150px]"
+                                          />
+                                      </TableCell>
+                                      <TableCell className="px-2 sm:px-4">
+                                          <Select 
+                                              value={player.position}
+                                              onValueChange={(value) => handlePlayerChange(index, 'position', value)}
+                                          >
+                                              <SelectTrigger>
+                                                  <SelectValue placeholder="Seleccionar" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                  <SelectItem value="Portero">Portero</SelectItem>
+                                                  <SelectItem value="Cierre">Cierre</SelectItem>
+                                                  <SelectItem value="Ala">Ala</SelectItem>
+                                                  <SelectItem value="Pívot">Pívot</SelectItem>
+                                                  <SelectItem value="Universal">Universal</SelectItem>
+                                              </SelectContent>
+                                          </Select>
+                                      </TableCell>
+                                      <TableCell className="text-right px-2 sm:px-4">
+                                          <Button variant="ghost" size="icon" onClick={() => handleRemovePlayer(index)}>
+                                              <Trash2 className="w-5 h-5 text-destructive" />
+                                          </Button>
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
+                  </div>
+                  )}
+                  {errorPlayers && <div className="text-red-500 bg-red-100 p-4 rounded-md mt-4"><b>Error:</b> {errorPlayers.message}</div>}
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                  <Button variant="outline" onClick={handleAddPlayer}>
+                      <PlusCircle className="mr-2" />
+                      Añadir Jugador
+                  </Button>
+                  <Button onClick={handleSavePlayers} disabled={isSavingPlayers}>
+                      {isSavingPlayers ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2" />}
+                      Guardar Plantilla
+                  </Button>
+              </CardFooter>
+          </Card>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }

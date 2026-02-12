@@ -23,6 +23,7 @@ import { app } from "@/firebase/config";
 import { auth } from "@/firebase/config";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 const db = getFirestore(app);
 
@@ -304,6 +305,7 @@ function PageContent() {
     };
 
     return (
+      <AuthGuard>
         <div className="container mx-auto px-4 py-8">
             <div className="mb-6">
                 <Button variant="outline" asChild>
@@ -354,6 +356,7 @@ function PageContent() {
             )}
             {view === 'form' && <SubirEjercicioForm onCancel={handleCancel} exerciseId={exerciseId} />}
         </div>
+      </AuthGuard>
     );
 }
 

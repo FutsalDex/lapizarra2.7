@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
+import AuthGuard from '@/components/auth/AuthGuard';
 
 const db = getFirestore(app);
 
@@ -293,166 +294,168 @@ export default function PlayerStatsPage() {
     const filterOptions = ['Todos', 'Liga', 'Copa', 'Torneo', 'Amistoso'];
 
     return (
-        <div className="container mx-auto px-4 py-8 space-y-8">
-            <div className="flex justify-between items-center">
-                <div>
-                     <div className="flex items-center gap-3 mb-2">
-                        <Users className="w-8 h-8 text-primary" />
-                        <h1 className="text-3xl font-bold font-headline">Estadísticas de Jugadores</h1>
-                    </div>
-                    <p className="text-muted-foreground">Rendimiento individual de los jugadores de {team?.name || '...'}.</p>
-                </div>
-                <Button variant="outline" asChild>
-                    <Link href={`/equipos/${teamId}/estadisticas`}>
-                        <ArrowLeft className="mr-2" />
-                        Volver
-                    </Link>
-                </Button>
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Controles</CardTitle>
-                    <p className="text-sm text-muted-foreground">Filtra por competición y busca jugadores.</p>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col sm:flex-row items-center gap-4">
-                        <div className="relative flex-grow w-full sm:w-auto">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input 
-                                placeholder="Buscar jugador..." 
-                                className="pl-10" 
-                                value={searchTerm} 
-                                onChange={(e) => setSearchTerm(e.target.value)} 
-                            />
+        <AuthGuard>
+            <div className="container mx-auto px-4 py-8 space-y-8">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <Users className="w-8 h-8 text-primary" />
+                            <h1 className="text-3xl font-bold font-headline">Estadísticas de Jugadores</h1>
                         </div>
-                        <div className="flex items-center gap-2">
-                            {filterOptions.map(option => (
-                                <Button 
-                                    key={option}
-                                    variant={filter === option ? 'default' : 'outline'}
-                                    onClick={() => setFilter(option)}
-                                    size="sm"
-                                >
-                                    {option}
-                                </Button>
+                        <p className="text-muted-foreground">Rendimiento individual de los jugadores de {team?.name || '...'}.</p>
+                    </div>
+                    <Button variant="outline" asChild>
+                        <Link href={`/equipos/${teamId}/estadisticas`}>
+                            <ArrowLeft className="mr-2" />
+                            Volver
+                        </Link>
+                    </Button>
+                </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Controles</CardTitle>
+                        <p className="text-sm text-muted-foreground">Filtra por competición y busca jugadores.</p>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <div className="relative flex-grow w-full sm:w-auto">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Buscar jugador..." 
+                                    className="pl-10" 
+                                    value={searchTerm} 
+                                    onChange={(e) => setSearchTerm(e.target.value)} 
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {filterOptions.map(option => (
+                                    <Button 
+                                        key={option}
+                                        variant={filter === option ? 'default' : 'outline'}
+                                        onClick={() => setFilter(option)}
+                                        size="sm"
+                                    >
+                                        {option}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {isLoading || !leaders.topScorer ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {Array.from({ length: 14 }).map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <StatCard title="Máximo Goleador" playerName={leaders.topScorer.value > 0 ? leaders.topScorer.name : '-'} value={leaders.topScorer.value} icon={<Trophy className="text-primary"/>} />
+                        <StatCard title="Máximo Asistente" playerName={leaders.topAssistant.value > 0 ? leaders.topAssistant.name : '-'} value={leaders.topAssistant.value} icon={<Hand className="text-primary"/>} />
+                        <StatCard title="Más Tiros a Puerta" playerName={leaders.mostShotsOn.value > 0 ? leaders.mostShotsOn.name : '-'} value={leaders.mostShotsOn.value} icon={<Target className="text-primary"/>} />
+                        <StatCard title="Más Tiros Fuera" playerName={leaders.mostShotsOff.value > 0 ? leaders.mostShotsOff.name : '-'} value={leaders.mostShotsOff.value} icon={<Goal className="text-primary"/>} />
+                        <StatCard title="Más Recuperaciones" playerName={leaders.mostRecoveries.value > 0 ? leaders.mostRecoveries.name : '-'} value={leaders.mostRecoveries.value} icon={<RefreshCw className="text-primary"/>} />
+                        <StatCard title="Más Pérdidas" playerName={leaders.mostTurnovers.value > 0 ? leaders.mostTurnovers.name : '-'} value={leaders.mostTurnovers.value} icon={<ChevronsRightLeft className="text-primary"/>} />
+                        <StatCard title="Más Faltas" playerName={leaders.mostFouls.value > 0 ? leaders.mostFouls.name : '-'} value={leaders.mostFouls.value} icon={<ShieldAlert className="text-orange-500"/>} />
+                        <StatCard title="Más T. Amarillas" playerName={leaders.mostYellows.value > 0 ? leaders.mostYellows.name : '-'} value={leaders.mostYellows.value} icon={<SquareIcon className="bg-yellow-400" />} />
+                        <StatCard title="Más T. Rojas" playerName={leaders.mostReds.value > 0 ? leaders.mostReds.name : '-'} value={leaders.mostReds.value} icon={<SquareIcon className="bg-red-600" />} />
+                        <StatCard title="Portero con más Paradas" playerName={leaders.mostSaves.value > 0 ? leaders.mostSaves.name : '-'} value={leaders.mostSaves.value} icon={<Shield className="text-primary"/>} />
+                        <StatCard title="Portero mejor en 1vs1" playerName={leaders.bestUnoVsUno.value > 0 ? leaders.bestUnoVsUno.name : '-'} value={leaders.bestUnoVsUno.value} icon={<Target className="text-primary"/>} />
+                        <StatCard title="Portero Menos Goleado" playerName={leaders.leastConceded.value > 0 ? leaders.leastConceded.name : '-'} value={leaders.leastConceded.value} icon={<Shield className="text-primary"/>} />
+                        <StatCard title="Portero Más Goleado" playerName={leaders.mostConceded.value > 0 ? leaders.mostConceded.name : '-'} value={leaders.mostConceded.value} icon={<Shield className="text-primary"/>} />
+                        <StatCard title="Jugador con más minutos" playerName={leaders.mostMinutes.value > 0 ? leaders.mostMinutes.name : '-'} value={formatTime(leaders.mostMinutes.value as number)} icon={<Clock className="text-primary"/>} />
+                        <StatCard title="Jugador con menos minutos" playerName={leaders.leastMinutes.value > 0 ? leaders.leastMinutes.name : '-'} value={formatTime(leaders.leastMinutes.value as number)} icon={<Clock className="text-primary"/>} />
+                    </div>
+                )}
+                
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Tabla General de Jugadores</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? <Skeleton className="h-64 w-full" /> : (
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Dorsal</TableHead>
+                                            <TableHead>Nombre</TableHead>
+                                            <TableHead className="text-center">Min.</TableHead>
+                                            <TableHead className="text-center">PJ</TableHead>
+                                            <TableHead className="text-center">G</TableHead>
+                                            <TableHead className="text-center">A</TableHead>
+                                            <TableHead className="text-center">T.P.</TableHead>
+                                            <TableHead className="text-center">T.F.</TableHead>
+                                            <TableHead className="text-center">REC</TableHead>
+                                            <TableHead className="text-center">PER</TableHead>
+                                            <TableHead className="text-center">F</TableHead>
+                                            <TableHead className="text-center">TA</TableHead>
+                                            <TableHead className="text-center">TR</TableHead>
+                                            <TableHead className="text-center">PAR</TableHead>
+                                            <TableHead className="text-center">GC</TableHead>
+                                            <TableHead className="text-center">1vs1</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {tablePlayers.map(player => {
+                                            const stats = playerStats[player.id];
+                                            return (
+                                                <TableRow key={player.id}>
+                                                    <TableCell className="font-medium">{player.number}</TableCell>
+                                                    <TableCell>{player.name}</TableCell>
+                                                    <TableCell className="text-center">{formatTime(stats?.minutesPlayed || 0)}</TableCell>
+                                                    <TableCell className="text-center">{stats?.matchesPlayed || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.goals || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.assists || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.shotsOnTarget || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.shotsOffTarget || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.recoveries || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.turnovers || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.fouls || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.yellowCards || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.redCards || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.saves || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.goalsConceded || 0}</TableCell>
+                                                    <TableCell className="text-center">{stats?.unoVsUno || 0}</TableCell>
+                                                </TableRow>
+                                            )
+                                        })}
+                                    </TableBody>
+                                    <TableFooter>
+                                        <TableRow className="font-bold bg-muted/50">
+                                            <TableCell colSpan={2}>Total Equipo</TableCell>
+                                            <TableCell className="text-center">{formatTime(tableTotals.minutesPlayed)}</TableCell>
+                                            <TableCell className="text-center">{/* PJ no se suma */}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.goals}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.assists}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.shotsOnTarget}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.shotsOffTarget}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.recoveries}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.turnovers}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.fouls}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.yellowCards}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.redCards}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.saves}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.goalsConceded}</TableCell>
+                                            <TableCell className="text-center">{tableTotals.unoVsUno}</TableCell>
+                                        </TableRow>
+                                    </TableFooter>
+                                </Table>
+                            </div>
+                        )}
+                    </CardContent>
+                    <CardFooter className="pt-4">
+                        <div className="text-xs text-muted-foreground grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-1">
+                            {legendItems.map(item => (
+                                <div key={item.abbr}>
+                                    <span className="font-semibold">{item.abbr}:</span> {item.full}
+                                </div>
                             ))}
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardFooter>
+                </Card>
 
-            {isLoading || !leaders.topScorer ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {Array.from({ length: 14 }).map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
-                </div>
-            ) : (
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <StatCard title="Máximo Goleador" playerName={leaders.topScorer.value > 0 ? leaders.topScorer.name : '-'} value={leaders.topScorer.value} icon={<Trophy className="text-primary"/>} />
-                    <StatCard title="Máximo Asistente" playerName={leaders.topAssistant.value > 0 ? leaders.topAssistant.name : '-'} value={leaders.topAssistant.value} icon={<Hand className="text-primary"/>} />
-                    <StatCard title="Más Tiros a Puerta" playerName={leaders.mostShotsOn.value > 0 ? leaders.mostShotsOn.name : '-'} value={leaders.mostShotsOn.value} icon={<Target className="text-primary"/>} />
-                    <StatCard title="Más Tiros Fuera" playerName={leaders.mostShotsOff.value > 0 ? leaders.mostShotsOff.name : '-'} value={leaders.mostShotsOff.value} icon={<Goal className="text-primary"/>} />
-                    <StatCard title="Más Recuperaciones" playerName={leaders.mostRecoveries.value > 0 ? leaders.mostRecoveries.name : '-'} value={leaders.mostRecoveries.value} icon={<RefreshCw className="text-primary"/>} />
-                    <StatCard title="Más Pérdidas" playerName={leaders.mostTurnovers.value > 0 ? leaders.mostTurnovers.name : '-'} value={leaders.mostTurnovers.value} icon={<ChevronsRightLeft className="text-primary"/>} />
-                    <StatCard title="Más Faltas" playerName={leaders.mostFouls.value > 0 ? leaders.mostFouls.name : '-'} value={leaders.mostFouls.value} icon={<ShieldAlert className="text-orange-500"/>} />
-                    <StatCard title="Más T. Amarillas" playerName={leaders.mostYellows.value > 0 ? leaders.mostYellows.name : '-'} value={leaders.mostYellows.value} icon={<SquareIcon className="bg-yellow-400" />} />
-                    <StatCard title="Más T. Rojas" playerName={leaders.mostReds.value > 0 ? leaders.mostReds.name : '-'} value={leaders.mostReds.value} icon={<SquareIcon className="bg-red-600" />} />
-                    <StatCard title="Portero con más Paradas" playerName={leaders.mostSaves.value > 0 ? leaders.mostSaves.name : '-'} value={leaders.mostSaves.value} icon={<Shield className="text-primary"/>} />
-                    <StatCard title="Portero mejor en 1vs1" playerName={leaders.bestUnoVsUno.value > 0 ? leaders.bestUnoVsUno.name : '-'} value={leaders.bestUnoVsUno.value} icon={<Target className="text-primary"/>} />
-                    <StatCard title="Portero Menos Goleado" playerName={leaders.leastConceded.value > 0 ? leaders.leastConceded.name : '-'} value={leaders.leastConceded.value} icon={<Shield className="text-primary"/>} />
-                    <StatCard title="Portero Más Goleado" playerName={leaders.mostConceded.value > 0 ? leaders.mostConceded.name : '-'} value={leaders.mostConceded.value} icon={<Shield className="text-primary"/>} />
-                    <StatCard title="Jugador con más minutos" playerName={leaders.mostMinutes.value > 0 ? leaders.mostMinutes.name : '-'} value={formatTime(leaders.mostMinutes.value as number)} icon={<Clock className="text-primary"/>} />
-                    <StatCard title="Jugador con menos minutos" playerName={leaders.leastMinutes.value > 0 ? leaders.leastMinutes.name : '-'} value={formatTime(leaders.leastMinutes.value as number)} icon={<Clock className="text-primary"/>} />
-                </div>
-            )}
-            
-            <Card>
-                <CardHeader>
-                    <CardTitle>Tabla General de Jugadores</CardTitle>
-                </CardHeader>
-                <CardContent>
-                     {isLoading ? <Skeleton className="h-64 w-full" /> : (
-                         <div className="overflow-x-auto">
-                             <Table>
-                                 <TableHeader>
-                                     <TableRow>
-                                         <TableHead>Dorsal</TableHead>
-                                         <TableHead>Nombre</TableHead>
-                                         <TableHead className="text-center">Min.</TableHead>
-                                         <TableHead className="text-center">PJ</TableHead>
-                                         <TableHead className="text-center">G</TableHead>
-                                         <TableHead className="text-center">A</TableHead>
-                                         <TableHead className="text-center">T.P.</TableHead>
-                                         <TableHead className="text-center">T.F.</TableHead>
-                                         <TableHead className="text-center">REC</TableHead>
-                                         <TableHead className="text-center">PER</TableHead>
-                                         <TableHead className="text-center">F</TableHead>
-                                         <TableHead className="text-center">TA</TableHead>
-                                         <TableHead className="text-center">TR</TableHead>
-                                         <TableHead className="text-center">PAR</TableHead>
-                                         <TableHead className="text-center">GC</TableHead>
-                                         <TableHead className="text-center">1vs1</TableHead>
-                                     </TableRow>
-                                 </TableHeader>
-                                 <TableBody>
-                                     {tablePlayers.map(player => {
-                                         const stats = playerStats[player.id];
-                                         return (
-                                             <TableRow key={player.id}>
-                                                 <TableCell className="font-medium">{player.number}</TableCell>
-                                                 <TableCell>{player.name}</TableCell>
-                                                 <TableCell className="text-center">{formatTime(stats?.minutesPlayed || 0)}</TableCell>
-                                                 <TableCell className="text-center">{stats?.matchesPlayed || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.goals || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.assists || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.shotsOnTarget || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.shotsOffTarget || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.recoveries || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.turnovers || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.fouls || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.yellowCards || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.redCards || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.saves || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.goalsConceded || 0}</TableCell>
-                                                 <TableCell className="text-center">{stats?.unoVsUno || 0}</TableCell>
-                                             </TableRow>
-                                         )
-                                     })}
-                                 </TableBody>
-                                 <TableFooter>
-                                     <TableRow className="font-bold bg-muted/50">
-                                         <TableCell colSpan={2}>Total Equipo</TableCell>
-                                         <TableCell className="text-center">{formatTime(tableTotals.minutesPlayed)}</TableCell>
-                                         <TableCell className="text-center">{/* PJ no se suma */}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.goals}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.assists}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.shotsOnTarget}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.shotsOffTarget}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.recoveries}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.turnovers}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.fouls}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.yellowCards}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.redCards}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.saves}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.goalsConceded}</TableCell>
-                                         <TableCell className="text-center">{tableTotals.unoVsUno}</TableCell>
-                                     </TableRow>
-                                 </TableFooter>
-                             </Table>
-                         </div>
-                     )}
-                </CardContent>
-                <CardFooter className="pt-4">
-                     <div className="text-xs text-muted-foreground grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-1">
-                        {legendItems.map(item => (
-                            <div key={item.abbr}>
-                                <span className="font-semibold">{item.abbr}:</span> {item.full}
-                            </div>
-                        ))}
-                    </div>
-                </CardFooter>
-            </Card>
-
-        </div>
+            </div>
+        </AuthGuard>
     );
 }

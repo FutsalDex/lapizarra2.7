@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import AuthGuard from '@/components/auth/AuthGuard';
 
 type Match = {
     id: string;
@@ -234,183 +235,181 @@ export default function TeamStatsPage() {
     }, [selectedMatch, team]);
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-3">
-                    <Trophy className="h-8 w-8 text-primary" />
-                    <h1 className="text-3xl font-bold font-headline">Estadísticas del Equipo: {team?.name || '...'}</h1>
-                </div>
-                <Button variant="outline" asChild>
-                <Link href={`/equipos/${teamId}/estadisticas`}>
-                    <ArrowLeft className="mr-2" />
-                    Volver
-                </Link>
-                </Button>
-            </div>
-
-            <Card className="mb-6">
-                <CardHeader>
-                    <CardTitle>Controles</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center gap-2">
-                        {filterOptions.map(option => (
-                            <Button 
-                                key={option}
-                                variant={filter === option ? 'default' : 'outline'}
-                                onClick={() => setFilter(option)}
-                                size="sm"
-                            >
-                                {option}
-                            </Button>
-                        ))}
+        <AuthGuard>
+            <div className="container mx-auto px-4 py-8">
+                <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-3">
+                        <Trophy className="h-8 w-8 text-primary" />
+                        <h1 className="text-3xl font-bold font-headline">Estadísticas del Equipo: {team?.name || '...'}</h1>
                     </div>
-                </CardContent>
-            </Card>
-            
-            <div className="space-y-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Resumen General de Partidos ({filter})</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoading ? (
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                                <Skeleton className="h-24 w-full" />
-                                <Skeleton className="h-24 w-full" />
-                                <Skeleton className="h-24 w-full" />
-                                <Skeleton className="h-24 w-full" />
-                            </div>
-                        ) : errorMatches ? (
-                            <p className="text-destructive">Error: {errorMatches.message}</p>
-                        ) : matchSummary ? (
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                                <StatCard title="Partidos Jugados" value={matchSummary.played} icon={<GanttChartSquare className="h-6 w-6 text-primary" />} />
-                                <StatCard title="Ganados" value={matchSummary.won} icon={<TrendingUp className="h-6 w-6 text-green-600" />} className="border-green-500/50" />
-                                <StatCard title="Empatados" value={matchSummary.drawn} icon={<Shield className="h-6 w-6 text-yellow-600" />} className="border-yellow-500/50" />
-                                <StatCard title="Perdidos" value={matchSummary.lost} icon={<TrendingDown className="h-6 w-6 text-red-600" />} className="border-red-500/50" />
-                            </div>
-                        ) : null}
-                    </CardContent>
-                </Card>
+                    <Button variant="outline" asChild>
+                    <Link href={`/equipos/${teamId}/estadisticas`}>
+                        <ArrowLeft className="mr-2" />
+                        Volver
+                    </Link>
+                    </Button>
+                </div>
 
-                <Card>
+                <Card className="mb-6">
                     <CardHeader>
-                        <CardTitle>Rendimiento del Equipo</CardTitle>
+                        <CardTitle>Controles</CardTitle>
                     </CardHeader>
                     <CardContent>
-                         {isLoading ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                               {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
-                            </div>
-                         ) : teamPerformanceStats ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                <StatCard title="Tiros Totales" value={teamPerformanceStats.totalShots} icon={<Target className="h-6 w-6 text-primary" />} />
-                                <StatCard title="Tiros a Puerta" value={teamPerformanceStats.shotsOnTarget} icon={<Target className="h-6 w-6 text-green-600" />} />
-                                <StatCard title="Tiros Fuera" value={teamPerformanceStats.shotsOffTarget} icon={<XCircle className="h-6 w-6 text-red-600" />} />
-                                <StatCard title="Faltas Cometidas" value={teamPerformanceStats.foulsCommitted} icon={<ShieldAlert className="h-6 w-6 text-yellow-600" />} />
-                                <StatCard title="Faltas Recibidas" value={teamPerformanceStats.foulsReceived} icon={<ShieldAlert className="h-6 w-6 text-blue-500" />} />
-                                <StatCard title="Pérdidas de Balón" value={teamPerformanceStats.turnovers} icon={<ChevronsRightLeft className="h-6 w-6 text-orange-500" />} />
-                                <StatCard title="Robos de Balón" value={teamPerformanceStats.recoveries} icon={<RefreshCw className="h-6 w-6 text-teal-500" />} />
-                                <StatCard title="Tarjetas Amarillas" value={teamPerformanceStats.yellowCards} icon={<SquareIcon className="bg-yellow-400" />} />
-                            </div>
-                         ) : null}
+                        <div className="flex items-center gap-2">
+                            {filterOptions.map(option => (
+                                <Button 
+                                    key={option}
+                                    variant={filter === option ? 'default' : 'outline'}
+                                    onClick={() => setFilter(option)}
+                                    size="sm"
+                                >
+                                    {option}
+                                </Button>
+                            ))}
+                        </div>
                     </CardContent>
                 </Card>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {isLoading ? (
-                        <>
-                            <Skeleton className="h-64 w-full" />
-                            <Skeleton className="h-64 w-full" />
-                        </>
-                    ) : teamPerformanceStats ? (
-                        <>
-                            <GoalCard title="Goles a Favor" total={teamPerformanceStats.goalsFor.total} part1={teamPerformanceStats.goalsFor['1H']} part2={teamPerformanceStats.goalsFor['2H']} type="for"/>
-                            <GoalCard title="Goles en Contra" total={teamPerformanceStats.goalsAgainst.total} part1={teamPerformanceStats.goalsAgainst['1H']} part2={teamPerformanceStats.goalsAgainst['2H']} type="against"/>
-                        </>
-                    ) : null}
-                </div>
+                <div className="space-y-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Resumen General de Partidos ({filter})</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {isLoading ? (
+                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                                    <Skeleton className="h-24 w-full" />
+                                    <Skeleton className="h-24 w-full" />
+                                    <Skeleton className="h-24 w-full" />
+                                    <Skeleton className="h-24 w-full" />
+                                </div>
+                            ) : errorMatches ? (
+                                <p className="text-destructive">Error: {errorMatches.message}</p>
+                            ) : matchSummary ? (
+                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                                    <StatCard title="Partidos Jugados" value={matchSummary.played} icon={<GanttChartSquare className="h-6 w-6 text-primary" />} />
+                                    <StatCard title="Ganados" value={matchSummary.won} icon={<TrendingUp className="h-6 w-6 text-green-600" />} className="border-green-500/50" />
+                                    <StatCard title="Empatados" value={matchSummary.drawn} icon={<Shield className="h-6 w-6 text-yellow-600" />} className="border-yellow-500/50" />
+                                    <StatCard title="Perdidos" value={matchSummary.lost} icon={<TrendingDown className="h-6 w-6 text-red-600" />} className="border-red-500/50" />
+                                </div>
+                            ) : null}
+                        </CardContent>
+                    </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <GanttChart className="h-5 w-5 text-primary" />
-                            Historial de Partidos ({filter})
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoading ? <Skeleton className="h-40 w-full" /> : (
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="w-[120px]">Fecha</TableHead>
-                                            <TableHead>Local</TableHead>
-                                            <TableHead>Visitante</TableHead>
-                                            <TableHead className="text-right">Resultado</TableHead>
-                                            <TableHead className="text-right w-[80px]">Goles</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {filteredMatches.length > 0 ? filteredMatches.map((match) => (
-                                            <TableRow key={match.id}>
-                                                <TableCell>
-                                                    {match.date ? format(match.date, 'dd/MM/yyyy', { locale: es }) : '-'}
-                                                </TableCell>
-                                                <TableCell>{match.localTeam}</TableCell>
-                                                <TableCell>{match.visitorTeam}</TableCell>
-                                                <TableCell className={cn("text-right font-bold", getResultColor(match))}>
-                                                    {match.localScore} - {match.visitorScore}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="icon" onClick={() => setSelectedMatch(match)}>
-                                                        <Goal className="h-5 w-5 text-muted-foreground" />
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        )) : (
-                                            <TableRow>
-                                                <TableCell colSpan={5} className="text-center h-24">
-                                                    No hay partidos para este filtro.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-            </div>
-             <Dialog open={!!selectedMatch} onOpenChange={(open) => !open && setSelectedMatch(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Goleadores del Partido</DialogTitle>
-                        <DialogDescription>
-                            {selectedMatch?.localTeam} vs {selectedMatch?.visitorTeam}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div>
-                        {goalscorers.length > 0 ? (
-                            <ul className="space-y-2">
-                                {goalscorers.map((goal, index) => (
-                                    <li key={index} className="flex justify-between items-center p-2 bg-muted rounded-md">
-                                        <span>{goal.playerName}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p className="text-muted-foreground">Tu equipo no marcó goles en este partido.</p>
-                        )}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Rendimiento del Equipo</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {isLoading ? (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+                                </div>
+                            ) : teamPerformanceStats ? (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    <StatCard title="Tiros Totales" value={teamPerformanceStats.totalShots} icon={<Target className="h-6 w-6 text-primary" />} />
+                                    <StatCard title="Tiros a Puerta" value={teamPerformanceStats.shotsOnTarget} icon={<Target className="h-6 w-6 text-green-600" />} />
+                                    <StatCard title="Tiros Fuera" value={teamPerformanceStats.shotsOffTarget} icon={<XCircle className="h-6 w-6 text-red-600" />} />
+                                    <StatCard title="Faltas Cometidas" value={teamPerformanceStats.foulsCommitted} icon={<ShieldAlert className="h-6 w-6 text-yellow-600" />} />
+                                    <StatCard title="Faltas Recibidas" value={teamPerformanceStats.foulsReceived} icon={<ShieldAlert className="h-6 w-6 text-blue-500" />} />
+                                    <StatCard title="Pérdidas de Balón" value={teamPerformanceStats.turnovers} icon={<ChevronsRightLeft className="h-6 w-6 text-orange-500" />} />
+                                    <StatCard title="Robos de Balón" value={teamPerformanceStats.recoveries} icon={<RefreshCw className="h-6 w-6 text-teal-500" />} />
+                                    <StatCard title="Tarjetas Amarillas" value={teamPerformanceStats.yellowCards} icon={<SquareIcon className="bg-yellow-400" />} />
+                                </div>
+                            ) : null}
+                        </CardContent>
+                    </Card>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {isLoading ? (
+                            <>
+                                <Skeleton className="h-64 w-full" />
+                                <Skeleton className="h-64 w-full" />
+                            </>
+                        ) : teamPerformanceStats ? (
+                            <>
+                                <GoalCard title="Goles a Favor" total={teamPerformanceStats.goalsFor.total} part1={teamPerformanceStats.goalsFor['1H']} part2={teamPerformanceStats.goalsFor['2H']} type="for"/>
+                                <GoalCard title="Goles en Contra" total={teamPerformanceStats.goalsAgainst.total} part1={teamPerformanceStats.goalsAgainst['1H']} part2={teamPerformanceStats.goalsAgainst['2H']} type="against"/>
+                            </>
+                        ) : null}
                     </div>
-                </DialogContent>
-            </Dialog>
-        </div>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <GanttChart className="h-5 w-5 text-primary" />
+                                Historial de Partidos ({filter})
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {isLoading ? <Skeleton className="h-40 w-full" /> : (
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-[120px]">Fecha</TableHead>
+                                                <TableHead>Local</TableHead>
+                                                <TableHead>Visitante</TableHead>
+                                                <TableHead className="text-right">Resultado</TableHead>
+                                                <TableHead className="text-right w-[80px]">Goles</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredMatches.length > 0 ? filteredMatches.map((match) => (
+                                                <TableRow key={match.id}>
+                                                    <TableCell>
+                                                        {match.date ? format(match.date, 'dd/MM/yyyy', { locale: es }) : '-'}
+                                                    </TableCell>
+                                                    <TableCell>{match.localTeam}</TableCell>
+                                                    <TableCell>{match.visitorTeam}</TableCell>
+                                                    <TableCell className={cn("text-right font-bold", getResultColor(match))}>
+                                                        {match.localScore} - {match.visitorScore}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button variant="ghost" size="icon" onClick={() => setSelectedMatch(match)}>
+                                                            <Goal className="h-5 w-5 text-muted-foreground" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={5} className="text-center h-24">
+                                                        No hay partidos para este filtro.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                </div>
+                <Dialog open={!!selectedMatch} onOpenChange={(open) => !open && setSelectedMatch(null)}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Goleadores del Partido</DialogTitle>
+                            <DialogDescription>
+                                {selectedMatch?.localTeam} vs {selectedMatch?.visitorTeam}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div>
+                            {goalscorers.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {goalscorers.map((goal, index) => (
+                                        <li key={index} className="flex justify-between items-center p-2 bg-muted rounded-md">
+                                            <span>{goal.playerName}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-muted-foreground">Tu equipo no marcó goles en este partido.</p>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </AuthGuard>
     );
 }
-
-
-
-

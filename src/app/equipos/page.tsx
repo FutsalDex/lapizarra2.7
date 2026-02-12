@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { collection, query, where, addDoc, deleteDoc, doc, writeBatch, getDocs, Timestamp, getFirestore } from "firebase/firestore";
@@ -36,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -224,171 +225,173 @@ export default function EquiposPage() {
 
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <Button variant="outline" asChild>
-          <Link href="/panel">
-            <ArrowLeft className="mr-2" />
-            Volver al Panel
-          </Link>
-        </Button>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-                <Button>
-                    <PlusCircle className="mr-2" />
-                    Añadir Equipo
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Añadir Nuevo Equipo</DialogTitle>
-                    <DialogDescription>Introduce los datos para crear un nuevo equipo.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="team-name">Nombre del Equipo</Label>
-                        <Input id="team-name" placeholder="Ej: Juvenil B" value={newTeam.name} onChange={(e) => setNewTeam({...newTeam, name: e.target.value})} disabled={isSubmitting}/>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="club-name">Club</Label>
-                        <Input id="club-name" placeholder="Ej: FS Ràpid Santa Coloma" value={newTeam.club} onChange={(e) => setNewTeam({...newTeam, club: e.target.value})} disabled={isSubmitting}/>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="season">Temporada</Label>
-                        <Input id="season" placeholder="Ej: 2024/2025" value={newTeam.season} onChange={(e) => setNewTeam({...newTeam, season: e.target.value})} disabled={isSubmitting}/>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="competition">Competición</Label>
-                        <Input id="competition" placeholder="Ej: Liga Nacional Juvenil" value={newTeam.competition} onChange={(e) => setNewTeam({...newTeam, competition: e.target.value})} disabled={isSubmitting}/>
-                    </div>
+    <AuthGuard>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <Button variant="outline" asChild>
+            <Link href="/panel">
+              <ArrowLeft className="mr-2" />
+              Volver al Panel
+            </Link>
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                  <Button>
+                      <PlusCircle className="mr-2" />
+                      Añadir Equipo
+                  </Button>
+              </DialogTrigger>
+              <DialogContent>
+                  <DialogHeader>
+                      <DialogTitle>Añadir Nuevo Equipo</DialogTitle>
+                      <DialogDescription>Introduce los datos para crear un nuevo equipo.</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                          <Label htmlFor="team-name">Nombre del Equipo</Label>
+                          <Input id="team-name" placeholder="Ej: Juvenil B" value={newTeam.name} onChange={(e) => setNewTeam({...newTeam, name: e.target.value})} disabled={isSubmitting}/>
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="club-name">Club</Label>
+                          <Input id="club-name" placeholder="Ej: FS Ràpid Santa Coloma" value={newTeam.club} onChange={(e) => setNewTeam({...newTeam, club: e.target.value})} disabled={isSubmitting}/>
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="season">Temporada</Label>
+                          <Input id="season" placeholder="Ej: 2024/2025" value={newTeam.season} onChange={(e) => setNewTeam({...newTeam, season: e.target.value})} disabled={isSubmitting}/>
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="competition">Competición</Label>
+                          <Input id="competition" placeholder="Ej: Liga Nacional Juvenil" value={newTeam.competition} onChange={(e) => setNewTeam({...newTeam, competition: e.target.value})} disabled={isSubmitting}/>
+                      </div>
+                  </div>
+                  <DialogFooter>
+                      <DialogClose asChild>
+                          <Button variant="outline" disabled={isSubmitting}>Cancelar</Button>
+                      </DialogClose>
+                      <Button onClick={handleAddTeam} disabled={isSubmitting}>
+                          {isSubmitting ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2"/>}
+                          Guardar Equipo
+                      </Button>
+                  </DialogFooter>
+              </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="flex items-center gap-4 mb-8">
+          <div className="bg-primary/10 p-3 rounded-full">
+              <Shield className="w-8 h-8 text-primary" />
+          </div>
+          <div>
+              <h1 className="text-4xl font-bold font-headline">Gestión de Equipos</h1>
+              <p className="text-lg text-muted-foreground mt-1">Crea y administra tus equipos. Invita a tu cuerpo técnico para colaborar.</p>
+          </div>
+        </div>
+        
+
+        <div className="space-y-8">
+            { (loadingUser || loadingInvitations) && <Skeleton className="h-24 w-full" />}
+            { !loadingUser && !loadingInvitations && invitations.length > 0 && (
+                  <Card>
+                      <CardHeader>
+                          <div className="flex items-center gap-3">
+                              <UserPlus className="w-5 h-5 text-primary" />
+                              <CardTitle>Invitaciones Pendientes</CardTitle>
+                          </div>
+                          <CardDescription>Has sido invitado a colaborar en estos equipos. Acéptalos para empezar.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                          {invitations.map(inv => (
+                              <div key={inv.id} className="border rounded-lg p-4 flex items-center justify-between">
+                                  <div>
+                                      <p className="font-bold text-lg">{inv.teamName || "un equipo"}</p>
+                                      <p className="text-sm text-muted-foreground">Invitado por {inv.inviterEmail}</p>
+                                  </div>
+                                  <Button onClick={() => handleAcceptInvitation(inv)}>
+                                      <UserPlus className="mr-2" />
+                                      Unirse al equipo
+                                  </Button>
+                              </div>
+                          ))}
+                      </CardContent>
+                  </Card>
+              )}
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-primary" />
+                  <CardTitle>Mis Equipos (Propietario)</CardTitle>
                 </div>
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline" disabled={isSubmitting}>Cancelar</Button>
-                    </DialogClose>
-                    <Button onClick={handleAddTeam} disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2"/>}
-                        Guardar Equipo
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                <CardDescription>Lista de equipos que administras como propietario.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  {(loadingUser || loadingTeams) && (
+                      <div className="space-y-4">
+                          <Skeleton className="h-16 w-full" />
+                          <Skeleton className="h-16 w-full" />
+                      </div>
+                  )}
+
+                  {!(loadingUser || loadingTeams) && ownedTeams.length > 0 ? (
+                      <div className="space-y-2">
+                          {ownedTeams.map(team => (
+                              <TeamCard key={team.id} team={team} isOwner={true} />
+                          ))}
+                      </div>
+                  ) : null}
+
+                  {!(loadingUser || loadingTeams) && ownedTeams.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                          <p>No has creado ningún equipo todavía.</p>
+                          <p>Haz clic en "Añadir Equipo" para empezar.</p>
+                      </div>
+                  )}
+
+                  {errorTeams && (
+                      <div className="text-center py-8 text-destructive">
+                          <p>Error al cargar los equipos: {errorTeams.message}</p>
+                      </div>
+                  )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-muted-foreground" />
+                  <CardTitle>Equipos en los que colaboro</CardTitle>
+                </div>
+                <CardDescription>Lista de equipos en los que eres miembro del cuerpo técnico.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  {(loadingUser || loadingTeams) && (
+                      <div className="space-y-4">
+                          <Skeleton className="h-16 w-full" />
+                      </div>
+                  )}
+
+                  {!(loadingUser || loadingTeams) && memberTeams && memberTeams.length > 0 ? (
+                      <div className="space-y-2">
+                          {memberTeams.map((team, index) => (
+                            <TeamCard key={`${team.id}-${index}`} team={team} isOwner={false} />
+                          ))}
+                      </div>
+                  ) : null}
+
+                  {!(loadingUser || loadingTeams) && (!memberTeams || memberTeams.length === 0) && (
+                      <div className="text-center py-8 text-muted-foreground">
+                          <p>Aún no eres miembro de ningún equipo.</p>
+                      </div>
+                  )}
+                  {errorTeams && (
+                      <div className="text-center py-8 text-destructive">
+                          <p>Error al cargar los equipos: {errorTeams.message}</p>
+                      </div>
+                  )}
+              </CardContent>
+            </Card>
+          </div>
       </div>
-
-      <div className="flex items-center gap-4 mb-8">
-        <div className="bg-primary/10 p-3 rounded-full">
-            <Shield className="w-8 h-8 text-primary" />
-        </div>
-        <div>
-            <h1 className="text-4xl font-bold font-headline">Gestión de Equipos</h1>
-            <p className="text-lg text-muted-foreground mt-1">Crea y administra tus equipos. Invita a tu cuerpo técnico para colaborar.</p>
-        </div>
-      </div>
-      
-
-      <div className="space-y-8">
-          { (loadingUser || loadingInvitations) && <Skeleton className="h-24 w-full" />}
-          { !loadingUser && !loadingInvitations && invitations.length > 0 && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-3">
-                            <UserPlus className="w-5 h-5 text-primary" />
-                            <CardTitle>Invitaciones Pendientes</CardTitle>
-                        </div>
-                        <CardDescription>Has sido invitado a colaborar en estos equipos. Acéptalos para empezar.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        {invitations.map(inv => (
-                            <div key={inv.id} className="border rounded-lg p-4 flex items-center justify-between">
-                                <div>
-                                    <p className="font-bold text-lg">{inv.teamName || "un equipo"}</p>
-                                    <p className="text-sm text-muted-foreground">Invitado por {inv.inviterEmail}</p>
-                                </div>
-                                <Button onClick={() => handleAcceptInvitation(inv)}>
-                                    <UserPlus className="mr-2" />
-                                    Unirse al equipo
-                                </Button>
-                            </div>
-                        ))}
-                    </CardContent>
-                </Card>
-            )}
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-primary" />
-                <CardTitle>Mis Equipos (Propietario)</CardTitle>
-              </div>
-              <CardDescription>Lista de equipos que administras como propietario.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {(loadingUser || loadingTeams) && (
-                    <div className="space-y-4">
-                        <Skeleton className="h-16 w-full" />
-                        <Skeleton className="h-16 w-full" />
-                    </div>
-                )}
-
-                {!(loadingUser || loadingTeams) && ownedTeams.length > 0 ? (
-                    <div className="space-y-2">
-                        {ownedTeams.map(team => (
-                            <TeamCard key={team.id} team={team} isOwner={true} />
-                        ))}
-                    </div>
-                ) : null}
-
-                {!(loadingUser || loadingTeams) && ownedTeams.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                        <p>No has creado ningún equipo todavía.</p>
-                        <p>Haz clic en "Añadir Equipo" para empezar.</p>
-                    </div>
-                )}
-
-                {errorTeams && (
-                    <div className="text-center py-8 text-destructive">
-                        <p>Error al cargar los equipos: {errorTeams.message}</p>
-                    </div>
-                )}
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-muted-foreground" />
-                <CardTitle>Equipos en los que colaboro</CardTitle>
-              </div>
-              <CardDescription>Lista de equipos en los que eres miembro del cuerpo técnico.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 {(loadingUser || loadingTeams) && (
-                    <div className="space-y-4">
-                        <Skeleton className="h-16 w-full" />
-                    </div>
-                )}
-
-                {!(loadingUser || loadingTeams) && memberTeams && memberTeams.length > 0 ? (
-                    <div className="space-y-2">
-                        {memberTeams.map((team, index) => (
-                           <TeamCard key={`${team.id}-${index}`} team={team} isOwner={false} />
-                        ))}
-                    </div>
-                ) : null}
-
-                 {!(loadingUser || loadingTeams) && (!memberTeams || memberTeams.length === 0) && (
-                    <div className="text-center py-8 text-muted-foreground">
-                        <p>Aún no eres miembro de ningún equipo.</p>
-                    </div>
-                )}
-                 {errorTeams && (
-                    <div className="text-center py-8 text-destructive">
-                        <p>Error al cargar los equipos: {errorTeams.message}</p>
-                    </div>
-                )}
-            </CardContent>
-          </Card>
-        </div>
-    </div>
+    </AuthGuard>
   );
 }

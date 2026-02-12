@@ -38,6 +38,7 @@ import app from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import AuthGuard from '@/components/auth/AuthGuard';
 
 type User = {
   uid: string;
@@ -93,145 +94,147 @@ export default function GestionUsuariosPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <Button variant="outline" asChild>
-          <Link href="/admin">
-            <ArrowLeft className="mr-2" />
-            Volver al Panel de Admin
-          </Link>
-        </Button>
-      </div>
+    <AuthGuard>
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-6">
+          <Button variant="outline" asChild>
+            <Link href="/admin">
+              <ArrowLeft className="mr-2" />
+              Volver al Panel de Admin
+            </Link>
+          </Button>
+        </div>
 
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold font-headline text-primary">Gestión de Usuarios</h1>
-        <p className="text-lg text-muted-foreground mt-2">
-          Lista de todos los usuarios de la plataforma y gestión de suscripciones.
-        </p>
-      </div>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold font-headline text-primary">Gestión de Usuarios</h1>
+          <p className="text-lg text-muted-foreground mt-2">
+            Lista de todos los usuarios de la plataforma y gestión de suscripciones.
+          </p>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Todos los Usuarios</CardTitle>
-          <CardDescription>{loading ? 'Cargando...' : `${users.length} usuarios en total.`}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4">
-            <Input
-              placeholder="Buscar por nombre o email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Fin Suscripción</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading && (
-                    Array.from({length: 5}).map((_, i) => (
-                        <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                            <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><div className="flex gap-2"><Skeleton className="h-8 w-8" /><Skeleton className="h-8 w-8" /></div></TableCell>
-                        </TableRow>
-                    ))
-                )}
-                {!loading && filteredUsers.map((user, index) => (
-                  <TableRow key={user.uid}>
-                    <TableCell className="font-medium">{user.displayName || '-'}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      {user.subscription ? <Badge>{user.subscription}</Badge> : <Badge variant="outline">N/A</Badge>}
-                    </TableCell>
-                    <TableCell>{user.subscriptionEndDate ? format(user.subscriptionEndDate.toDate(), 'dd/MM/yyyy') : '-'}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Dialog onOpenChange={(open) => !open && setSelectedUser(null)}>
-                           <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" onClick={() => setSelectedUser(user)}>
-                                    <Edit className="h-4 w-4" />
-                                </Button>
-                           </DialogTrigger>
-                           {selectedUser && (
-                               <DialogContent>
-                                   <DialogHeader>
-                                       <DialogTitle>Gestionar Suscripción</DialogTitle>
-                                       <DialogDescription>
-                                           Activa un plan anual para {selectedUser.email}.
-                                       </DialogDescription>
-                                   </DialogHeader>
-                                   <div className="py-4 space-y-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="plan">Plan</Label>
-                                            <Select value={selectedPlan} onValueChange={(value) => setSelectedPlan(value as 'Básico' | 'Pro')}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecciona un plan..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Básico">Básico (19.95€/año)</SelectItem>
-                                                    <SelectItem value="Pro">Pro (39.95€/año)</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                   </div>
-                                   <DialogFooter>
-                                        <DialogClose asChild>
-                                            <Button variant="outline">Cancelar</Button>
-                                        </DialogClose>
-                                       <Button onClick={handleActivateSubscription}>Activar Suscripción por 1 Año</Button>
-                                   </DialogFooter>
-                               </DialogContent>
-                           )}
-                        </Dialog>
-                        
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción eliminará permanentemente al usuario {user.email}. No se puede deshacer.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteUser(user.uid)}>
-                                Sí, eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-
-                      </div>
-                    </TableCell>
+        <Card>
+          <CardHeader>
+            <CardTitle>Todos los Usuarios</CardTitle>
+            <CardDescription>{loading ? 'Cargando...' : `${users.length} usuarios en total.`}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4">
+              <Input
+                placeholder="Buscar por nombre o email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Fin Suscripción</TableHead>
+                    <TableHead>Acciones</TableHead>
                   </TableRow>
-                ))}
-                 {!loading && filteredUsers.length === 0 && (
-                    <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">No se encontraron usuarios.</TableCell>
+                </TableHeader>
+                <TableBody>
+                  {loading && (
+                      Array.from({length: 5}).map((_, i) => (
+                          <TableRow key={i}>
+                              <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                              <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                              <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                              <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                              <TableCell><div className="flex gap-2"><Skeleton className="h-8 w-8" /><Skeleton className="h-8 w-8" /></div></TableCell>
+                          </TableRow>
+                      ))
+                  )}
+                  {!loading && filteredUsers.map((user, index) => (
+                    <TableRow key={user.uid}>
+                      <TableCell className="font-medium">{user.displayName || '-'}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        {user.subscription ? <Badge>{user.subscription}</Badge> : <Badge variant="outline">N/A</Badge>}
+                      </TableCell>
+                      <TableCell>{user.subscriptionEndDate ? format(user.subscriptionEndDate.toDate(), 'dd/MM/yyyy') : '-'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Dialog onOpenChange={(open) => !open && setSelectedUser(null)}>
+                            <DialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" onClick={() => setSelectedUser(user)}>
+                                      <Edit className="h-4 w-4" />
+                                  </Button>
+                            </DialogTrigger>
+                            {selectedUser && (
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Gestionar Suscripción</DialogTitle>
+                                        <DialogDescription>
+                                            Activa un plan anual para {selectedUser.email}.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="py-4 space-y-4">
+                                          <div className="space-y-2">
+                                              <Label htmlFor="plan">Plan</Label>
+                                              <Select value={selectedPlan} onValueChange={(value) => setSelectedPlan(value as 'Básico' | 'Pro')}>
+                                                  <SelectTrigger>
+                                                      <SelectValue placeholder="Selecciona un plan..." />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                      <SelectItem value="Básico">Básico (19.95€/año)</SelectItem>
+                                                      <SelectItem value="Pro">Pro (39.95€/año)</SelectItem>
+                                                  </SelectContent>
+                                              </Select>
+                                          </div>
+                                    </div>
+                                    <DialogFooter>
+                                          <DialogClose asChild>
+                                              <Button variant="outline">Cancelar</Button>
+                                          </DialogClose>
+                                        <Button onClick={handleActivateSubscription}>Activar Suscripción por 1 Año</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            )}
+                          </Dialog>
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción eliminará permanentemente al usuario {user.email}. No se puede deshacer.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteUser(user.uid)}>
+                                  Sí, eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+
+                        </div>
+                      </TableCell>
                     </TableRow>
-                 )}
-              </TableBody>
-            </Table>
-          </div>
-           {error && <p className="text-destructive mt-4">Error al cargar usuarios: {error.message}</p>}
-        </CardContent>
-      </Card>
-    </div>
+                  ))}
+                  {!loading && filteredUsers.length === 0 && (
+                      <TableRow>
+                          <TableCell colSpan={5} className="h-24 text-center">No se encontraron usuarios.</TableCell>
+                      </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            {error && <p className="text-destructive mt-4">Error al cargar usuarios: {error.message}</p>}
+          </CardContent>
+        </Card>
+      </div>
+    </AuthGuard>
   );
 }

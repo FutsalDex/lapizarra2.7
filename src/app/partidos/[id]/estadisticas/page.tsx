@@ -26,6 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import AuthGuard from '@/components/auth/AuthGuard';
 
 const db = getFirestore(app);
 
@@ -471,195 +472,103 @@ export default function EstadisticasPartidoPage() {
     }
     
   return (
-    <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div>
-                <h1 className="text-2xl md:text-3xl font-bold font-headline">Marcador y Estadísticas en Vivo</h1>
-                <p className="text-sm md:text-base text-muted-foreground">Gestiona el partido en tiempo real y pulsa Guardar para registrar los cambios.</p>
-            </div>
-            <div className="flex gap-2 w-full md:w-auto">
-                 <Button variant="outline" asChild className="flex-grow md:flex-grow-0">
-                    <Link href="/partidos">
-                        <ArrowLeft className="mr-2" />
-                        Volver
-                    </Link>
-                </Button>
-                <Button onClick={() => saveStats()} disabled={isSaving || isFinished || isAutoSaving} className="flex-grow md:flex-grow-0">
-                    {isSaving ? <Loader2 className="mr-2 animate-spin"/> : (isAutoSaving ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2"/>)}
-                    {isAutoSaving ? 'Autoguardando...' : (isSaving ? 'Guardando...' : 'Guardar')}
-                </Button>
-                {isFinished ? (
-                     <Button variant="outline" onClick={reopenGame}><Unlock className="mr-2"/>Reabrir</Button>
-                ) : (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive"><Flag className="mr-2"/>Finalizar</Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>¿Finalizar partido?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta acción detendrá el cronómetro y guardará el estado final del partido. No podrás volver a editarlo hasta que lo reabras.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={finishGame}>Sí, finalizar</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                )}
-            </div>
-        </div>
-
-        <Card className="mb-8">
-            <CardContent className="p-4 md:p-6">
-                <div className="grid grid-cols-3 items-center text-center gap-2">
-                    <div className="flex flex-col items-center gap-3">
-                        <h2 className="text-base md:text-2xl font-bold truncate">{match?.localTeam}</h2>
-                        <div className="flex items-center gap-1 md:gap-2">
-                            {[...Array(5)].map((_, i) => (
-                                <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < (match?.localTeam === myTeamName ? totals.fouls || 0 : opponentStatsRef.current.fouls) ? 'bg-destructive' : '')}></div>
-                            ))}
-                        </div>
-                         <Button variant={localTimeoutTakenRef.current ? "default" : "outline"} className={cn("h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm", {"bg-primary hover:bg-primary/90 text-primary-foreground": localTimeoutTakenRef.current})} size="sm" onClick={() => handleTimeout('local')} disabled={isFinished || localTimeoutTakenRef.current}>TM</Button>
-                    </div>
-
-                    <div className="flex flex-col items-center gap-2 md:gap-4">
-                        <div className="text-4xl md:text-6xl font-bold text-primary">{localScoreRef.current} - {visitorScoreRef.current}</div>
-                        <div className="text-3xl sm:text-4xl md:text-6xl font-bold bg-gray-900 text-white p-2 md:p-4 rounded-lg w-full">
-                           {formatTime(time)}
-                        </div>
-                        <div className="flex flex-wrap justify-center gap-2">
-                            <Button size="sm" onClick={toggleTimer} disabled={isFinished}>
-                                {isActive ? <><Pause className="mr-2"/>Pausar</> : <><Play className="mr-2"/>Iniciar</>}
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={resetTimer} disabled={isFinished}><RefreshCw className="mr-2"/>Reiniciar</Button>
-                        </div>
-                         <div className="flex justify-center gap-2 mt-2">
-                            <Button variant={period === '1H' ? 'secondary' : 'ghost'} size="sm" onClick={() => handlePeriodChange('1H')}>1ª Parte</Button>
-                            <Button variant={period === '2H' ? 'secondary' : 'ghost'} size="sm" onClick={() => handlePeriodChange('2H')}>2ª Parte</Button>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col items-center gap-3">
-                        <h2 className="text-base md:text-2xl font-bold truncate">{match?.visitorTeam}</h2>
-                         <div className="flex items-center gap-1 md:gap-2">
-                            {[...Array(5)].map((_, i) => (
-                                <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < (match?.visitorTeam === myTeamName ? totals.fouls || 0 : opponentStatsRef.current.fouls) ? 'bg-destructive' : '')}></div>
-                            ))}
-                        </div>
-                        <Button variant={opponentTimeoutTakenRef.current ? "default" : "outline"} className={cn("h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm", {"bg-primary hover:bg-primary/90 text-primary-foreground": opponentTimeoutTakenRef.current})} size="sm" onClick={() => handleTimeout('opponent')} disabled={isFinished || opponentTimeoutTakenRef.current}>TM</Button>
-                    </div>
+    <AuthGuard>
+        <div className="container mx-auto px-4 py-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold font-headline">Marcador y Estadísticas en Vivo</h1>
+                    <p className="text-sm md:text-base text-muted-foreground">Gestiona el partido en tiempo real y pulsa Guardar para registrar los cambios.</p>
                 </div>
-            </CardContent>
-        </Card>
+                <div className="flex gap-2 w-full md:w-auto">
+                    <Button variant="outline" asChild className="flex-grow md:flex-grow-0">
+                        <Link href="/partidos">
+                            <ArrowLeft className="mr-2" />
+                            Volver
+                        </Link>
+                    </Button>
+                    <Button onClick={() => saveStats()} disabled={isSaving || isFinished || isAutoSaving} className="flex-grow md:flex-grow-0">
+                        {isSaving ? <Loader2 className="mr-2 animate-spin"/> : (isAutoSaving ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2"/>)}
+                        {isAutoSaving ? 'Autoguardando...' : (isSaving ? 'Guardando...' : 'Guardar')}
+                    </Button>
+                    {isFinished ? (
+                        <Button variant="outline" onClick={reopenGame}><Unlock className="mr-2"/>Reabrir</Button>
+                    ) : (
+                        <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive"><Flag className="mr-2"/>Finalizar</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>¿Finalizar partido?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción detendrá el cronómetro y guardará el estado final del partido. No podrás volver a editarlo hasta que lo reabras.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={finishGame}>Sí, finalizar</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                </div>
+            </div>
 
-        <Tabs defaultValue={match?.localTeam === myTeamName ? "local" : "visitor"}>
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="local">{match?.localTeam}</TabsTrigger>
-                <TabsTrigger value="visitor">{match?.visitorTeam}</TabsTrigger>
-            </TabsList>
-            <TabsContent value="local">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{match?.localTeam} - Estadísticas {period}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                    {match?.localTeam === myTeamName ? (
-                        <div className="overflow-x-auto">
-                            <Table className="text-xs">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
-                                        <TableHead className="px-1 py-2 text-center">Min</TableHead>
-                                        {statHeaders.map(header => <TableHead key={header.key} className="px-1 py-2 text-center">{header.label}</TableHead>)}
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {activePlayers.map((player) => (
-                                        <TableRow 
-                                            key={player.id} 
-                                            onClick={() => handlePlayerSelection(player.id)}
-                                            className={cn("cursor-pointer", {
-                                                'bg-teal-100/50 dark:bg-teal-900/30 hover:bg-teal-100/60 dark:hover:bg-teal-900/40': selectedPlayerIds.has(player.id)
-                                            })}
-                                        >
-                                            <TableCell className={cn(
-                                                "sticky left-0 px-1 py-2 min-w-[150px] z-10", 
-                                                selectedPlayerIds.has(player.id) 
-                                                    ? "bg-teal-100/50 dark:bg-teal-900/30 font-bold" 
-                                                    : "bg-card font-medium"
-                                            )}>{player.number}. {player.name}</TableCell>
-                                            <TableCell className="px-1 py-2 text-center">{formatTime(playerStatsRef.current[player.id]?.minutesPlayed || 0)}</TableCell>
-                                            {statHeaders.map(header => (
-                                                 <TableCell key={header.key} className="px-1 py-2" onClick={(e) => e.stopPropagation()}>
-                                                    <StatButton 
-                                                        value={playerStatsRef.current[player.id]?.[header.key as keyof PlayerStat] as number || 0} 
-                                                        onIncrement={() => handleStatChange(player.id, header.key as keyof PlayerStat, 1)} 
-                                                        onDecrement={() => handleStatChange(player.id, header.key as keyof PlayerStat, -1)} 
-                                                        disabled={isFinished} 
-                                                    />
-                                                </TableCell>
-                                            ))}
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                                <TableFooter>
-                                     <TableRow>
-                                        <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
-                                        <TableHead className="px-1 py-2 text-center">Min</TableHead>
-                                        {statHeaders.map(header => <TableHead key={header.key} className="px-1 py-2 text-center">{header.label}</TableHead>)}
-                                    </TableRow>
-                                    <TableRow className="font-bold bg-muted/50 hover:bg-muted/50">
-                                        <TableCell className="sticky left-0 bg-muted/50 px-1 py-2 min-w-[150px] text-center z-10">Total</TableCell>
-                                        <TableCell className="px-1 py-2 text-center">-</TableCell>
-                                        {statHeaders.map(header => (
-                                            <TableCell key={header.key} className="px-1 py-2 text-center">
-                                                {totals[header.key as keyof PlayerStat] || 0}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                </TableFooter>
-                            </Table>
-                        </div>
-                        ) : (
-                             <div className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <OpponentStatCounters title="Goles" value={opponentStatsRef.current.goals} onIncrement={() => handleOpponentStatChange('goals', 1)} onDecrement={() => handleOpponentStatChange('goals', -1)} icon={<Goal className="text-muted-foreground" />} disabled={isFinished}/>
-                                    <OpponentStatCounters title="Tiros a Puerta" value={opponentStatsRef.current.shotsOnTarget} onIncrement={() => handleOpponentStatChange('shotsOnTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOnTarget', -1)} icon={<Target className="text-muted-foreground" />} disabled={isFinished}/>
-                                    <OpponentStatCounters title="Tiros Fuera" value={opponentStatsRef.current.shotsOffTarget} onIncrement={() => handleOpponentStatChange('shotsOffTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOffTarget', -1)} icon={<XCircle className="text-muted-foreground" />} disabled={isFinished}/>
-                                    <OpponentStatCounters title="Faltas" value={opponentStatsRef.current.fouls} onIncrement={() => handleOpponentStatChange('fouls', 1)} onDecrement={() => handleOpponentStatChange('fouls', -1)} icon={<ShieldAlert className="text-muted-foreground" />} disabled={isFinished}/>
-                                    <OpponentStatCounters title="Recuperaciones" value={opponentStatsRef.current.recoveries} onIncrement={() => handleOpponentStatChange('recoveries', 1)} onDecrement={() => handleOpponentStatChange('recoveries', -1)} icon={<RefreshCw className="text-muted-foreground" />} disabled={isFinished}/>
-                                    <OpponentStatCounters title="Pérdidas" value={opponentStatsRef.current.turnovers} onIncrement={() => handleOpponentStatChange('turnovers', 1)} onDecrement={() => handleOpponentStatChange('turnovers', -1)} icon={<ArrowRightLeft className="text-muted-foreground" />} disabled={isFinished}/>
-                                </div>
-                                <div className="pt-4">
-                                    <Button onClick={handleOpponentOwnGoal} disabled={isFinished} className="w-full md:w-auto">
-                                        <Plus className="mr-2" />
-                                        Añadir Gol en Propia
-                                    </Button>
-                                </div>
+            <Card className="mb-8">
+                <CardContent className="p-4 md:p-6">
+                    <div className="grid grid-cols-3 items-center text-center gap-2">
+                        <div className="flex flex-col items-center gap-3">
+                            <h2 className="text-base md:text-2xl font-bold truncate">{match?.localTeam}</h2>
+                            <div className="flex items-center gap-1 md:gap-2">
+                                {[...Array(5)].map((_, i) => (
+                                    <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < (match?.localTeam === myTeamName ? totals.fouls || 0 : opponentStatsRef.current.fouls) ? 'bg-destructive' : '')}></div>
+                                ))}
                             </div>
-                        )}
-                    </CardContent>
-                     <CardFooter className="pt-4">
-                        <div className="text-xs text-muted-foreground grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-1">
-                            {legendItems.map(item => (
-                                <div key={item.abbr}>
-                                    <span className="font-semibold">{item.abbr}:</span> {item.full}
-                                </div>
-                            ))}
+                            <Button variant={localTimeoutTakenRef.current ? "default" : "outline"} className={cn("h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm", {"bg-primary hover:bg-primary/90 text-primary-foreground": localTimeoutTakenRef.current})} size="sm" onClick={() => handleTimeout('local')} disabled={isFinished || localTimeoutTakenRef.current}>TM</Button>
                         </div>
-                    </CardFooter>
-                </Card>
-            </TabsContent>
-            <TabsContent value="visitor">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{match?.visitorTeam} - Estadísticas {period}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                         {match?.visitorTeam === myTeamName ? (
+
+                        <div className="flex flex-col items-center gap-2 md:gap-4">
+                            <div className="text-4xl md:text-6xl font-bold text-primary">{localScoreRef.current} - {visitorScoreRef.current}</div>
+                            <div className="text-3xl sm:text-4xl md:text-6xl font-bold bg-gray-900 text-white p-2 md:p-4 rounded-lg w-full">
+                            {formatTime(time)}
+                            </div>
+                            <div className="flex flex-wrap justify-center gap-2">
+                                <Button size="sm" onClick={toggleTimer} disabled={isFinished}>
+                                    {isActive ? <><Pause className="mr-2"/>Pausar</> : <><Play className="mr-2"/>Iniciar</>}
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={resetTimer} disabled={isFinished}><RefreshCw className="mr-2"/>Reiniciar</Button>
+                            </div>
+                            <div className="flex justify-center gap-2 mt-2">
+                                <Button variant={period === '1H' ? 'secondary' : 'ghost'} size="sm" onClick={() => handlePeriodChange('1H')}>1ª Parte</Button>
+                                <Button variant={period === '2H' ? 'secondary' : 'ghost'} size="sm" onClick={() => handlePeriodChange('2H')}>2ª Parte</Button>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-3">
+                            <h2 className="text-base md:text-2xl font-bold truncate">{match?.visitorTeam}</h2>
+                            <div className="flex items-center gap-1 md:gap-2">
+                                {[...Array(5)].map((_, i) => (
+                                    <div key={i} className={cn("w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-destructive", i < (match?.visitorTeam === myTeamName ? totals.fouls || 0 : opponentStatsRef.current.fouls) ? 'bg-destructive' : '')}></div>
+                                ))}
+                            </div>
+                            <Button variant={opponentTimeoutTakenRef.current ? "default" : "outline"} className={cn("h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm", {"bg-primary hover:bg-primary/90 text-primary-foreground": opponentTimeoutTakenRef.current})} size="sm" onClick={() => handleTimeout('opponent')} disabled={isFinished || opponentTimeoutTakenRef.current}>TM</Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Tabs defaultValue={match?.localTeam === myTeamName ? "local" : "visitor"}>
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="local">{match?.localTeam}</TabsTrigger>
+                    <TabsTrigger value="visitor">{match?.visitorTeam}</TabsTrigger>
+                </TabsList>
+                <TabsContent value="local">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{match?.localTeam} - Estadísticas {period}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                        {match?.localTeam === myTeamName ? (
                             <div className="overflow-x-auto">
                                 <Table className="text-xs">
                                     <TableHeader>
@@ -716,38 +625,131 @@ export default function EstadisticasPartidoPage() {
                                     </TableFooter>
                                 </Table>
                             </div>
-                        ) : (
-                             <div className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <OpponentStatCounters title="Goles" value={opponentStatsRef.current.goals} onIncrement={() => handleOpponentStatChange('goals', 1)} onDecrement={() => handleOpponentStatChange('goals', -1)} icon={<Goal className="text-muted-foreground" />} disabled={isFinished}/>
-                                    <OpponentStatCounters title="Tiros a Puerta" value={opponentStatsRef.current.shotsOnTarget} onIncrement={() => handleOpponentStatChange('shotsOnTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOnTarget', -1)} icon={<Target className="text-muted-foreground" />} disabled={isFinished}/>
-                                    <OpponentStatCounters title="Tiros Fuera" value={opponentStatsRef.current.shotsOffTarget} onIncrement={() => handleOpponentStatChange('shotsOffTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOffTarget', -1)} icon={<XCircle className="text-muted-foreground" />} disabled={isFinished}/>
-                                    <OpponentStatCounters title="Faltas" value={opponentStatsRef.current.fouls} onIncrement={() => handleOpponentStatChange('fouls', 1)} onDecrement={() => handleOpponentStatChange('fouls', -1)} icon={<ShieldAlert className="text-muted-foreground" />} disabled={isFinished}/>
-                                    <OpponentStatCounters title="Recuperaciones" value={opponentStatsRef.current.recoveries} onIncrement={() => handleOpponentStatChange('recoveries', 1)} onDecrement={() => handleOpponentStatChange('recoveries', -1)} icon={<RefreshCw className="text-muted-foreground" />} disabled={isFinished}/>
-                                    <OpponentStatCounters title="Pérdidas" value={opponentStatsRef.current.turnovers} onIncrement={() => handleOpponentStatChange('turnovers', 1)} onDecrement={() => handleOpponentStatChange('turnovers', -1)} icon={<ArrowRightLeft className="text-muted-foreground" />} disabled={isFinished}/>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <OpponentStatCounters title="Goles" value={opponentStatsRef.current.goals} onIncrement={() => handleOpponentStatChange('goals', 1)} onDecrement={() => handleOpponentStatChange('goals', -1)} icon={<Goal className="text-muted-foreground" />} disabled={isFinished}/>
+                                        <OpponentStatCounters title="Tiros a Puerta" value={opponentStatsRef.current.shotsOnTarget} onIncrement={() => handleOpponentStatChange('shotsOnTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOnTarget', -1)} icon={<Target className="text-muted-foreground" />} disabled={isFinished}/>
+                                        <OpponentStatCounters title="Tiros Fuera" value={opponentStatsRef.current.shotsOffTarget} onIncrement={() => handleOpponentStatChange('shotsOffTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOffTarget', -1)} icon={<XCircle className="text-muted-foreground" />} disabled={isFinished}/>
+                                        <OpponentStatCounters title="Faltas" value={opponentStatsRef.current.fouls} onIncrement={() => handleOpponentStatChange('fouls', 1)} onDecrement={() => handleOpponentStatChange('fouls', -1)} icon={<ShieldAlert className="text-muted-foreground" />} disabled={isFinished}/>
+                                        <OpponentStatCounters title="Recuperaciones" value={opponentStatsRef.current.recoveries} onIncrement={() => handleOpponentStatChange('recoveries', 1)} onDecrement={() => handleOpponentStatChange('recoveries', -1)} icon={<RefreshCw className="text-muted-foreground" />} disabled={isFinished}/>
+                                        <OpponentStatCounters title="Pérdidas" value={opponentStatsRef.current.turnovers} onIncrement={() => handleOpponentStatChange('turnovers', 1)} onDecrement={() => handleOpponentStatChange('turnovers', -1)} icon={<ArrowRightLeft className="text-muted-foreground" />} disabled={isFinished}/>
+                                    </div>
+                                    <div className="pt-4">
+                                        <Button onClick={handleOpponentOwnGoal} disabled={isFinished} className="w-full md:w-auto">
+                                            <Plus className="mr-2" />
+                                            Añadir Gol en Propia
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div className="pt-4">
-                                    <Button onClick={handleOpponentOwnGoal} disabled={isFinished} className="w-full md:w-auto">
-                                        <Plus className="mr-2" />
-                                        Añadir Gol en Propia
-                                    </Button>
-                                </div>
+                            )}
+                        </CardContent>
+                        <CardFooter className="pt-4">
+                            <div className="text-xs text-muted-foreground grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-1">
+                                {legendItems.map(item => (
+                                    <div key={item.abbr}>
+                                        <span className="font-semibold">{item.abbr}:</span> {item.full}
+                                    </div>
+                                ))}
                             </div>
-                        )}
-                    </CardContent>
-                     <CardFooter className="pt-4">
-                        <div className="text-xs text-muted-foreground grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-1">
-                            {legendItems.map(item => (
-                                <div key={item.abbr}>
-                                    <span className="font-semibold">{item.abbr}:</span> {item.full}
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="visitor">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{match?.visitorTeam} - Estadísticas {period}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {match?.visitorTeam === myTeamName ? (
+                                <div className="overflow-x-auto">
+                                    <Table className="text-xs">
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
+                                                <TableHead className="px-1 py-2 text-center">Min</TableHead>
+                                                {statHeaders.map(header => <TableHead key={header.key} className="px-1 py-2 text-center">{header.label}</TableHead>)}
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {activePlayers.map((player) => (
+                                                <TableRow 
+                                                    key={player.id} 
+                                                    onClick={() => handlePlayerSelection(player.id)}
+                                                    className={cn("cursor-pointer", {
+                                                        'bg-teal-100/50 dark:bg-teal-900/30 hover:bg-teal-100/60 dark:hover:bg-teal-900/40': selectedPlayerIds.has(player.id)
+                                                    })}
+                                                >
+                                                    <TableCell className={cn(
+                                                        "sticky left-0 px-1 py-2 min-w-[150px] z-10", 
+                                                        selectedPlayerIds.has(player.id) 
+                                                            ? "bg-teal-100/50 dark:bg-teal-900/30 font-bold" 
+                                                            : "bg-card font-medium"
+                                                    )}>{player.number}. {player.name}</TableCell>
+                                                    <TableCell className="px-1 py-2 text-center">{formatTime(playerStatsRef.current[player.id]?.minutesPlayed || 0)}</TableCell>
+                                                    {statHeaders.map(header => (
+                                                        <TableCell key={header.key} className="px-1 py-2" onClick={(e) => e.stopPropagation()}>
+                                                            <StatButton 
+                                                                value={playerStatsRef.current[player.id]?.[header.key as keyof PlayerStat] as number || 0} 
+                                                                onIncrement={() => handleStatChange(player.id, header.key as keyof PlayerStat, 1)} 
+                                                                onDecrement={() => handleStatChange(player.id, header.key as keyof PlayerStat, -1)} 
+                                                                disabled={isFinished} 
+                                                            />
+                                                        </TableCell>
+                                                    ))}
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                        <TableFooter>
+                                            <TableRow>
+                                                <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
+                                                <TableHead className="px-1 py-2 text-center">Min</TableHead>
+                                                {statHeaders.map(header => <TableHead key={header.key} className="px-1 py-2 text-center">{header.label}</TableHead>)}
+                                            </TableRow>
+                                            <TableRow className="font-bold bg-muted/50 hover:bg-muted/50">
+                                                <TableCell className="sticky left-0 bg-muted/50 px-1 py-2 min-w-[150px] text-center z-10">Total</TableCell>
+                                                <TableCell className="px-1 py-2 text-center">-</TableCell>
+                                                {statHeaders.map(header => (
+                                                    <TableCell key={header.key} className="px-1 py-2 text-center">
+                                                        {totals[header.key as keyof PlayerStat] || 0}
+                                                    </TableCell>
+                                                ))}
+                                            </TableRow>
+                                        </TableFooter>
+                                    </Table>
                                 </div>
-                            ))}
-                        </div>
-                    </CardFooter>
-                </Card>
-            </TabsContent>
-        </Tabs>
-    </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <OpponentStatCounters title="Goles" value={opponentStatsRef.current.goals} onIncrement={() => handleOpponentStatChange('goals', 1)} onDecrement={() => handleOpponentStatChange('goals', -1)} icon={<Goal className="text-muted-foreground" />} disabled={isFinished}/>
+                                        <OpponentStatCounters title="Tiros a Puerta" value={opponentStatsRef.current.shotsOnTarget} onIncrement={() => handleOpponentStatChange('shotsOnTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOnTarget', -1)} icon={<Target className="text-muted-foreground" />} disabled={isFinished}/>
+                                        <OpponentStatCounters title="Tiros Fuera" value={opponentStatsRef.current.shotsOffTarget} onIncrement={() => handleOpponentStatChange('shotsOffTarget', 1)} onDecrement={() => handleOpponentStatChange('shotsOffTarget', -1)} icon={<XCircle className="text-muted-foreground" />} disabled={isFinished}/>
+                                        <OpponentStatCounters title="Faltas" value={opponentStatsRef.current.fouls} onIncrement={() => handleOpponentStatChange('fouls', 1)} onDecrement={() => handleOpponentStatChange('fouls', -1)} icon={<ShieldAlert className="text-muted-foreground" />} disabled={isFinished}/>
+                                        <OpponentStatCounters title="Recuperaciones" value={opponentStatsRef.current.recoveries} onIncrement={() => handleOpponentStatChange('recoveries', 1)} onDecrement={() => handleOpponentStatChange('recoveries', -1)} icon={<RefreshCw className="text-muted-foreground" />} disabled={isFinished}/>
+                                        <OpponentStatCounters title="Pérdidas" value={opponentStatsRef.current.turnovers} onIncrement={() => handleOpponentStatChange('turnovers', 1)} onDecrement={() => handleOpponentStatChange('turnovers', -1)} icon={<ArrowRightLeft className="text-muted-foreground" />} disabled={isFinished}/>
+                                    </div>
+                                    <div className="pt-4">
+                                        <Button onClick={handleOpponentOwnGoal} disabled={isFinished} className="w-full md:w-auto">
+                                            <Plus className="mr-2" />
+                                            Añadir Gol en Propia
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                        <CardFooter className="pt-4">
+                            <div className="text-xs text-muted-foreground grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-1">
+                                {legendItems.map(item => (
+                                    <div key={item.abbr}>
+                                        <span className="font-semibold">{item.abbr}:</span> {item.full}
+                                    </div>
+                                ))}
+                            </div>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
+    </AuthGuard>
   );
 }
-
