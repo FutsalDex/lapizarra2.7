@@ -13,9 +13,8 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   distDir: '.next',
 
-  // 3. Configuración de paquetes externos (Nueva sintaxis de Next.js 15)
-  // Eliminamos transpilePackages para evitar el conflicto
-  serverExternalPackages: [
+  // 3. Configuración de paquetes a transpilar (para Next.js 14)
+  transpilePackages: [
     'genkit', 
     '@genkit-ai/ai', 
     '@genkit-ai/core', 
