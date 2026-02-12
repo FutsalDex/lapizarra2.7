@@ -1,31 +1,20 @@
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import SoporteChat from './SoporteChat';
 
-// 1. Forzamos modo dinámico
+// Esta línea obliga a Next.js a no intentar hacer la página estática
 export const dynamic = 'force-dynamic';
-
-// 2. Importamos el cliente de forma dinámica desactivando el SSR
-// IMPORTANTE: El archivo debe llamarse SoporteChat.tsx en tu carpeta
-const ChatInterface = dynamic(() => import('./SoporteChat'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex justify-center items-center h-screen bg-background">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    </div>
-  )
-});
 
 export default function SoportePage() {
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <Suspense fallback={
         <div className="flex justify-center items-center h-screen">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       }>
-        <ChatInterface />
+        <SoporteChat />
       </Suspense>
-    </main>
+    </div>
   );
 }
