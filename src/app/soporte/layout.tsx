@@ -1,6 +1,7 @@
 
 'use client';
 
+import { Suspense, useEffect, useState } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, query, where, orderBy, getFirestore, Timestamp } from 'firebase/firestore';
@@ -9,7 +10,7 @@ import { app } from '@/firebase/config';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, Bot } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -24,7 +25,22 @@ type Conversation = {
   updatedAt: Timestamp;
 };
 
-function HistorySidebar() {
+const TimeAgo = ({ date }: { date: Date }) => {
+    const [timeAgo, setTimeAgo] = useState('');
+
+    useEffect(() => {
+        // This effect runs only on the client, preventing hydration mismatch
+        setTimeAgo(formatDistanceToNow(date, { addSuffix: true, locale: es }));
+    }, [date]);
+
+    if (!timeAgo) {
+        return null; // Render nothing on the server and initial client render
+    }
+
+    return <span className="text-xs text-muted-foreground">{timeAgo}</span>;
+}
+
+function HistorySidebarContent() {
     const [user, loadingAuth] = useAuthState(auth);
     const searchParams = useSearchParams();
     const chatId = searchParams.get('chatId');
@@ -42,6 +58,44 @@ function HistorySidebar() {
         ...doc.data(),
     } as Conversation)) || [];
 
+    if (loadingAuth || loadingConversations) {
+        return (
+            <div className="flex justify-center items-center h-full p-4">
+                <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+        );
+    }
+    
+    if (conversations.length === 0) {
+        return (
+            <div className="text-center text-sm text-muted-foreground p-4">
+                No hay conversaciones guardadas.
+            </div>
+        );
+    }
+
+    return (
+        <nav className="p-2 space-y-1">
+            {conversations.map((convo) => (
+                <Link
+                    key={convo.id}
+                    href={`/soporte?chatId=${convo.id}`}
+                    scroll={false}
+                    className={cn(
+                        "flex flex-col items-start p-2 rounded-lg text-left",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        chatId === convo.id && "bg-accent text-accent-foreground"
+                    )}
+                >
+                    <span className="text-sm font-medium truncate w-full">{convo.title}</span>
+                    {convo.updatedAt && <TimeAgo date={convo.updatedAt.toDate()} />}
+                </Link>
+            ))}
+        </nav>
+    );
+}
+
+function HistorySidebar() {
     return (
         <div className="flex flex-col h-full bg-muted/50">
             <div className="p-4 flex justify-between items-center border-b">
@@ -54,35 +108,13 @@ function HistorySidebar() {
                 </Button>
             </div>
             <div className="flex-grow overflow-y-auto">
-                {loadingAuth || loadingConversations ? (
-                    <div className="flex justify-center items-center h-full">
+                 <Suspense fallback={
+                    <div className="flex justify-center items-center h-full p-4">
                         <Loader2 className="h-6 w-6 animate-spin" />
                     </div>
-                ) : conversations.length === 0 ? (
-                    <div className="text-center text-sm text-muted-foreground p-4">
-                        No hay conversaciones guardadas.
-                    </div>
-                ) : (
-                    <nav className="p-2 space-y-1">
-                        {conversations.map((convo) => (
-                            <Link
-                                key={convo.id}
-                                href={`/soporte?chatId=${convo.id}`}
-                                scroll={false}
-                                className={cn(
-                                    "flex flex-col items-start p-2 rounded-lg text-left",
-                                    "hover:bg-accent hover:text-accent-foreground",
-                                    chatId === convo.id && "bg-accent text-accent-foreground"
-                                )}
-                            >
-                                <span className="text-sm font-medium truncate w-full">{convo.title}</span>
-                                {convo.updatedAt && <span className="text-xs text-muted-foreground">
-                                    {formatDistanceToNow(convo.updatedAt.toDate(), { addSuffix: true, locale: es })}
-                                </span>}
-                            </Link>
-                        ))}
-                    </nav>
-                )}
+                }>
+                    <HistorySidebarContent />
+                </Suspense>
             </div>
         </div>
     )
