@@ -113,7 +113,7 @@ service cloud.firestore {
     // ============================================================
      match /conversations/{conversationId} {
       allow list: if isSignedIn();
-      allow get, update, delete: if request.auth.uid == resource.data.userId;
+      allow get, update, delete: if request.auth.uid == resource.data.userId || isAdmin();
       allow create: if request.auth.uid == request.resource.data.userId;
     }
 
@@ -123,16 +123,16 @@ service cloud.firestore {
     // ============================================================
 
     match /matches/{matchId} {
-        allow get, list: if isTeamMember(resource.data.teamId) || resource.data.userId == request.auth.uid;
+        allow get, list: if isTeamMember(resource.data.teamId) || resource.data.userId == request.auth.uid || isAdmin();
         allow create: if isTeamMember(request.resource.data.teamId) || request.resource.data.userId == request.auth.uid;
-        allow update, delete: if isTeamMember(resource.data.teamId) || resource.data.userId == request.auth.uid;
+        allow update, delete: if isTeamMember(resource.data.teamId) || resource.data.userId == request.auth.uid || isAdmin();
     }
 
 
     match /sessions/{sessionId} {
        allow get, list: if isSignedIn();
        allow create: if request.resource.data.userId == request.auth.uid;
-       allow update, delete: if resource.data.userId == request.auth.uid;
+       allow update, delete: if resource.data.userId == request.auth.uid || isAdmin();
     }
 
     match /invitations/{invitationId} {
