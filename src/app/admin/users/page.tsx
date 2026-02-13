@@ -33,7 +33,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, doc, deleteDoc, updateDoc, Timestamp, getFirestore } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc, Timestamp, getFirestore, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import app from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -66,12 +66,67 @@ export default function GestionUsuariosPage() {
     (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleDeleteUser = async (uid: string) => {
+  const handleDeleteUser = async (userToDelete: User) => {
+    const { uid, email } = userToDelete;
+    
+    if (!uid || !email) {
+        toast({ variant: "destructive", title: "Error", description: "Falta información del usuario para eliminar." });
+        return;
+    }
+
+    toast({ title: "Eliminando usuario...", description: "Este proceso puede tardar un momento." });
+
     try {
-        await deleteDoc(doc(db, "users", uid));
-        toast({ variant: "destructive", title: "Usuario eliminado" });
+        const batch = writeBatch(db);
+
+        // 1. Delete user's exercises
+        const exercisesQuery = query(collection(db, 'exercises'), where('userId', '==', uid));
+        const exercisesSnapshot = await getDocs(exercisesQuery);
+        exercisesSnapshot.forEach(doc => batch.delete(doc.ref));
+
+        // 2. Delete user's sent invitations
+        const invitationsQuery = query(collection(db, 'invitations'), where('inviterEmail', '==', email));
+        const invitationsSnapshot = await getDocs(invitationsQuery);
+        invitationsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+        // 3. Delete user's sessions
+        const sessionsQuery = query(collection(db, 'sessions'), where('userId', '==', uid));
+        const sessionsSnapshot = await getDocs(sessionsQuery);
+        sessionsSnapshot.forEach(doc => batch.delete(doc.ref));
+        
+        // 4. Delete user's matches
+        const matchesQuery = query(collection(db, 'matches'), where('userId', '==', uid));
+        const matchesSnapshot = await getDocs(matchesQuery);
+        matchesSnapshot.forEach(doc => batch.delete(doc.ref));
+        
+        // 5. Delete user's conversations
+        const conversationsQuery = query(collection(db, 'conversations'), where('userId', '==', uid));
+        const conversationsSnapshot = await getDocs(conversationsQuery);
+        conversationsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+        // 6. Delete teams owned by the user
+        const ownedTeamsQuery = query(collection(db, 'teams'), where('ownerId', '==', uid));
+        const ownedTeamsSnapshot = await getDocs(ownedTeamsQuery);
+        ownedTeamsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+        // 7. Remove user from teams they are a member of (but don't own)
+        const memberTeamsQuery = query(collection(db, 'teams'), where('memberIds', 'array-contains', uid));
+        const memberTeamsSnapshot = await getDocs(memberTeamsQuery);
+        memberTeamsSnapshot.forEach(teamDoc => {
+            const teamData = teamDoc.data();
+            const updatedMemberIds = teamData.memberIds.filter((id: string) => id !== uid);
+            batch.update(teamDoc.ref, { memberIds: updatedMemberIds });
+        });
+
+        // 8. Finally, delete the user profile
+        batch.delete(doc(db, "users", uid));
+
+        await batch.commit();
+        
+        toast({ variant: "destructive", title: "Usuario eliminado completamente", description: "Se han borrado el perfil y todos sus datos asociados." });
+
     } catch (error: any) {
-        toast({ variant: "destructive", title: "Error al eliminar", description: error.message });
+        toast({ variant: "destructive", title: "Error al eliminar", description: `Ocurrió un error: ${error.message}` });
     }
   };
 
@@ -207,12 +262,12 @@ export default function GestionUsuariosPage() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Esta acción eliminará permanentemente al usuario {user.email}. No se puede deshacer.
+                                  Esta acción eliminará permanentemente al usuario {user.email} y todos sus datos asociados (equipos, ejercicios, etc.). No se puede deshacer.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteUser(user.uid)}>
+                                <AlertDialogAction onClick={() => handleDeleteUser(user)}>
                                   Sí, eliminar
                                 </AlertDialogAction>
                               </AlertDialogFooter>
