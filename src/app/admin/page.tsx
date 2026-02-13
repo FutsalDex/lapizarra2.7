@@ -1,7 +1,8 @@
 
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Shield, Gift, Upload, UserCog } from 'lucide-react';
+import { ArrowRight, Shield, Gift, Upload, UserCog, Star } from 'lucide-react';
 import Link from 'next/link';
 import AuthGuard from '@/components/auth/AuthGuard';
 
@@ -19,6 +20,13 @@ const adminItems = [
     description: 'Revisa y aprueba las invitaciones de usuarios para el programa de puntos.',
     buttonText: 'Ir a Gestión de Invitaciones',
     href: '/admin/invitations',
+  },
+  {
+    icon: <Star className="w-8 h-8 text-primary" />,
+    title: 'Gestión de Suscripciones',
+    description: 'Consulta puntos, referidos y actividad de los usuarios en el programa de fidelización.',
+    buttonText: 'Ir a Suscripciones',
+    href: '/admin/suscripciones',
   },
     {
     icon: <Shield className="w-8 h-8 text-primary" />,

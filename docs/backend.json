@@ -14,7 +14,9 @@
         "subscriptionStartDate": { "type": "string", "format": "date-time" },
         "subscriptionEndDate": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "favorites": { "type": "array", "items": { "type": "string" }, "description": "Array of favorite exercise IDs." }
+        "favorites": { "type": "array", "items": { "type": "string" }, "description": "Array of favorite exercise IDs." },
+        "points": { "type": "number", "description": "Total loyalty points accumulated." },
+        "referralsCount": { "type": "number", "description": "Number of successful referrals." }
       },
       "required": ["displayName", "email"]
     },
