@@ -71,8 +71,8 @@ export default function SuscripcionesPage() {
   
   const filteredData = useMemo(() => {
       return processedData.filter(user => 
-        user.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (user.displayName && user.displayName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
       ).sort((a,b) => b.points - a.points);
   }, [processedData, searchTerm]);
 
