@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -34,14 +33,14 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const navLinks = [
-  { href: "/ejercicios", label: "Ver ejercicios", icon: <BookOpen className="w-5 h-5"/>, auth: false },
-  { href: "/sesiones/crear", label: "Crear Sesión", icon: <PenSquare className="w-5 h-5"/>, auth: true },
-  { href: "/favoritos", label: "Favoritos", icon: <Star className="w-5 h-5"/>, auth: true },
-  { href: "/panel", label: "Mi Panel", icon: <LayoutDashboard className="w-5 h-5"/>, auth: true },
+  { href: "/ejercicios", label: "Ver ejercicios", icon: <BookOpen className="w-5 h-5"/> },
+  { href: "/sesiones/crear", label: "Crear Sesión", icon: <PenSquare className="w-5 h-5"/> },
+  { href: "/favoritos", label: "Favoritos", icon: <Star className="w-5 h-5"/> },
+  { href: "/panel", label: "Mi Panel", icon: <LayoutDashboard className="w-5 h-5"/> },
 ];
 
 const adminNavLinks = [
-    { href: "/admin", label: "Panel Admin", icon: <UserCog className="w-5 h-5"/>, auth: true },
+    { href: "/admin", label: "Panel Admin", icon: <UserCog className="w-5 h-5"/> },
 ]
 
 const HeaderSkeleton = () => (
@@ -97,7 +96,6 @@ export function Header() {
   const pendingInvitations = invitationsSnapshot?.docs.length || 0;
 
   
-  const visibleNavLinks = navLinks.filter(link => !link.auth || isLoggedIn);
   const visibleAdminNavLinks = isAdmin ? adminNavLinks : [];
 
   const handleLinkClick = () => {
@@ -125,28 +123,13 @@ export function Header() {
             </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            {navLinks.filter(l => !l.auth).map((link) => (
+            {navLinks.map((link) => (
                <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
                   "transition-colors hover:text-white flex items-center gap-2",
-                  pathname === link.href
-                    ? "text-white"
-                    : "text-primary-foreground/80"
-                )}
-              >
-                {link.icon}
-                {link.label}
-              </Link>
-            ))}
-            {isLoggedIn && navLinks.filter(l => l.auth).map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "transition-colors hover:text-white flex items-center gap-2",
-                  pathname === link.href
+                  (pathname.startsWith(link.href) && link.href !== '/') || pathname === link.href
                     ? "text-white"
                     : "text-primary-foreground/80"
                 )}
@@ -190,14 +173,14 @@ export function Header() {
             <SheetContent side="right">
               <SheetTitle className="sr-only">Menú</SheetTitle>
               <nav className="grid gap-6 text-lg font-medium mt-8">
-                {visibleNavLinks.map((link) => (
+                {navLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={handleLinkClick}
                     className={cn(
                       "flex items-center gap-2 text-lg font-semibold transition-colors hover:text-foreground/80",
-                      pathname === link.href
+                      (pathname.startsWith(link.href) && link.href !== '/') || pathname === link.href
                         ? "text-foreground"
                         : "text-muted-foreground"
                     )}

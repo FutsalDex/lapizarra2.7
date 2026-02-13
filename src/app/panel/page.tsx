@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Shield, Calendar, BookUser, BarChart3, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
-import AuthGuard from '@/components/auth/AuthGuard';
 
 const panelItems = [
   {
@@ -46,12 +45,11 @@ const panelItems = [
 
 export default function PanelPage() {
   return (
-    <AuthGuard>
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Panel de Mi Equipo</h1>
           <p className="text-lg text-muted-foreground mt-4 max-w-2xl mx-auto">
-            Bienvenido, Francisco. Aquí tienes el centro de mando para tu equipo.
+            Bienvenido. Aquí tienes el centro de mando para tu equipo.
           </p>
         </div>
 
@@ -79,6 +77,5 @@ export default function PanelPage() {
           ))}
         </div>
       </div>
-    </AuthGuard>
   );
 }

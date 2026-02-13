@@ -14,11 +14,14 @@ import { useCollection } from 'react-firebase-hooks/firestore';
 import { collection, getFirestore } from 'firebase/firestore';
 import app from '@/firebase/config';
 import { Skeleton } from '@/components/ui/skeleton';
-import AuthGuard from '@/components/auth/AuthGuard';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { getAuth } from 'firebase/auth';
 
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 export default function FavoritosPage() {
+  const [user] = useAuthState(auth);
   const [favoriteIds, setFavoriteIds] = useState(new Set(favoriteExerciseIdsStore));
   const { toast } = useToast();
   
@@ -37,6 +40,14 @@ export default function FavoritosPage() {
   }, []);
 
   const handleFavoriteToggle = (exerciseId: string) => {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Función solo para usuarios",
+            description: "Inicia sesión o regístrate para guardar tus ejercicios favoritos.",
+        });
+        return;
+    }
     const newFavoriteIds = new Set(favoriteIds);
     if (newFavoriteIds.has(exerciseId)) {
       newFavoriteIds.delete(exerciseId);
@@ -58,7 +69,6 @@ export default function FavoritosPage() {
   const favoriteExercises = exercises.filter(ex => favoriteIds.has(ex.id));
 
   return (
-    <AuthGuard>
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold font-headline">Mis Ejercicios Favoritos</h1>
@@ -127,6 +137,5 @@ export default function FavoritosPage() {
           </div>
         )}
       </div>
-    </AuthGuard>
   );
 }
