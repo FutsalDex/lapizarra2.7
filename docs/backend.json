@@ -204,7 +204,7 @@
     }
   },
   "auth": {
-    "providers": ["google.com", "password"]
+    "providers": ["password"]
   },
   "firestore": {
     "/users/{userId}": {
