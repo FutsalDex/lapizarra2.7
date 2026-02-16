@@ -58,6 +58,7 @@ function RegisterContent() {
         email: user.email,
         photoURL: user.photoURL || null,
         createdAt: new Date().toISOString(),
+        subscription: null,
       });
 
       router.push(redirectUrl || "/panel");
