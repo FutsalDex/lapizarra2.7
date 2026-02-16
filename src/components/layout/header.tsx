@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -26,7 +27,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { signOut, getAuth } from "firebase/auth";
 import { FirebaseLogo } from "./logo";
 import { useCollection, useDocumentData } from "react-firebase-hooks/firestore";
-import { collection, query, where, getFirestore, doc } from "firebase/firestore";
+import { collection, query, where, getFirestore, doc, orderBy } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { differenceInDays } from "date-fns";
 
@@ -98,51 +99,81 @@ export function Header() {
   );
   const pendingInvitations = invitationsSnapshot?.docs.length || 0;
 
+  // Admin-sent notifications
+  const notificationsQuery = query(collection(db, 'notifications'), where('active', '==', true), orderBy('createdAt', 'desc'));
+  const [notificationsSnapshot, loadingNotifications] = useCollection(notificationsQuery);
+
+  const [allInfoNotifications, setAllInfoNotifications] = useState<{ id: string; title: string; message: string; }[]>([]);
+  const [unreadInfoCount, setUnreadInfoCount] = useState(0);
   const [remainingTrialDays, setRemainingTrialDays] = useState(0);
-  const [notifications, setNotifications] = useState<{ id: string; message: string; }[]>([]);
-  const [showInfoBadge, setShowInfoBadge] = useState(true);
-  
+
+  // This effect calculates all notifications from different sources
   useEffect(() => {
-    if (!user || !userProfile || loadingProfile) {
-        setRemainingTrialDays(0);
-        setNotifications([]);
+    if (loadingAuth || loadingProfile || loadingNotifications || !user || !userProfile) {
         return;
     }
 
-    // Trial days logic
+    // == Bell Icon Logic (Trial Days) ==
+    let trialDays = 0;
     if (!userProfile.subscription && userProfile.createdAt) {
         try {
             const creationDate = new Date(userProfile.createdAt);
             const trialEndDate = new Date(creationDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-            const daysLeft = differenceInDays(trialEndDate, new Date());
-            setRemainingTrialDays(daysLeft > 0 ? daysLeft : 0);
+            trialDays = differenceInDays(trialEndDate, new Date());
+            setRemainingTrialDays(trialDays > 0 ? trialDays : 0);
         } catch (e) {
-            console.error("Error parsing creation date for trial:", e);
             setRemainingTrialDays(0);
         }
     } else {
         setRemainingTrialDays(0);
     }
-
-    // Notifications logic
-    const newNotifications = [];
+    
+    // == Info Icon Logic (Admin msgs + Expiry) ==
+    const infoNotifications: { id: string; title: string; message: string; }[] = [];
+    
+    // Subscription expiry logic
     if (userProfile.subscription && userProfile.subscriptionEndDate) {
         const expiryDate = userProfile.subscriptionEndDate.toDate();
         const daysToExpiry = differenceInDays(expiryDate, new Date());
 
         if (daysToExpiry <= 15 && daysToExpiry > 0) {
-            newNotifications.push({
+            infoNotifications.push({
                 id: 'expiry-warning',
+                title: 'Tu suscripción vence pronto',
                 message: `Tu suscripción vence en ${daysToExpiry} día(s).`
             });
         }
     }
+
+    // Admin-sent notifications
+    const userPlan = userProfile.subscription || 'basic'; // Default to basic if null
+    const isTrial = !userProfile.subscription && trialDays > 0;
+
+    const adminNotifications = notificationsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(notif => {
+        if (notif.target === 'all') return true;
+        if (isTrial && notif.target === 'trial') return true;
+        return notif.target === userPlan;
+    }).map(n => ({ id: n.id, title: n.title as string, message: n.message as string })) || [];
     
-    setNotifications(newNotifications);
-    setShowInfoBadge(newNotifications.length > 0);
+    // Combine for Info Icon
+    const combined = [...infoNotifications, ...adminNotifications];
+    setAllInfoNotifications(combined);
+    
+    // Calculate unread for Info Icon
+    const seenNotifications = JSON.parse(localStorage.getItem('seenNotifications') || '[]');
+    const newUnreadCount = combined.filter(n => !seenNotifications.includes(n.id)).length;
+    setUnreadInfoCount(newUnreadCount);
 
-  }, [user, userProfile, loadingProfile]);
-
+  }, [user, userProfile, notificationsSnapshot, loadingAuth, loadingProfile, loadingNotifications]);
+  
+  const handleOpenInfoNotifications = (open: boolean) => {
+      if (open && allInfoNotifications.length > 0) {
+          const notificationIds = allInfoNotifications.map(n => n.id);
+          localStorage.setItem('seenNotifications', JSON.stringify(notificationIds));
+          setUnreadInfoCount(0); // Optimistically update UI
+      }
+  };
   
   const visibleAdminNavLinks = isAdmin ? adminNavLinks : [];
 
@@ -339,13 +370,13 @@ export function Header() {
                     </DropdownMenu>
                 )}
 
-                <DropdownMenu onOpenChange={(open) => { if(open) setShowInfoBadge(false) }}>
+                <DropdownMenu onOpenChange={handleOpenInfoNotifications}>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
                             <Info className="h-5 w-5" />
-                            {showInfoBadge && notifications.length > 0 && (
+                            {unreadInfoCount > 0 && (
                               <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
-                                  {notifications.length}
+                                  {unreadInfoCount}
                               </span>
                             )}
                             <span className="sr-only">Notificaciones</span>
@@ -354,9 +385,10 @@ export function Header() {
                     <DropdownMenuContent className="w-80" align="end" forceMount>
                         <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {notifications.length > 0 ? notifications.map(notif => (
-                            <DropdownMenuItem key={notif.id} className="whitespace-normal !cursor-default">
-                                {notif.message}
+                        {allInfoNotifications.length > 0 ? allInfoNotifications.map(notif => (
+                            <DropdownMenuItem key={notif.id} className="whitespace-normal !cursor-default flex-col items-start">
+                               <p className="font-semibold">{notif.title}</p>
+                               <p className="text-muted-foreground">{notif.message}</p>
                             </DropdownMenuItem>
                         )) : (
                             <DropdownMenuItem className="!cursor-default">No hay notificaciones nuevas.</DropdownMenuItem>

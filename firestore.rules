@@ -113,7 +113,7 @@ service cloud.firestore {
     // ============================================================
      match /conversations/{conversationId} {
       allow list: if isSignedIn();
-      allow get, update, delete: if request.auth.uid == resource.data.userId || isAdmin();
+      allow get, update, delete: if resource.data.userId == request.auth.uid || isAdmin();
       allow create: if request.auth.uid == request.resource.data.userId;
     }
 
@@ -137,6 +137,14 @@ service cloud.firestore {
 
     match /invitations/{invitationId} {
       allow get, list, create, update, delete: if isSignedIn();
+    }
+    
+    // ============================================================
+    // 📢 NOTIFICATIONS
+    // ============================================================
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     // ============================================================

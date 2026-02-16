@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Shield, Gift, Upload, UserCog, Star } from 'lucide-react';
+import { ArrowRight, Shield, Gift, Upload, UserCog, Star, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 import AuthGuard from '@/components/auth/AuthGuard';
 
@@ -27,6 +27,13 @@ const adminItems = [
     description: 'Consulta puntos, referidos y actividad de los usuarios en el programa de fidelización.',
     buttonText: 'Ir a Suscripciones',
     href: '/admin/suscripciones',
+  },
+  {
+    icon: <Megaphone className="w-8 h-8 text-primary" />,
+    title: 'Gestión de Notificaciones',
+    description: 'Envía y gestiona notificaciones para todos los usuarios de la plataforma.',
+    buttonText: 'Ir a Notificaciones',
+    href: '/admin/notifications',
   },
     {
     icon: <Shield className="w-8 h-8 text-primary" />,

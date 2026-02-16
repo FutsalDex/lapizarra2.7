@@ -203,6 +203,19 @@
         }
       },
       "required": ["userId", "title", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Represents a notification sent to users.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "target": { "type": "string", "enum": ["all", "pro", "basic", "trial"] },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "message", "target", "active", "createdAt"]
     }
   },
   "auth": {
@@ -252,6 +265,10 @@
     "/conversations/{conversationId}": {
       "schema": { "$ref": "#/entities/Conversation" },
       "description": "Stores conversation histories with the AI assistant."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Stores global notifications for users."
     }
   }
 }
