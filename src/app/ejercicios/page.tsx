@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -243,12 +244,6 @@ export default function EjerciciosPage() {
               <CardContent className="p-6 flex-grow flex flex-col">
                 <div className="flex justify-between items-start mb-2 gap-2">
                   <CardTitle className="font-headline text-lg truncate" title={exercise['Ejercicio']}>{exercise['Ejercicio']}</CardTitle>
-                  {exercise.youtubeUrl && (
-                      <Badge variant="outline" className="flex items-center gap-1 shrink-0">
-                          <Video className="h-4 w-4" />
-                          <span>Vídeo</span>
-                      </Badge>
-                  )}
                 </div>
                 
                 <div className="space-y-1 text-sm text-muted-foreground mb-4">
@@ -259,12 +254,20 @@ export default function EjerciciosPage() {
                 </div>
 
                 <div className="mt-auto pt-4 flex justify-between items-center">
-                    <Button variant="outline" size="sm" asChild>
-                        <Link href={`/ejercicios/${exercise.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Ver Ficha
-                        </Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href={`/ejercicios/${exercise.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Ver Ficha
+                            </Link>
+                        </Button>
+                        {exercise.youtubeUrl && (
+                            <Badge variant="outline" className="flex items-center gap-1 shrink-0">
+                                <Video className="h-4 w-4" />
+                                <span>Vídeo</span>
+                            </Badge>
+                        )}
+                    </div>
                    <Button variant="ghost" size="icon" onClick={() => handleFavoriteToggle(exercise.id)} disabled={!user}>
                         <Heart className={cn("w-6 h-6 text-destructive/50 transition-colors", {
                             "fill-destructive text-destructive": user && favoriteIds.has(exercise.id),
@@ -302,5 +305,3 @@ export default function EjerciciosPage() {
     </div>
   );
 }
-
-    
