@@ -100,6 +100,7 @@ export function Header() {
 
   const [remainingTrialDays, setRemainingTrialDays] = useState(0);
   const [notifications, setNotifications] = useState<{ id: string; message: string; }[]>([]);
+  const [showInfoBadge, setShowInfoBadge] = useState(true);
   
   useEffect(() => {
     if (!user || !userProfile || loadingProfile) {
@@ -144,6 +145,7 @@ export function Header() {
     });
 
     setNotifications(newNotifications);
+    setShowInfoBadge(true);
 
   }, [user, userProfile, loadingProfile]);
 
@@ -344,13 +346,15 @@ export function Header() {
                 )}
 
                 {notifications.length > 0 && (
-                    <DropdownMenu>
+                    <DropdownMenu onOpenChange={(open) => { if(open) setShowInfoBadge(false) }}>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
                                 <Info className="h-5 w-5" />
-                                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
-                                    {notifications.length}
-                                </span>
+                                {showInfoBadge && (
+                                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
+                                      {notifications.length}
+                                  </span>
+                                )}
                                 <span className="sr-only">Notificaciones</span>
                             </Button>
                         </DropdownMenuTrigger>
