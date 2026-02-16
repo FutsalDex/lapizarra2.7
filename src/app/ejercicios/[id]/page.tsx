@@ -184,7 +184,7 @@ export default function EjercicioDetallePage() {
             </div>
 
             {embedUrl && (
-                <Card>
+                <Card id="video" className="scroll-mt-24">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-xl font-headline">
                             <Youtube className="w-5 h-5 text-primary" />

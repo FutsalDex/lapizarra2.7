@@ -260,7 +260,7 @@ export default function EjerciciosPage() {
                         </Button>
                         {exercise.youtubeUrl && (
                             <Button variant="secondary" size="sm" asChild>
-                                <Link href={`/ejercicios/${exercise.id}`}>
+                                <Link href={`/ejercicios/${exercise.id}#video`}>
                                     <Youtube className="mr-2 h-4 w-4" />
                                     Ver Vídeo
                                 </Link>
