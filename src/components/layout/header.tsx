@@ -11,7 +11,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "../ui/button";
-import { Menu, BookOpen, PenSquare, Star, LayoutDashboard, UserCog, Gift, Users, User, LogOut, LogIn, ClipboardList } from "lucide-react";
+import { Menu, BookOpen, PenSquare, Star, LayoutDashboard, UserCog, Gift, Users, User, LogOut, LogIn, ClipboardList, Bell, Info } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,9 +25,10 @@ import app from "@/firebase/config";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { signOut, getAuth } from "firebase/auth";
 import { FirebaseLogo } from "./logo";
-import { useCollection } from "react-firebase-hooks/firestore";
-import { collection, query, where, getFirestore } from "firebase/firestore";
+import { useCollection, useDocumentData } from "react-firebase-hooks/firestore";
+import { collection, query, where, getFirestore, doc } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
+import { differenceInDays } from "date-fns";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -81,6 +82,8 @@ export function Header() {
     setIsClient(true);
   }, []);
 
+  const [userProfile, loadingProfile] = useDocumentData(user ? doc(db, 'users', user.uid) : null);
+
   const isLoggedIn = !!user;
   const isAdmin = isLoggedIn && user.email === 'futsaldex@gmail.com'; 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -94,6 +97,55 @@ export function Header() {
     isClient && isAdmin ? query(collection(db, 'invitations'), where('status', '==', 'completed'), where('isApproved', '!=', true)) : null
   );
   const pendingInvitations = invitationsSnapshot?.docs.length || 0;
+
+  const [remainingTrialDays, setRemainingTrialDays] = useState(0);
+  const [notifications, setNotifications] = useState<{ id: string; message: string; }[]>([]);
+  
+  useEffect(() => {
+    if (!user || !userProfile || loadingProfile) {
+        setRemainingTrialDays(0);
+        setNotifications([]);
+        return;
+    }
+
+    // Trial days logic
+    if (!userProfile.subscription && userProfile.createdAt) {
+        try {
+            const creationDate = new Date(userProfile.createdAt);
+            const trialEndDate = new Date(creationDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const daysLeft = differenceInDays(trialEndDate, new Date());
+            setRemainingTrialDays(daysLeft > 0 ? daysLeft : 0);
+        } catch (e) {
+            console.error("Error parsing creation date for trial:", e);
+            setRemainingTrialDays(0);
+        }
+    } else {
+        setRemainingTrialDays(0);
+    }
+
+    // Notifications logic
+    const newNotifications = [];
+    if (userProfile.subscription && userProfile.subscriptionEndDate) {
+        const expiryDate = userProfile.subscriptionEndDate.toDate();
+        const daysToExpiry = differenceInDays(expiryDate, new Date());
+
+        if (daysToExpiry <= 15 && daysToExpiry > 0) {
+            newNotifications.push({
+                id: 'expiry-warning',
+                message: `Tu suscripción vence en ${daysToExpiry} día(s).`
+            });
+        }
+    }
+    
+    // Add a static notification for new exercises
+    newNotifications.push({
+        id: 'new-exercises',
+        message: '¡Hemos añadido 5 nuevos ejercicios de finalización a la biblioteca!'
+    });
+
+    setNotifications(newNotifications);
+
+  }, [user, userProfile, loadingProfile]);
 
   
   const visibleAdminNavLinks = isAdmin ? adminNavLinks : [];
@@ -261,6 +313,59 @@ export function Header() {
                         </Button>
                     </>
                 )}
+                
+                {remainingTrialDays > 0 && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
+                                <Bell className="h-5 w-5" />
+                                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                                    {remainingTrialDays}
+                                </span>
+                                <span className="sr-only">Días de prueba restantes</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-64" align="end" forceMount>
+                            <DropdownMenuLabel>Prueba Gratuita</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="flex-col items-start !cursor-default whitespace-normal">
+                                <p className="text-sm">Te quedan {remainingTrialDays} día(s) de tu prueba PRO.</p>
+                                <p className="text-xs text-muted-foreground mt-1">Suscríbete para no perder el acceso.</p>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                                <Link href="/planes">
+                                    <Star className="mr-2 h-4 w-4" />
+                                    <span>Ver Planes</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+
+                {notifications.length > 0 && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
+                                <Info className="h-5 w-5" />
+                                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
+                                    {notifications.length}
+                                </span>
+                                <span className="sr-only">Notificaciones</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-80" align="end" forceMount>
+                            <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {notifications.map(notif => (
+                                <DropdownMenuItem key={notif.id} className="whitespace-normal !cursor-default">
+                                    {notif.message}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
