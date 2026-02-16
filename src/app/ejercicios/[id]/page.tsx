@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Users, Clock, ClipboardList, Target, Info, Lightbulb, GitBranch, Layers, Package, Tag, Workflow } from 'lucide-react';
+import { ArrowLeft, Users, Clock, ClipboardList, Target, Info, Lightbulb, GitBranch, Layers, Package, Tag, Workflow, Youtube } from 'lucide-react';
 import Link from 'next/link';
 import { useDocument } from 'react-firebase-hooks/firestore';
 import { doc, getFirestore } from 'firebase/firestore';
@@ -15,6 +15,25 @@ import { Exercise } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const db = getFirestore(app);
+
+const getYouTubeEmbedUrl = (url: string | undefined): string | null => {
+    if (!url) return null;
+    try {
+        const urlObj = new URL(url);
+        let videoId;
+        if (urlObj.hostname === 'youtu.be') {
+            videoId = urlObj.pathname.slice(1);
+        } else if (urlObj.hostname.includes('youtube.com')) {
+            videoId = urlObj.searchParams.get('v');
+        }
+        if (videoId) {
+            return `https://www.youtube.com/embed/${videoId}`;
+        }
+    } catch (e) {
+        console.error("Invalid YouTube URL", e);
+    }
+    return null;
+};
 
 export default function EjercicioDetallePage() {
   const params = useParams();
@@ -93,6 +112,7 @@ export default function EjercicioDetallePage() {
   }
 
   const exercise = { id: snapshot.id, ...snapshot.data() } as Exercise;
+  const embedUrl = getYouTubeEmbedUrl(exercise.youtubeUrl);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -162,6 +182,31 @@ export default function EjercicioDetallePage() {
                     </Badge>
                 </div>
             </div>
+
+            {embedUrl && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl font-headline">
+                            <Youtube className="w-5 h-5 text-primary" />
+                            Vídeo del Ejercicio
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="aspect-video">
+                            <iframe
+                                width="100%"
+                                height="100%"
+                                src={embedUrl}
+                                title="YouTube video player"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                                className="rounded-lg"
+                            ></iframe>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
             
             <Card>
                 <CardHeader>

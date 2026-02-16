@@ -38,6 +38,7 @@
         "Variantes": { "type": "string" },
         "Consejos para el entrenador": { "type": "string" },
         "Imagen": { "type": "string", "format": "uri" },
+        "youtubeUrl": { "type": "string", "format": "uri", "description": "URL of the YouTube video for the exercise." },
         "Visible": { "type": "boolean" },
         "userId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }

@@ -13,7 +13,7 @@ import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Search, Eye, Heart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Eye, Heart, Youtube } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -253,8 +253,8 @@ export default function EjerciciosPage() {
                 <div className="mt-auto pt-4 flex justify-between items-center">
                    <Button variant="outline" size="sm" asChild>
                       <Link href={`/ejercicios/${exercise.id}`}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          Ver Ficha
+                          {exercise.youtubeUrl ? <Youtube className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                          {exercise.youtubeUrl ? 'Ver Vídeo' : 'Ver Ficha'}
                       </Link>
                    </Button>
                    <Button variant="ghost" size="icon" onClick={() => handleFavoriteToggle(exercise.id)} disabled={!user}>

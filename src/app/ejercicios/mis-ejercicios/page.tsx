@@ -41,6 +41,7 @@ const exerciseSchema = z.object({
     Variantes: z.string().optional(),
     'Consejos para el entrenador': z.string().optional(),
     Imagen: z.string().url("Debe ser una URL válida.").or(z.literal("")),
+    youtubeUrl: z.string().url("Debe ser una URL de YouTube válida.").or(z.literal("")).optional(),
     Visible: z.boolean(),
 });
 
@@ -60,6 +61,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
             Visible: true,
             Edad: [],
             Imagen: '',
+            youtubeUrl: '',
         }
     });
 
@@ -259,6 +261,11 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                         <Label htmlFor="Imagen">URL de la Imagen</Label>
                         <Input id="Imagen" placeholder="https://ejemplo.com/imagen.jpg" {...register('Imagen')} />
                          {errors.Imagen && <p className="text-sm text-destructive">{errors.Imagen.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="youtubeUrl">URL del Vídeo (Opcional)</Label>
+                        <Input id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." {...register('youtubeUrl')} />
+                        {errors.youtubeUrl && <p className="text-sm text-destructive">{errors.youtubeUrl.message}</p>}
                     </div>
                      <Controller
                         name="Visible"

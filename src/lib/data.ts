@@ -17,6 +17,7 @@ export type Exercise = {
   'Consejos para el entrenador': string;
   'Variantes': string;
   'Imagen': string; // imageUrl
+  'youtubeUrl'?: string;
   'Visible': boolean;
   'Espacio y materiales necesarios': string;
   userId: string;
