@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -13,11 +12,12 @@ import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Search, Eye, Heart, Youtube } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Eye, Heart, Video } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 const ITEMS_PER_PAGE = 12;
 const db = getFirestore(app);
@@ -241,7 +241,15 @@ export default function EjerciciosPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-6 flex-grow flex flex-col">
-                <CardTitle className="font-headline text-lg truncate mb-2" title={exercise['Ejercicio']}>{exercise['Ejercicio']}</CardTitle>
+                <div className="flex justify-between items-start mb-2 gap-2">
+                  <CardTitle className="font-headline text-lg truncate" title={exercise['Ejercicio']}>{exercise['Ejercicio']}</CardTitle>
+                  {exercise.youtubeUrl && (
+                      <Badge variant="outline" className="flex items-center gap-1 shrink-0">
+                          <Video className="h-4 w-4" />
+                          <span>Vídeo</span>
+                      </Badge>
+                  )}
+                </div>
                 
                 <div className="space-y-1 text-sm text-muted-foreground mb-4">
                   <p><span className="font-semibold text-foreground">Fase:</span> {exercise['Fase']}</p>
@@ -294,3 +302,5 @@ export default function EjerciciosPage() {
     </div>
   );
 }
+
+    
