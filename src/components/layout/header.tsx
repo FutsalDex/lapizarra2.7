@@ -138,14 +138,8 @@ export function Header() {
         }
     }
     
-    // Add a static notification for new exercises
-    newNotifications.push({
-        id: 'new-exercises',
-        message: '¡Hemos añadido 5 nuevos ejercicios de finalización a la biblioteca!'
-    });
-
     setNotifications(newNotifications);
-    setShowInfoBadge(true);
+    setShowInfoBadge(newNotifications.length > 0);
 
   }, [user, userProfile, loadingProfile]);
 
@@ -345,30 +339,30 @@ export function Header() {
                     </DropdownMenu>
                 )}
 
-                {notifications.length > 0 && (
-                    <DropdownMenu onOpenChange={(open) => { if(open) setShowInfoBadge(false) }}>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
-                                <Info className="h-5 w-5" />
-                                {showInfoBadge && (
-                                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
-                                      {notifications.length}
-                                  </span>
-                                )}
-                                <span className="sr-only">Notificaciones</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-80" align="end" forceMount>
-                            <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            {notifications.map(notif => (
-                                <DropdownMenuItem key={notif.id} className="whitespace-normal !cursor-default">
-                                    {notif.message}
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )}
+                <DropdownMenu onOpenChange={(open) => { if(open) setShowInfoBadge(false) }}>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
+                            <Info className="h-5 w-5" />
+                            {showInfoBadge && notifications.length > 0 && (
+                              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
+                                  {notifications.length}
+                              </span>
+                            )}
+                            <span className="sr-only">Notificaciones</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-80" align="end" forceMount>
+                        <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {notifications.length > 0 ? notifications.map(notif => (
+                            <DropdownMenuItem key={notif.id} className="whitespace-normal !cursor-default">
+                                {notif.message}
+                            </DropdownMenuItem>
+                        )) : (
+                            <DropdownMenuItem className="!cursor-default">No hay notificaciones nuevas.</DropdownMenuItem>
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
