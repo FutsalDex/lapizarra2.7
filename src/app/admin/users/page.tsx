@@ -52,6 +52,7 @@ const db = getFirestore(app);
 
 export default function GestionUsuariosPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [planFilter, setPlanFilter] = useState('Todos');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<'Básico' | 'Pro'>('Pro');
 
@@ -61,10 +62,18 @@ export default function GestionUsuariosPage() {
 
   const users: User[] = usersSnapshot?.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User)) || [];
 
-  const filteredUsers = users.filter(user =>
-    (user.displayName && user.displayName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = (user.displayName && user.displayName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesPlan = () => {
+        if (planFilter === 'Todos') return true;
+        if (planFilter === 'Sin Plan') return !user.subscription;
+        return user.subscription === planFilter;
+    };
+
+    return matchesSearch && matchesPlan();
+  });
 
   const handleDeleteUser = async (userToDelete: User) => {
     const { uid, email } = userToDelete;
@@ -170,16 +179,27 @@ export default function GestionUsuariosPage() {
         <Card>
           <CardHeader>
             <CardTitle>Todos los Usuarios</CardTitle>
-            <CardDescription>{loading ? 'Cargando...' : `${users.length} usuarios en total.`}</CardDescription>
+            <CardDescription>{loading ? 'Cargando...' : `${filteredUsers.length} usuarios en total.`}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4">
+            <div className="flex flex-col sm:flex-row gap-4 mb-4">
               <Input
                 placeholder="Buscar por nombre o email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="max-w-sm"
               />
+              <Select value={planFilter} onValueChange={setPlanFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Filtrar por plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="Todos">Todos los Planes</SelectItem>
+                      <SelectItem value="Pro">Pro</SelectItem>
+                      <SelectItem value="Básico">Básico</SelectItem>
+                      <SelectItem value="Sin Plan">Sin Plan</SelectItem>
+                  </SelectContent>
+              </Select>
             </div>
             <div className="border rounded-lg">
               <Table>
