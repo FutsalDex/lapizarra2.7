@@ -20,14 +20,23 @@ const getYouTubeEmbedUrl = (url: string | undefined): string | null => {
     if (!url) return null;
     try {
         const urlObj = new URL(url);
-        let videoId;
+        let videoId: string | null = null;
+
         if (urlObj.hostname === 'youtu.be') {
             videoId = urlObj.pathname.slice(1);
         } else if (urlObj.hostname.includes('youtube.com')) {
-            videoId = urlObj.searchParams.get('v');
+            if (urlObj.pathname.startsWith('/watch')) {
+                videoId = urlObj.searchParams.get('v');
+            } else if (urlObj.pathname.startsWith('/embed/')) {
+                videoId = urlObj.pathname.split('/')[2];
+            } else if (urlObj.pathname.startsWith('/shorts/')) {
+                videoId = urlObj.pathname.split('/')[2];
+            }
         }
+        
         if (videoId) {
-            return `https://www.youtube.com/embed/${videoId}`;
+            // Clean up potential extra params from videoId
+            return `https://www.youtube.com/embed/${videoId.split('?')[0].split('&')[0]}`;
         }
     } catch (e) {
         console.error("Invalid YouTube URL", e);
@@ -98,7 +107,7 @@ export default function EjercicioDetallePage() {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold">Ejercicio no encontrado</h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-muted-foreground">
             {error ? `Error: ${error.message}` : 'El ejercicio que buscas no existe o ha sido eliminado.'}
         </p>
         <Link href="/ejercicios">
