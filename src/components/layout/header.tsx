@@ -146,14 +146,15 @@ export function Header() {
     }
 
     // Admin-sent notifications
-    const userPlan = userProfile.subscription || 'basic'; // Default to basic if null
-    const isTrial = !userProfile.subscription && trialDays > 0;
+    const userPlan = userProfile.subscription; // 'Pro', 'Básico', or null
+    const isTrial = !userPlan && trialDays > 0;
 
     const adminNotifications = notificationsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       .filter(notif => {
         if (notif.target === 'all') return true;
         if (isTrial && notif.target === 'trial') return true;
-        return notif.target === userPlan;
+        if (userPlan && notif.target === userPlan) return true;
+        return false;
     }).map(n => ({ id: n.id, title: n.title as string, message: n.message as string })) || [];
     
     // Combine for Info Icon

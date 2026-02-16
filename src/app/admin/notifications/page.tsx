@@ -27,7 +27,7 @@ type Notification = {
     id: string;
     title: string;
     message: string;
-    target: 'all' | 'pro' | 'basic' | 'trial';
+    target: 'all' | 'Pro' | 'Básico' | 'trial';
     active: boolean;
     createdAt: any;
 };
@@ -36,7 +36,7 @@ export default function NotificationsPage() {
     const { toast } = useToast();
     const [title, setTitle] = useState('');
     const [message, setMessage] = useState('');
-    const [target, setTarget] = useState<'all' | 'pro' | 'basic' | 'trial'>('all');
+    const [target, setTarget] = useState<'all' | 'Pro' | 'Básico' | 'trial'>('all');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [notificationsSnapshot, loading, error] = useCollection(collection(db, 'notifications'));
@@ -129,8 +129,8 @@ export default function NotificationsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">Todos los usuarios</SelectItem>
-                                    <SelectItem value="pro">Solo usuarios PRO</SelectItem>
-                                    <SelectItem value="basic">Solo usuarios Básico</SelectItem>
+                                    <SelectItem value="Pro">Solo usuarios PRO</SelectItem>
+                                    <SelectItem value="Básico">Solo usuarios Básico</SelectItem>
                                     <SelectItem value="trial">Solo usuarios de prueba</SelectItem>
                                 </SelectContent>
                             </Select>
