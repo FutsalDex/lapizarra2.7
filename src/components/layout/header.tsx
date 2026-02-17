@@ -83,7 +83,7 @@ export function Header() {
     setIsClient(true);
   }, []);
 
-  const [userProfile, loadingProfile] = useDocumentData(user ? doc(db, 'users', user.uid) : null);
+  const [userProfile, loadingProfile] = useDocumentData(isClient && user ? doc(db, 'users', user.uid) : null);
 
   const isLoggedIn = !!user;
   const isAdmin = isLoggedIn && user.email === 'futsaldex@gmail.com'; 
@@ -100,7 +100,7 @@ export function Header() {
   const pendingInvitations = invitationsSnapshot?.docs.length || 0;
 
   // Admin-sent notifications
-  const notificationsQuery = query(collection(db, 'notifications'), where('active', '==', true), orderBy('createdAt', 'desc'));
+  const notificationsQuery = isClient ? query(collection(db, 'notifications'), where('active', '==', true), orderBy('createdAt', 'desc')) : null;
   const [notificationsSnapshot, loadingNotifications] = useCollection(notificationsQuery);
 
   const [unreadInfoCount, setUnreadInfoCount] = useState(0);
@@ -108,7 +108,7 @@ export function Header() {
 
   // This effect calculates all notifications from different sources
   useEffect(() => {
-    if (loadingAuth || loadingProfile || loadingNotifications || !user || !userProfile) {
+    if (!isClient || loadingAuth || loadingProfile || loadingNotifications || !user || !userProfile) {
         setUnreadInfoCount(0);
         return;
     }
@@ -165,7 +165,7 @@ export function Header() {
     const newUnreadCount = combined.filter(n => !seenNotifications.includes(n.id)).length;
     setUnreadInfoCount(newUnreadCount);
 
-  }, [user, userProfile, notificationsSnapshot, loadingAuth, loadingProfile, loadingNotifications]);
+  }, [isClient, user, userProfile, notificationsSnapshot, loadingAuth, loadingProfile, loadingNotifications]);
   
   
   const visibleAdminNavLinks = isAdmin ? adminNavLinks : [];

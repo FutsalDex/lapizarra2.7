@@ -14,7 +14,7 @@ import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -29,18 +29,24 @@ type Notification = {
 
 export default function NotificacionesPage() {
     const [user, loadingAuth] = useAuthState(auth);
-    const [userProfile, loadingProfile] = useDocumentData(user ? doc(db, 'users', user.uid) : null);
+    
+    const [isClient, setIsClient] = useState(false);
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
-    const notificationsQuery = query(
+    const [userProfile, loadingProfile] = useDocumentData(isClient && user ? doc(db, 'users', user.uid) : null);
+
+    const notificationsQuery = isClient ? query(
         collection(db, 'notifications'), 
         where('active', '==', true), 
         orderBy('createdAt', 'desc')
-    );
+    ) : null;
 
     const [notificationsSnapshot, loadingNotifications, error] = useCollection(notificationsQuery);
 
     const notifications = useMemo(() => {
-        if (loadingAuth || loadingProfile || loadingNotifications || !user || !userProfile) {
+        if (!isClient || loadingAuth || loadingProfile || loadingNotifications || !user || !userProfile) {
             return [];
         }
 
@@ -87,16 +93,16 @@ export default function NotificacionesPage() {
             return dateB.getTime() - dateA.getTime();
         });
 
-    }, [notificationsSnapshot, user, userProfile, loadingAuth, loadingProfile, loadingNotifications]);
+    }, [isClient, notificationsSnapshot, user, userProfile, loadingAuth, loadingProfile, loadingNotifications]);
     
      useEffect(() => {
-        if (!loadingNotifications && notifications.length > 0) {
+        if (isClient && !loadingNotifications && notifications.length > 0) {
             const allIds = notifications.map(n => n.id);
             localStorage.setItem('seenNotifications', JSON.stringify(allIds));
         }
-    }, [notifications, loadingNotifications]);
+    }, [isClient, notifications, loadingNotifications]);
     
-    const isLoading = loadingAuth || loadingProfile || loadingNotifications;
+    const isLoading = !isClient || loadingAuth || loadingProfile || loadingNotifications;
 
     return (
         <AuthGuard>
@@ -160,4 +166,3 @@ export default function NotificacionesPage() {
         </AuthGuard>
     );
 }
-
