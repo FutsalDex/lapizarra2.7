@@ -123,7 +123,8 @@ service cloud.firestore {
     // ============================================================
 
     match /matches/{matchId} {
-        allow get, list: if isTeamMember(resource.data.teamId) || resource.data.userId == request.auth.uid || isAdmin();
+        allow get: if isTeamMember(resource.data.teamId) || resource.data.userId == request.auth.uid || isAdmin();
+        allow list: if resource.data.userId == request.auth.uid || isAdmin();
         allow create: if isTeamMember(request.resource.data.teamId) || request.resource.data.userId == request.auth.uid;
         allow update, delete: if isTeamMember(resource.data.teamId) || resource.data.userId == request.auth.uid || isAdmin();
     }

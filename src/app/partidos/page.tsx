@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
-import { collection, query, where, doc, addDoc, updateDoc, deleteDoc, Timestamp, getFirestore, or } from 'firebase/firestore';
+import { collection, query, where, doc, addDoc, updateDoc, deleteDoc, Timestamp, getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import app from '@/firebase/config';
 import { Button } from '@/components/ui/button';
@@ -354,15 +354,12 @@ export default function PartidosPage() {
     const [playersSnapshot, loadingPlayers, errorPlayers] = useCollection(teamId ? collection(db, `teams/${teamId}/players`) : null);
     
     const matchesQuery = useMemo(() => {
-        if (!user || !teamId) return null;
+        if (!user) return null;
         return query(
             collection(db, "matches"), 
-            or(
-                where("userId", "==", user.uid),
-                where("teamId", "==", teamId)
-            )
+            where("userId", "==", user.uid)
         );
-    }, [user, teamId]);
+    }, [user]);
     
     const [matchesSnapshot, loadingMatches, errorMatches] = useCollection(matchesQuery);
 
@@ -383,9 +380,8 @@ export default function PartidosPage() {
             const date = (data.date as Timestamp)?.toDate ? (data.date as Timestamp).toDate() : new Date();
             return { id: doc.id, ...data, date: date } as Match;
         })
-        .filter(match => match.teamId === teamId || match.userId === user?.uid) // Client-side filter for OR query
         .sort((a, b) => a.date.getTime() - b.date.getTime()) || [],
-        [matchesSnapshot, teamId, user]
+        [matchesSnapshot]
     );
 
     const teamPlayers = useMemo(() =>
