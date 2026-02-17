@@ -4,16 +4,29 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { collection, query, where, getFirestore, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getFirestore, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { app } from '@/firebase/config';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -25,16 +38,17 @@ type Conversation = {
   updatedAt: Timestamp;
 };
 
-const TimeAgo = ({ date }: { date: Date }) => {
+const TimeAgo = ({ date }: { date: Date | undefined }) => {
     const [timeAgo, setTimeAgo] = useState('');
 
     useEffect(() => {
-        // This effect runs only on the client, preventing hydration mismatch
-        setTimeAgo(formatDistanceToNow(date, { addSuffix: true, locale: es }));
+        if (date) {
+            setTimeAgo(formatDistanceToNow(date, { addSuffix: true, locale: es }));
+        }
     }, [date]);
 
     if (!timeAgo) {
-        return null; // Render nothing on the server and initial client render
+        return null;
     }
 
     return <span className="text-xs text-muted-foreground">{timeAgo}</span>;
@@ -43,7 +57,9 @@ const TimeAgo = ({ date }: { date: Date }) => {
 function HistorySidebarContent() {
     const [user, loadingAuth] = useAuthState(auth);
     const searchParams = useSearchParams();
+    const router = useRouter();
     const chatId = searchParams.get('chatId');
+    const { toast } = useToast();
 
     const conversationsQuery = user ? query(
         collection(db, 'conversations'),
@@ -58,13 +74,35 @@ function HistorySidebarContent() {
             ...doc.data(),
         } as Conversation)) || [];
         
-        // Sort on the client side
-        return convos.sort((a, b) => {
-            const timeA = a.updatedAt?.toMillis() || 0;
-            const timeB = b.updatedAt?.toMillis() || 0;
+        const sortedConvos = convos.sort((a, b) => {
+            const timeA = a.updatedAt?.toMillis() || a.createdAt?.toMillis() || 0;
+            const timeB = b.updatedAt?.toMillis() || b.createdAt?.toMillis() || 0;
             return timeB - timeA;
         });
+
+        return sortedConvos.slice(0, 10);
     }, [conversationsSnapshot]);
+
+    const handleDelete = async (e: React.MouseEvent, conversationId: string) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        try {
+            await deleteDoc(doc(db, 'conversations', conversationId));
+            toast({
+                title: "Conversación eliminada",
+            });
+            if (chatId === conversationId) {
+                router.push('/soporte');
+            }
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Error al eliminar",
+                description: error.message,
+            });
+        }
+    };
 
 
     if (loadingAuth || loadingConversations) {
@@ -86,19 +124,39 @@ function HistorySidebarContent() {
     return (
         <nav className="p-2 space-y-1">
             {conversations.map((convo) => (
-                <Link
-                    key={convo.id}
-                    href={`/soporte?chatId=${convo.id}`}
-                    scroll={false}
-                    className={cn(
-                        "flex flex-col items-start p-2 rounded-lg text-left",
-                        "hover:bg-accent hover:text-accent-foreground",
-                        chatId === convo.id && "bg-accent text-accent-foreground"
-                    )}
-                >
-                    <span className="text-sm font-medium truncate w-full">{convo.title}</span>
-                    {convo.updatedAt && <TimeAgo date={convo.updatedAt.toDate()} />}
-                </Link>
+                 <div key={convo.id} className="group flex items-center justify-between gap-1 rounded-lg hover:bg-accent"
+                 >
+                    <Link
+                        href={`/soporte?chatId=${convo.id}`}
+                        scroll={false}
+                        className={cn(
+                            "flex flex-col items-start p-2 rounded-l-lg text-left flex-1",
+                            chatId === convo.id && "bg-accent"
+                        )}
+                    >
+                        <span className="text-sm font-medium truncate w-full">{convo.title}</span>
+                        <TimeAgo date={(convo.updatedAt || convo.createdAt)?.toDate()} />
+                    </Link>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                <Trash2 className="h-4 w-4 text-destructive"/>
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar conversación?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción es permanente. Se eliminará el chat "{convo.title}".
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={(e) => handleDelete(e, convo.id)}>Eliminar</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
             ))}
         </nav>
     );
