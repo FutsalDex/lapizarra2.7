@@ -42,8 +42,15 @@ function Chat() {
 
     useEffect(() => {
         if (conversationDoc?.messages) {
+            const parsedMessages = conversationDoc.messages.map((m: any) => {
+                if (m.createdAt && typeof m.createdAt.seconds === 'number') {
+                    return { ...m, createdAt: new Timestamp(m.createdAt.seconds, m.createdAt.nanoseconds) };
+                }
+                return m;
+            }).filter((m: any) => m.createdAt); 
+
             setMessages(
-                [...conversationDoc.messages].sort((a: any, b: any) =>
+                parsedMessages.sort((a: any, b: any) =>
                     a.createdAt.toMillis() - b.createdAt.toMillis()
                 )
             );
@@ -63,13 +70,17 @@ function Chat() {
         const userMessageContent = input;
         const userMessage: Message = { role: 'user', content: userMessageContent, createdAt: Timestamp.now() };
 
-        const newMessages = [...messages, userMessage];
+        const currentMessages = messages;
+        const newMessages = [...currentMessages, userMessage];
         setMessages(newMessages);
         setInput('');
         setIsAiLoading(true);
 
         try {
-            const historyForAI = newMessages.filter(m => m.role === 'user' || typeof m.content === 'string').map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : (m.content as MisterGlobalOutput).answer }));
+            const historyForAI = currentMessages.map(m => ({
+              role: m.role,
+              content: typeof m.content === 'string' ? m.content : m.content.answer
+            }));
             
             const response = await askMisterGlobal({ history: historyForAI, question: userMessageContent });
             
@@ -78,7 +89,20 @@ function Chat() {
             const finalMessages = [...newMessages, aiMessage];
             setMessages(finalMessages);
             
-            const messagesToSave = finalMessages.map(m => ({...m}));
+            const messagesToSave = finalMessages.map(msg => {
+                const content = typeof msg.content === 'string'
+                  ? msg.content
+                  : {
+                      contextAnalysis: msg.content.contextAnalysis || null,
+                      misterNuance: msg.content.misterNuance || null,
+                      answer: msg.content.answer || ''
+                    };
+                return {
+                  role: msg.role,
+                  content: content,
+                  createdAt: msg.createdAt
+                };
+            });
 
             if (chatId) {
                 await updateDoc(doc(db, 'conversations', chatId), {
@@ -97,7 +121,7 @@ function Chat() {
             }
         } catch (e: any) {
             toast({ title: "Error del Asistente", description: e.message || "No se pudo obtener una respuesta.", variant: 'destructive' });
-            setMessages(messages); // Revert optimistic update
+            setMessages(currentMessages);
         } finally {
             setIsAiLoading(false);
         }
@@ -125,10 +149,10 @@ function Chat() {
                     <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                        <div className={`max-w-[80%] p-3 rounded-lg ${m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                             {typeof m.content === 'string' ? <p className="whitespace-pre-wrap">{m.content}</p> : (
-                                <div className="space-y-2 text-sm">
-                                    {m.content.contextAnalysis && <div><h4 className="font-bold text-base mb-1">Análisis de Contexto</h4><p className="whitespace-pre-wrap">{m.content.contextAnalysis}</p></div>}
-                                    {m.content.misterNuance && <div><h4 className="font-bold text-base mb-1">El Matiz del Míster</h4><p className="whitespace-pre-wrap">{m.content.misterNuance}</p></div>}
-                                    {m.content.answer && <div><h4 className="font-bold text-base mb-1">Respuesta</h4><p className="whitespace-pre-wrap">{m.content.answer}</p></div>}
+                                <div className="space-y-4 text-sm">
+                                    {m.content.contextAnalysis && <div><h4 className="font-bold text-base mb-2 uppercase tracking-wider">Análisis de Contexto</h4><p className="whitespace-pre-wrap">{m.content.contextAnalysis}</p></div>}
+                                    {m.content.misterNuance && <div className="mt-4"><h4 className="font-bold text-base mb-2 uppercase tracking-wider">El Matiz del Míster</h4><p className="whitespace-pre-wrap">{m.content.misterNuance}</p></div>}
+                                    {m.content.answer && <div className="mt-4"><h4 className="font-bold text-base mb-2 uppercase tracking-wider">Respuesta</h4><p className="whitespace-pre-wrap">{m.content.answer}</p></div>}
                                 </div>
                             )}
                        </div>
