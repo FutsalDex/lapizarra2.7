@@ -166,7 +166,18 @@ export function Header() {
         localStorage.setItem('seenNotifications', JSON.stringify(allIds));
         setUnreadInfoCount(0);
     } else {
-        const seenNotifications = JSON.parse(localStorage.getItem('seenNotifications') || '[]');
+        let seenNotifications: string[] = [];
+        try {
+            const seenJson = localStorage.getItem('seenNotifications');
+            if (seenJson) {
+                const parsed = JSON.parse(seenJson);
+                if (Array.isArray(parsed)) {
+                    seenNotifications = parsed;
+                }
+            }
+        } catch (e) {
+            // Malformed JSON in localStorage, treat as no seen notifications
+        }
         const newUnreadCount = combined.filter(n => !seenNotifications.includes(n.id)).length;
         setUnreadInfoCount(newUnreadCount);
     }

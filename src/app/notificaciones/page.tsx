@@ -51,12 +51,6 @@ export default function NotificacionesPage() {
 
     const [currentPage, setCurrentPage] = useState(1);
 
-    useEffect(() => {
-        if(pathname?.startsWith('/notificaciones')) {
-            localStorage.setItem('seenNotifications', 'true');
-        }
-    }, [pathname]);
-
     const notifications = useMemo(() => {
         if (!isClient || loadingAuth || loadingProfile || loadingNotifications || !user || !userProfile) {
             return [];
