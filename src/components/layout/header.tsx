@@ -103,7 +103,6 @@ export function Header() {
   const notificationsQuery = query(collection(db, 'notifications'), where('active', '==', true), orderBy('createdAt', 'desc'));
   const [notificationsSnapshot, loadingNotifications] = useCollection(notificationsQuery);
 
-  const [allInfoNotifications, setAllInfoNotifications] = useState<{ id: string; title: string; message: string; }[]>([]);
   const [unreadInfoCount, setUnreadInfoCount] = useState(0);
   const [remainingTrialDays, setRemainingTrialDays] = useState(0);
 
@@ -136,7 +135,7 @@ export function Header() {
         const expiryDate = userProfile.subscriptionEndDate.toDate();
         const daysToExpiry = differenceInDays(expiryDate, new Date());
 
-        if (daysToExpiry <= 15 && daysToExpiry > 0) {
+        if (daysToExpiry <= 15 && daysToExpiry >= 0) {
             infoNotifications.push({
                 id: 'expiry-warning',
                 title: 'Tu suscripción vence pronto',
@@ -157,24 +156,14 @@ export function Header() {
         return false;
     }).map(n => ({ id: n.id, title: n.title as string, message: n.message as string })) || [];
     
-    // Combine for Info Icon
     const combined = [...infoNotifications, ...adminNotifications];
-    setAllInfoNotifications(combined);
     
-    // Calculate unread for Info Icon
     const seenNotifications = JSON.parse(localStorage.getItem('seenNotifications') || '[]');
     const newUnreadCount = combined.filter(n => !seenNotifications.includes(n.id)).length;
     setUnreadInfoCount(newUnreadCount);
 
   }, [user, userProfile, notificationsSnapshot, loadingAuth, loadingProfile, loadingNotifications]);
   
-  const handleOpenInfoNotifications = (open: boolean) => {
-      if (open && allInfoNotifications.length > 0) {
-          const notificationIds = allInfoNotifications.map(n => n.id);
-          localStorage.setItem('seenNotifications', JSON.stringify(notificationIds));
-          setUnreadInfoCount(0); // Optimistically update UI
-      }
-  };
   
   const visibleAdminNavLinks = isAdmin ? adminNavLinks : [];
 
@@ -371,31 +360,17 @@ export function Header() {
                     </DropdownMenu>
                 )}
 
-                <DropdownMenu onOpenChange={handleOpenInfoNotifications}>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
-                            <Info className="h-5 w-5" />
-                            {unreadInfoCount > 0 && (
-                              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
-                                  {unreadInfoCount}
-                              </span>
-                            )}
-                            <span className="sr-only">Notificaciones</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-80" align="end" forceMount>
-                        <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {allInfoNotifications.length > 0 ? allInfoNotifications.map(notif => (
-                            <DropdownMenuItem key={notif.id} className="whitespace-normal !cursor-default flex-col items-start">
-                               <p className="font-semibold">{notif.title}</p>
-                               <p className="text-muted-foreground">{notif.message}</p>
-                            </DropdownMenuItem>
-                        )) : (
-                            <DropdownMenuItem className="!cursor-default">No hay notificaciones nuevas.</DropdownMenuItem>
+                <Button asChild variant="ghost" size="icon" className="relative hover:bg-primary/80">
+                    <Link href="/notificaciones">
+                        <Info className="h-5 w-5" />
+                        {unreadInfoCount > 0 && (
+                            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
+                                {unreadInfoCount}
+                            </span>
                         )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                        <span className="sr-only">Notificaciones</span>
+                    </Link>
+                </Button>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -448,3 +423,4 @@ export function Header() {
     </header>
   );
 }
+
