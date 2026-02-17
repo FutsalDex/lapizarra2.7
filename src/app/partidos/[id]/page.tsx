@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useParams } from 'next/navigation';
@@ -143,6 +142,8 @@ export default function PartidoDetallePage() {
     };
   }, [match, myTeamName, teamPlayers]);
   
+  const isLoading = loading || loadingTeam || loadingPlayers;
+
   if (isLoading) {
     return (
         <div className="container mx-auto px-4 py-8">
