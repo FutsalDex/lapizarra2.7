@@ -481,7 +481,7 @@ export default function EstadisticasPartidoPage() {
                 </div>
                 <div className="flex gap-2 w-full md:w-auto">
                     <Button variant="outline" asChild className="flex-grow md:flex-grow-0">
-                        <Link href="/partidos">
+                        <Link href={`/partidos?teamId=${match?.teamId}`}>
                             <ArrowLeft className="mr-2" />
                             Volver
                         </Link>
