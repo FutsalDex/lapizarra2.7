@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ const exerciseOptions = [
   {
     icon: <Upload className="w-8 h-8 text-primary" />,
     title: 'Alta de Ejercicios',
-    description: 'Añade ejercicios a la biblioteca, individualmente o en lote.',
+    description: 'Añade ejercicios a la biblioteca de forma individual.',
     buttonText: 'Acceder',
     href: '/ejercicios/mis-ejercicios',
   },

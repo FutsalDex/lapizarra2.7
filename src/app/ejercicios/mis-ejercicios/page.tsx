@@ -330,11 +330,11 @@ function PageContent() {
                 </div>
                 <h1 className="text-4xl font-bold font-headline">{view === 'form' && exerciseId ? 'Editar Ejercicio' : 'Alta de Ejercicios'}</h1>
                 <p className="text-lg text-muted-foreground mt-2">
-                    {view === 'form' && exerciseId ? 'Modifica los datos y guarda los cambios.' : 'Añade nuevos ejercicios a la biblioteca pública, de uno en uno o por lotes.'}
+                    {view === 'form' && exerciseId ? 'Modifica los datos y guarda los cambios.' : 'Añade nuevos ejercicios a la biblioteca pública.'}
                 </p>
             </div>
             {view === 'list' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-8 max-w-lg mx-auto">
                     <Card className="flex flex-col text-center items-center justify-center p-8">
                         <CardHeader>
                             <div className="bg-muted rounded-lg w-14 h-14 flex items-center justify-center mb-4 mx-auto">
@@ -346,18 +346,6 @@ function PageContent() {
                             <p className="text-muted-foreground">Completa el formulario para añadir un nuevo ejercicio a la biblioteca pública.</p>
                         </CardContent>
                         <Button onClick={() => setView('form')}>Acceder</Button>
-                    </Card>
-                    <Card className="flex flex-col text-center items-center justify-center p-8">
-                        <CardHeader>
-                            <div className="bg-muted rounded-lg w-14 h-14 flex items-center justify-center mb-4 mx-auto">
-                                <Upload className="w-8 h-8 text-primary" />
-                            </div>
-                            <CardTitle>Subida de Ejercicios en Lote</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">Sube un archivo CSV o Excel para añadir o actualizar múltiples ejercicios.</p>
-                        </CardContent>
-                        <Button disabled>Próximamente</Button>
                     </Card>
                 </div>
             )}
