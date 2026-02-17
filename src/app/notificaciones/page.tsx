@@ -95,13 +95,6 @@ export default function NotificacionesPage() {
 
     }, [isClient, notificationsSnapshot, user, userProfile, loadingAuth, loadingProfile, loadingNotifications]);
     
-     useEffect(() => {
-        if (isClient && !loadingNotifications && notifications.length > 0) {
-            const allIds = notifications.map(n => n.id);
-            localStorage.setItem('seenNotifications', JSON.stringify(allIds));
-        }
-    }, [isClient, notifications, loadingNotifications]);
-    
     const isLoading = !isClient || loadingAuth || loadingProfile || loadingNotifications;
 
     return (

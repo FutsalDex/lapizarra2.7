@@ -161,11 +161,17 @@ export function Header() {
     
     const combined = [...infoNotifications, ...adminNotifications];
     
-    const seenNotifications = JSON.parse(localStorage.getItem('seenNotifications') || '[]');
-    const newUnreadCount = combined.filter(n => !seenNotifications.includes(n.id)).length;
-    setUnreadInfoCount(newUnreadCount);
-
-  }, [isClient, user, userProfile, notificationsSnapshot, loadingAuth, loadingProfile, loadingNotifications]);
+    if (pathname === '/notificaciones') {
+        const allIds = combined.map(n => n.id);
+        localStorage.setItem('seenNotifications', JSON.stringify(allIds));
+        setUnreadInfoCount(0);
+    } else {
+        const seenNotifications = JSON.parse(localStorage.getItem('seenNotifications') || '[]');
+        const newUnreadCount = combined.filter(n => !seenNotifications.includes(n.id)).length;
+        setUnreadInfoCount(newUnreadCount);
+    }
+    
+  }, [pathname, isClient, user, userProfile, notificationsSnapshot, loadingAuth, loadingProfile, loadingNotifications]);
   
   
   const visibleAdminNavLinks = isAdmin ? adminNavLinks : [];
