@@ -143,7 +143,7 @@ export default function PartidoDetallePage() {
     };
   }, [match, myTeamName, teamPlayers]);
   
-  if (loading || loadingTeam || loadingPlayers) {
+  if (isLoading) {
     return (
         <div className="container mx-auto px-4 py-8">
             <Skeleton className="h-10 w-48 mb-6" />
@@ -158,7 +158,7 @@ export default function PartidoDetallePage() {
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold">Partido no encontrado</h1>
         <p className="text-muted-foreground">{error?.message}</p>
-        <Link href="/partidos">
+        <Link href={`/partidos?teamId=${teamId}`}>
           <Button variant="outline" className="mt-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver a Partidos
@@ -218,7 +218,7 @@ export default function PartidoDetallePage() {
         </div>
         <div className="flex gap-2">
             <Button variant="outline" asChild>
-                <Link href="/partidos">
+                <Link href={teamId ? `/partidos?teamId=${teamId}` : "/partidos"}>
                     <ArrowLeft className="mr-2" />
                     <span className="hidden sm:inline">Volver</span>
                 </Link>
@@ -373,5 +373,3 @@ export default function PartidoDetallePage() {
     </div>
   );
 }
-
-    
