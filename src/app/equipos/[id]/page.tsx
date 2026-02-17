@@ -1,16 +1,24 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight, BarChart3, CalendarCheck2, Trophy, User, Users, ClipboardList, Briefcase } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, CalendarCheck2, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import { useParams } from 'next/navigation';
 import AuthGuard from '@/components/auth/AuthGuard';
+import { useDocumentData } from 'react-firebase-hooks/firestore';
+import { doc, getFirestore } from 'firebase/firestore';
+import { app } from '@/firebase/config';
+import { Skeleton } from "@/components/ui/skeleton";
+
+const db = getFirestore(app);
 
 export default function EquipoPanelPage() {
     const params = useParams();
-    const teamName = "Juvenil B"; // Placeholder, you would fetch this based on params.id
+    const teamId = params.id as string;
+    const [team, loading, error] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
+    
+    const teamName = team?.name || "Equipo";
 
     const panelItems = [
         {
@@ -52,10 +60,19 @@ export default function EquipoPanelPage() {
           </div>
 
           <div className="text-left mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold font-headline text-foreground">Panel de {teamName}</h1>
-              <p className="text-lg text-muted-foreground mt-4 max-w-2xl">
-              Selecciona una sección para empezar a gestionar tu equipo.
-              </p>
+            {loading ? (
+                <div className="space-y-4">
+                    <Skeleton className="h-12 w-1/2" />
+                    <Skeleton className="h-6 w-3/4" />
+                </div>
+            ) : (
+              <>
+                <h1 className="text-4xl md:text-5xl font-bold font-headline text-foreground">Panel de {teamName}</h1>
+                <p className="text-lg text-muted-foreground mt-4 max-w-2xl">
+                Selecciona una sección para empezar a gestionar tu equipo.
+                </p>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
