@@ -93,14 +93,14 @@ function Chat() {
                 const content = typeof msg.content === 'string'
                   ? msg.content
                   : {
-                      contextAnalysis: (msg.content as MisterGlobalOutput).contextAnalysis,
-                      misterNuance: (msg.content as MisterGlobalOutput).misterNuance,
-                      answer: (msg.content as MisterGlobalOutput).answer
+                      contextAnalysis: (msg.content as MisterGlobalOutput).contextAnalysis || "",
+                      misterNuance: (msg.content as MisterGlobalOutput).misterNuance || "",
+                      answer: (msg.content as MisterGlobalOutput).answer || ""
                     };
                 return {
                   role: msg.role,
                   content: content,
-                  createdAt: msg.createdAt
+                  createdAt: serverTimestamp() // Use server timestamp for consistency
                 };
             });
 
