@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
@@ -502,7 +503,7 @@ function PartidosPageContent() {
                <Button variant="outline" asChild>
                   <Link href={`/equipos/${teamId}`}>
                       <ArrowLeft className="mr-2 h-4 w-4" />
-                      <span className="hidden sm:inline">Volver al Panel</span>
+                      <span className="hidden sm:inline">Volver al Panel del Equipo</span>
                   </Link>
               </Button>
           </div>
@@ -609,3 +610,5 @@ export default function PartidosPageWrapper() {
         </AuthGuard>
     )
 }
+
+    
