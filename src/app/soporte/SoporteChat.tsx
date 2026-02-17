@@ -100,7 +100,7 @@ function Chat() {
                 return {
                   role: msg.role,
                   content: content,
-                  createdAt: serverTimestamp() // Use server timestamp for consistency
+                  createdAt: msg.createdAt,
                 };
             });
 
