@@ -161,7 +161,7 @@ export function Header() {
     
     const combined = [...infoNotifications, ...adminNotifications];
     
-    if (pathname === '/notificaciones') {
+    if (pathname.startsWith('/notificaciones')) {
         const allIds = combined.map(n => n.id);
         localStorage.setItem('seenNotifications', JSON.stringify(allIds));
         setUnreadInfoCount(0);
