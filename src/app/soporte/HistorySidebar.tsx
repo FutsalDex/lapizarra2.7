@@ -1,10 +1,10 @@
 
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { collection, query, where, orderBy, getFirestore, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getFirestore, Timestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { app } from '@/firebase/config';
 import Link from 'next/link';
@@ -47,16 +47,25 @@ function HistorySidebarContent() {
 
     const conversationsQuery = user ? query(
         collection(db, 'conversations'),
-        where('userId', '==', user.uid),
-        orderBy('updatedAt', 'desc')
+        where('userId', '==', user.uid)
     ) : null;
     
     const [conversationsSnapshot, loadingConversations] = useCollection(conversationsQuery);
 
-    const conversations = conversationsSnapshot?.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-    } as Conversation)) || [];
+    const conversations = React.useMemo(() => {
+        const convos = conversationsSnapshot?.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        } as Conversation)) || [];
+        
+        // Sort on the client side
+        return convos.sort((a, b) => {
+            const timeA = a.updatedAt?.toMillis() || 0;
+            const timeB = b.updatedAt?.toMillis() || 0;
+            return timeB - timeA;
+        });
+    }, [conversationsSnapshot]);
+
 
     if (loadingAuth || loadingConversations) {
         return (
