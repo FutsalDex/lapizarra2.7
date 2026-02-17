@@ -41,7 +41,7 @@ export default function NotificationsPage() {
 
     const [notificationsSnapshot, loading, error] = useCollection(collection(db, 'notifications'));
     const notifications = notificationsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification))
-        .sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis()) || [];
+        .sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)) || [];
 
     const handleCreateNotification = async () => {
         if (!title || !message) {
