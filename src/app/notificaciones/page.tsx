@@ -9,15 +9,18 @@ import { app } from '@/firebase/config';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import AuthGuard from '@/components/auth/AuthGuard';
-import { ArrowLeft, Bell } from 'lucide-react';
+import { ArrowLeft, Bell, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useMemo, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+const NOTIFICATIONS_PER_PAGE = 5;
 
 type Notification = {
     id: string;
@@ -29,6 +32,7 @@ type Notification = {
 
 export default function NotificacionesPage() {
     const [user, loadingAuth] = useAuthState(auth);
+    const pathname = usePathname();
     
     const [isClient, setIsClient] = useState(false);
     useEffect(() => {
@@ -45,6 +49,14 @@ export default function NotificacionesPage() {
 
     const [notificationsSnapshot, loadingNotifications, error] = useCollection(notificationsQuery);
 
+    const [currentPage, setCurrentPage] = useState(1);
+
+    useEffect(() => {
+        if(pathname?.startsWith('/notificaciones')) {
+            localStorage.setItem('seenNotifications', 'true');
+        }
+    }, [pathname]);
+
     const notifications = useMemo(() => {
         if (!isClient || loadingAuth || loadingProfile || loadingNotifications || !user || !userProfile) {
             return [];
@@ -55,7 +67,7 @@ export default function NotificacionesPage() {
         let trialDays = 0;
         if (!userProfile.subscription && userProfile.createdAt) {
             try {
-                const creationDate = new Date(userProfile.createdAt);
+                const creationDate = userProfile.createdAt.toDate ? userProfile.createdAt.toDate() : new Date(userProfile.createdAt);
                 const trialEndDate = new Date(creationDate.getTime() + 7 * 24 * 60 * 60 * 1000);
                 trialDays = differenceInDays(trialEndDate, new Date());
             } catch (e) {}
@@ -97,6 +109,24 @@ export default function NotificacionesPage() {
     
     const isLoading = !isClient || loadingAuth || loadingProfile || loadingNotifications;
 
+    const totalPages = Math.ceil(notifications.length / NOTIFICATIONS_PER_PAGE);
+    const paginatedNotifications = notifications.slice(
+        (currentPage - 1) * NOTIFICATIONS_PER_PAGE,
+        currentPage * NOTIFICATIONS_PER_PAGE
+    );
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+          setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        }
+    };
+
     return (
         <AuthGuard>
             <div className="container mx-auto px-4 py-8">
@@ -135,7 +165,7 @@ export default function NotificacionesPage() {
                             </Card>
                         ))
                     )}
-                    {!isLoading && notifications.length > 0 && notifications.map((notif) => (
+                    {!isLoading && paginatedNotifications.length > 0 && paginatedNotifications.map((notif) => (
                         <Card key={notif.id}>
                             <CardHeader>
                                 <CardTitle>{notif.title}</CardTitle>
@@ -155,6 +185,20 @@ export default function NotificacionesPage() {
                     )}
                     {error && <p className="text-destructive">Error: {error.message}</p>}
                 </div>
+
+                 {!isLoading && totalPages > 1 && (
+                    <div className="flex items-center justify-center mt-8 space-x-2">
+                        <Button variant="outline" size="icon" onClick={handlePrevPage} disabled={currentPage === 1}>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                            Página {currentPage} de {totalPages}
+                        </span>
+                        <Button variant="outline" size="icon" onClick={handleNextPage} disabled={currentPage === totalPages}>
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
             </div>
         </AuthGuard>
     );
