@@ -1,7 +1,7 @@
-
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
 import { collection, query, where, doc, addDoc, updateDoc, deleteDoc, Timestamp, getFirestore } from 'firebase/firestore';
@@ -26,6 +26,7 @@ import { es } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import AuthGuard from "@/components/auth/AuthGuard";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -212,7 +213,7 @@ const MatchFormDialog = ({ isOpen, onOpenChange, match: initialMatch, onSave, is
             } else {
                  setMatchData({
                     localTeam: '', visitorTeam: '', date: undefined, time: '',
-                    type: 'Amistoso', competition: '', round: ''
+                    matchType: 'Amistoso', competition: '', round: ''
                 });
             }
         }
@@ -344,22 +345,22 @@ const MatchFormDialog = ({ isOpen, onOpenChange, match: initialMatch, onSave, is
     )
 }
 
-export default function PartidosPage() {
+function PartidosPageContent() {
     const { toast } = useToast();
     const [user, loadingAuth] = useAuthState(auth);
+    const searchParams = useSearchParams();
+    const teamId = searchParams.get('teamId');
 
-    const [teamId, setTeamId] = useState<string | null>('vfR0cLrsj4r5DSYxUac1'); // Hardcoded, should be dynamic
-    
     const [teamSnapshot, loadingTeam, errorTeam] = useDocumentData(teamId ? doc(db, 'teams', teamId) : null);
     const [playersSnapshot, loadingPlayers, errorPlayers] = useCollection(teamId ? collection(db, `teams/${teamId}/players`) : null);
     
     const matchesQuery = useMemo(() => {
-        if (!user) return null;
+        if (!user || !teamId) return null;
         return query(
             collection(db, "matches"), 
-            where("userId", "==", user.uid)
+            where("teamId", "==", teamId)
         );
-    }, [user]);
+    }, [user, teamId]);
     
     const [matchesSnapshot, loadingMatches, errorMatches] = useCollection(matchesQuery);
 
@@ -370,7 +371,7 @@ export default function PartidosPage() {
     const [matchForConvocatoria, setMatchForConvocatoria] = useState<Match | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const teamName = useMemo(() => teamSnapshot?.name || "Mi Equipo", [teamSnapshot]);
+    const teamName = useMemo(() => teamSnapshot?.name || "", [teamSnapshot]);
     const teamCompetition = useMemo(() => teamSnapshot?.competition || '', [teamSnapshot]);
 
     const matches = useMemo(() =>
@@ -429,7 +430,7 @@ export default function PartidosPage() {
         if (!user || !teamId) return;
         setIsSubmitting(true);
 
-        const [hours, minutes] = matchData.time.split(':').map(Number);
+        const [hours, minutes] = (matchData.time || "00:00").split(':').map(Number);
         const matchDate = new Date(matchData.date);
         matchDate.setHours(hours, minutes);
 
@@ -467,107 +468,144 @@ export default function PartidosPage() {
 
     const isLoading = loadingAuth || loadingMatches || loadingPlayers || loadingTeam;
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div className='flex items-center gap-4'>
-             <Button variant="outline" asChild>
-                <Link href={`/equipos/${teamId}`}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">Volver al Panel</span>
-                </Link>
-            </Button>
-        </div>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Añadir Partido
-        </Button>
-      </div>
-      
-       <div className='mb-8'>
-          <div className="flex items-center gap-3 mb-2">
-            <Trophy className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl md:text-4xl font-bold font-headline">Partidos de {teamName}</h1>
+    if (!isLoading && !teamId) {
+        return (
+             <div className="container mx-auto px-4 py-8 text-center">
+                 <p className="text-muted-foreground">Por favor, selecciona un equipo para ver sus partidos.</p>
+                 <div className="mt-4">
+                    <Button asChild>
+                        <Link href="/equipos">Ir a Mis Equipos</Link>
+                    </Button>
+                 </div>
+             </div>
+        )
+    }
+
+    if (!isLoading && errorTeam) {
+        return (
+             <div className="container mx-auto px-4 py-8 text-center">
+                 <p className="text-destructive font-semibold">Error de permisos</p>
+                 <p className="text-muted-foreground mt-2">No tienes permiso para ver los partidos de este equipo.</p>
+                  <div className="mt-4">
+                    <Button asChild variant="outline">
+                        <Link href="/equipos">Volver a Mis Equipos</Link>
+                    </Button>
+                 </div>
+             </div>
+        )
+    }
+
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div className='flex items-center gap-4'>
+               <Button variant="outline" asChild>
+                  <Link href={`/equipos/${teamId}`}>
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      <span className="hidden sm:inline">Volver al Panel</span>
+                  </Link>
+              </Button>
           </div>
-          <p className="text-base md:text-lg text-muted-foreground">Gestiona los partidos, añade nuevos encuentros, edita los existentes o consulta sus estadísticas.</p>
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Añadir Partido
+          </Button>
         </div>
-
-        {isLoading ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({length: 6}).map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
+        
+         <div className='mb-8'>
+            <div className="flex items-center gap-3 mb-2">
+              <Trophy className="w-8 h-8 text-primary" />
+              <h1 className="text-3xl md:text-4xl font-bold font-headline">Partidos de {teamName}</h1>
             </div>
-        ) : errorMatches || errorTeam || errorPlayers ? (
-            <p className="text-destructive">Error: {errorMatches?.message || errorTeam?.message || errorPlayers?.message}</p>
-        ) : (
-            <Tabs defaultValue="Todos">
-                <TabsList className="mb-8">
-                <TabsTrigger value="Todos">Todos</TabsTrigger>
-                <TabsTrigger value="Liga">Liga</TabsTrigger>
-                <TabsTrigger value="Copa">Copa</TabsTrigger>
-                <TabsTrigger value="Torneo">Torneo</TabsTrigger>
-                <TabsTrigger value="Amistoso">Amistoso</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="Todos">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {matches.map(m => <MatchCard key={m.id} match={m} teamName={teamName} onConvocatoriaOpen={handleOpenConvocatoriaDialog} onEditOpen={handleOpenEditDialog} onDelete={handleDeleteMatch} />)}
-                    </div>
-                </TabsContent>
-                <TabsContent value="Liga">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {matches.filter(m => m.matchType === 'Liga').map(m => <MatchCard key={m.id} match={m} teamName={teamName} onConvocatoriaOpen={handleOpenConvocatoriaDialog} onEditOpen={handleOpenEditDialog} onDelete={handleDeleteMatch} />)}
-                    </div>
-                </TabsContent>
-                <TabsContent value="Copa">
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {matches.filter(m => m.matchType === 'Copa').length > 0 ? (
-                            matches.filter(m => m.matchType === 'Copa').map(m => <MatchCard key={m.id} match={m} teamName={teamName} onConvocatoriaOpen={handleOpenConvocatoriaDialog} onEditOpen={handleOpenEditDialog} onDelete={handleDeleteMatch} />)
-                        ) : <p className="text-center text-muted-foreground col-span-3">No hay partidos de copa para mostrar.</p>}
-                    </div>
-                </TabsContent>
-                <TabsContent value="Torneo">
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {matches.filter(m => m.matchType === 'Torneo').length > 0 ? (
-                            matches.filter(m => m.matchType === 'Torneo').map(m => <MatchCard key={m.id} match={m} teamName={teamName} onConvocatoriaOpen={handleOpenConvocatoriaDialog} onEditOpen={handleOpenEditDialog} onDelete={handleDeleteMatch} />)
-                        ) : <p className="text-center text-muted-foreground col-span-3">No hay partidos de torneo para mostrar.</p>}
-                    </div>
-                </TabsContent>
-                <TabsContent value="Amistoso">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {matches.filter(m => m.matchType === 'Amistoso').length > 0 ? (
-                             matches.filter(m => m.matchType === 'Amistoso').map(m => <MatchCard key={m.id} match={m} teamName={teamName} onConvocatoriaOpen={handleOpenConvocatoriaDialog} onEditOpen={handleOpenEditDialog} onDelete={handleDeleteMatch} />)
-                        ): <p className="text-center text-muted-foreground col-span-3">No hay partidos amistosos para mostrar.</p>}
-                    </div>
-                </TabsContent>
-            </Tabs>
-        )}
-      
-      <ConvocatoriaDialog 
-        isOpen={isConvocatoriaOpen}
-        onOpenChange={setIsConvocatoriaOpen}
-        match={matchForConvocatoria}
-        teamPlayers={teamPlayers}
-        onSave={handleSaveConvocatoria}
-        isLoading={isSubmitting}
-      />
+            <p className="text-base md:text-lg text-muted-foreground">Gestiona los partidos, añade nuevos encuentros, edita los existentes o consulta sus estadísticas.</p>
+          </div>
 
-      <MatchFormDialog 
-        isOpen={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        onSave={handleSaveMatch}
-        isLoading={isSubmitting}
-        teamName={teamName}
-        teamCompetition={teamCompetition}
-      />
-      
-      <MatchFormDialog
-        isOpen={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        match={editingMatch}
-        onSave={handleSaveMatch}
-        isLoading={isSubmitting}
-        teamName={teamName}
-        teamCompetition={teamCompetition}
-      />
-    </div>
-  );
+          {isLoading ? (
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({length: 6}).map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
+              </div>
+          ) : errorMatches ? (
+              <p className="text-destructive">Error: {errorMatches?.message}</p>
+          ) : (
+              <Tabs defaultValue="Todos">
+                  <TabsList className="mb-8">
+                  <TabsTrigger value="Todos">Todos</TabsTrigger>
+                  <TabsTrigger value="Liga">Liga</TabsTrigger>
+                  <TabsTrigger value="Copa">Copa</TabsTrigger>
+                  <TabsTrigger value="Torneo">Torneo</TabsTrigger>
+                  <TabsTrigger value="Amistoso">Amistoso</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="Todos">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {matches.map(m => <MatchCard key={m.id} match={m} teamName={teamName} onConvocatoriaOpen={handleOpenConvocatoriaDialog} onEditOpen={handleOpenEditDialog} onDelete={handleDeleteMatch} />)}
+                      </div>
+                  </TabsContent>
+                  <TabsContent value="Liga">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {matches.filter(m => m.matchType === 'Liga').map(m => <MatchCard key={m.id} match={m} teamName={teamName} onConvocatoriaOpen={handleOpenConvocatoriaDialog} onEditOpen={handleOpenEditDialog} onDelete={handleDeleteMatch} />)}
+                      </div>
+                  </TabsContent>
+                  <TabsContent value="Copa">
+                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {matches.filter(m => m.matchType === 'Copa').length > 0 ? (
+                              matches.filter(m => m.matchType === 'Copa').map(m => <MatchCard key={m.id} match={m} teamName={teamName} onConvocatoriaOpen={handleOpenConvocatoriaDialog} onEditOpen={handleOpenEditDialog} onDelete={handleDeleteMatch} />)
+                          ) : <p className="text-center text-muted-foreground col-span-3">No hay partidos de copa para mostrar.</p>}
+                      </div>
+                  </TabsContent>
+                  <TabsContent value="Torneo">
+                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {matches.filter(m => m.matchType === 'Torneo').length > 0 ? (
+                              matches.filter(m => m.matchType === 'Torneo').map(m => <MatchCard key={m.id} match={m} teamName={teamName} onConvocatoriaOpen={handleOpenConvocatoriaDialog} onEditOpen={handleOpenEditDialog} onDelete={handleDeleteMatch} />)
+                          ) : <p className="text-center text-muted-foreground col-span-3">No hay partidos de torneo para mostrar.</p>}
+                      </div>
+                  </TabsContent>
+                  <TabsContent value="Amistoso">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {matches.filter(m => m.matchType === 'Amistoso').length > 0 ? (
+                               matches.filter(m => m.matchType === 'Amistoso').map(m => <MatchCard key={m.id} match={m} teamName={teamName} onConvocatoriaOpen={handleOpenConvocatoriaDialog} onEditOpen={handleOpenEditDialog} onDelete={handleDeleteMatch} />)
+                          ): <p className="text-center text-muted-foreground col-span-3">No hay partidos amistosos para mostrar.</p>}
+                      </div>
+                  </TabsContent>
+              </Tabs>
+          )}
+        
+        <ConvocatoriaDialog 
+          isOpen={isConvocatoriaOpen}
+          onOpenChange={setIsConvocatoriaOpen}
+          match={matchForConvocatoria}
+          teamPlayers={teamPlayers}
+          onSave={handleSaveConvocatoria}
+          isLoading={isSubmitting}
+        />
+
+        <MatchFormDialog 
+          isOpen={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          onSave={handleSaveMatch}
+          isLoading={isSubmitting}
+          teamName={teamName}
+          teamCompetition={teamCompetition}
+        />
+        
+        <MatchFormDialog
+          isOpen={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          match={editingMatch}
+          onSave={handleSaveMatch}
+          isLoading={isSubmitting}
+          teamName={teamName}
+          teamCompetition={teamCompetition}
+        />
+      </div>
+    );
+}
+
+export default function PartidosPageWrapper() {
+    return (
+        <AuthGuard>
+            <Suspense fallback={<div className="container mx-auto flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>}>
+                <PartidosPageContent/>
+            </Suspense>
+        </AuthGuard>
+    )
 }

@@ -25,25 +25,25 @@ export default function EquipoPanelPage() {
           icon: <Users className="w-8 h-8 text-primary" />,
           title: 'Mi Plantilla',
           description: 'Gestiona los jugadores del equipo.',
-          href: `/equipos/${params.id}/plantilla`,
+          href: `/equipos/${teamId}/plantilla`,
         },
         {
           icon: <Trophy className="w-8 h-8 text-primary" />,
           title: 'Mis Partidos',
           description: 'Planifica y revisa los resultados de los partidos.',
-          href: '/partidos',
+          href: `/partidos?teamId=${teamId}`,
         },
         {
           icon: <CalendarCheck2 className="w-8 h-8 text-primary" />,
           title: 'Control de Asistencia',
           description: 'Controla la asistencia a los entrenamientos.',
-          href: `/equipos/${params.id}/asistencia`,
+          href: `/equipos/${teamId}/asistencia`,
         },
         {
           icon: <BarChart3 className="w-8 h-8 text-primary" />,
           title: 'Mis Estadísticas',
           description: 'Analiza el rendimiento del equipo y los jugadores.',
-          href: `/equipos/${params.id}/estadisticas`,
+          href: `/equipos/${teamId}/estadisticas`,
         },
       ];
 
