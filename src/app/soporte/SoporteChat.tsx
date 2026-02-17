@@ -10,7 +10,7 @@ import { askMisterGlobal, type MisterGlobalOutput } from '@/ai/flows/mister-glob
 import { useToast } from '@/hooks/use-toast';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useDocumentData } from 'react-firebase-hooks/firestore';
-import { collection, doc, addDoc, updateDoc, Timestamp, getFirestore } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, Timestamp, getFirestore, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { app } from '@/firebase/config';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -107,15 +107,15 @@ function Chat() {
             if (chatId) {
                 await updateDoc(doc(db, 'conversations', chatId), {
                     messages: messagesToSave,
-                    updatedAt: Timestamp.now(),
+                    updatedAt: serverTimestamp(),
                 });
             } else {
                 const docRef = await addDoc(collection(db, 'conversations'), {
                     userId: user.uid,
                     title: userMessageContent.substring(0, 30) + '...',
                     messages: messagesToSave,
-                    createdAt: Timestamp.now(),
-                    updatedAt: Timestamp.now(),
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
                 });
                 router.push(`/soporte?chatId=${docRef.id}`);
             }
