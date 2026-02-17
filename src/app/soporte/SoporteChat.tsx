@@ -79,7 +79,7 @@ function Chat() {
         try {
             const historyForAI = currentMessages.map(m => ({
               role: m.role,
-              content: typeof m.content === 'string' ? m.content : m.content.answer
+              content: typeof m.content === 'string' ? m.content : (m.content as MisterGlobalOutput).answer
             }));
             
             const response = await askMisterGlobal({ history: historyForAI, question: userMessageContent });
@@ -93,9 +93,9 @@ function Chat() {
                 const content = typeof msg.content === 'string'
                   ? msg.content
                   : {
-                      contextAnalysis: msg.content.contextAnalysis || null,
-                      misterNuance: msg.content.misterNuance || null,
-                      answer: msg.content.answer || ''
+                      contextAnalysis: (msg.content as MisterGlobalOutput).contextAnalysis,
+                      misterNuance: (msg.content as MisterGlobalOutput).misterNuance,
+                      answer: (msg.content as MisterGlobalOutput).answer
                     };
                 return {
                   role: msg.role,
@@ -150,9 +150,9 @@ function Chat() {
                        <div className={`max-w-[80%] p-3 rounded-lg ${m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                             {typeof m.content === 'string' ? <p className="whitespace-pre-wrap">{m.content}</p> : (
                                 <div className="space-y-4 text-sm">
-                                    {m.content.contextAnalysis && <div><h4 className="font-bold text-base mb-2 uppercase tracking-wider">Análisis de Contexto</h4><p className="whitespace-pre-wrap">{m.content.contextAnalysis}</p></div>}
-                                    {m.content.misterNuance && <div className="mt-4"><h4 className="font-bold text-base mb-2 uppercase tracking-wider">El Matiz del Míster</h4><p className="whitespace-pre-wrap">{m.content.misterNuance}</p></div>}
-                                    {m.content.answer && <div className="mt-4"><h4 className="font-bold text-base mb-2 uppercase tracking-wider">Respuesta</h4><p className="whitespace-pre-wrap">{m.content.answer}</p></div>}
+                                    {m.content.contextAnalysis && <div><h4 className="font-bold text-base mb-2 uppercase tracking-wider">ANÁLISIS DE CONTEXTO</h4><p className="whitespace-pre-wrap">{m.content.contextAnalysis}</p></div>}
+                                    {m.content.misterNuance && <div className="mt-4"><h4 className="font-bold text-base mb-2 uppercase tracking-wider">EL MATIZ DEL MÍSTER</h4><p className="whitespace-pre-wrap">{m.content.misterNuance}</p></div>}
+                                    {m.content.answer && <div className="mt-4"><h4 className="font-bold text-base mb-2 uppercase tracking-wider">RESPUESTA</h4><p className="whitespace-pre-wrap">{m.content.answer}</p></div>}
                                 </div>
                             )}
                        </div>
