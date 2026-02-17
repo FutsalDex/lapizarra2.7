@@ -27,7 +27,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { signOut, getAuth } from "firebase/auth";
 import { FirebaseLogo } from "./logo";
 import { useCollection, useDocumentData } from "react-firebase-hooks/firestore";
-import { collection, query, where, getFirestore, doc, orderBy } from "firebase/firestore";
+import { collection, query, where, getFirestore, doc, orderBy, Timestamp } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { differenceInDays } from "date-fns";
 
@@ -109,6 +109,7 @@ export function Header() {
   // This effect calculates all notifications from different sources
   useEffect(() => {
     if (loadingAuth || loadingProfile || loadingNotifications || !user || !userProfile) {
+        setUnreadInfoCount(0);
         return;
     }
 
@@ -128,7 +129,7 @@ export function Header() {
     }
     
     // == Info Icon Logic (Admin msgs + Expiry) ==
-    const infoNotifications: { id: string; title: string; message: string; }[] = [];
+    const infoNotifications: any[] = [];
     
     // Subscription expiry logic
     if (userProfile.subscription && userProfile.subscriptionEndDate) {
@@ -139,13 +140,15 @@ export function Header() {
             infoNotifications.push({
                 id: 'expiry-warning',
                 title: 'Tu suscripción vence pronto',
-                message: `Tu suscripción vence en ${daysToExpiry} día(s).`
+                message: `Tu suscripción vence en ${daysToExpiry} día(s).`,
+                createdAt: Timestamp.now(),
+                target: userProfile.subscription,
             });
         }
     }
 
     // Admin-sent notifications
-    const userPlan = userProfile.subscription; // 'Pro', 'Básico', or null
+    const userPlan = userProfile.subscription;
     const isTrial = !userPlan && trialDays > 0;
 
     const adminNotifications = notificationsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() }))
@@ -154,7 +157,7 @@ export function Header() {
         if (isTrial && notif.target === 'trial') return true;
         if (userPlan && notif.target === userPlan) return true;
         return false;
-    }).map(n => ({ id: n.id, title: n.title as string, message: n.message as string })) || [];
+    }) || [];
     
     const combined = [...infoNotifications, ...adminNotifications];
     
@@ -423,4 +426,3 @@ export function Header() {
     </header>
   );
 }
-
