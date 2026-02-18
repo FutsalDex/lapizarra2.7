@@ -247,78 +247,179 @@ export function Header() {
         
         <div className="flex flex-1 items-center justify-between md:hidden">
            <Link href="/" className="flex items-center space-x-2">
-            
             <span className="font-bold font-headline">
               LaPizarra
             </span>
           </Link>
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="hover:bg-primary/80">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Abrir menú</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <SheetTitle className="sr-only">Menú</SheetTitle>
-              <nav className="grid gap-6 text-lg font-medium mt-8">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={handleLinkClick}
-                    className={cn(
-                      "flex items-center gap-2 text-lg font-semibold transition-colors hover:text-foreground/80",
-                      (pathname.startsWith(link.href) && link.href !== '/') || pathname === link.href
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {link.icon}
-                    {link.label}
-                  </Link>
-                ))}
-                {visibleAdminNavLinks.map((link) => (
-                   <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={handleLinkClick}
-                    className={cn(
-                      "flex items-center gap-2 text-lg font-semibold transition-colors hover:text-foreground/80",
-                      pathname.startsWith(link.href)
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {link.icon}
-                    {link.label}
-                  </Link>
-                ))}
-              </nav>
-                <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-2">
-                  {isLoggedIn ? (
-                     <Button variant="outline" onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Cerrar Sesión
-                    </Button>
-                  ) : (
-                    <>
-                        <Button asChild>
-                            <Link href="/login" onClick={handleLinkClick}>
-                                <LogIn className="mr-2 h-4 w-4" />
-                                Iniciar Sesión
+          <div className="flex items-center">
+            {isLoggedIn ? (
+                <>
+                    {isAdmin && (
+                        <>
+                            <Button variant="ghost" size="icon" className="relative hover:bg-primary/80" asChild>
+                            <Link href="/admin/invitations">
+                                <Gift className="h-5 w-5" />
+                                {pendingInvitations > 0 && (
+                                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                                        {pendingInvitations}
+                                    </span>
+                                )}
+                                <span className="sr-only">Invitaciones pendientes</span>
                             </Link>
-                        </Button>
+                            </Button>
+                            <Button variant="ghost" size="icon" className="relative hover:bg-primary/80" asChild>
+                                <Link href="/admin/users">
+                                    <Users className="h-5 w-5" />
+                                    {pendingUsers > 0 && (
+                                        <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                                            {pendingUsers}
+                                        </span>
+                                    )}
+                                    <span className="sr-only">Usuarios pendientes</span>
+                                </Link>
+                            </Button>
+                        </>
+                    )}
+                    
+                    {remainingTrialDays > 0 && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
+                                    <Bell className="h-5 w-5" />
+                                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                                        {remainingTrialDays}
+                                    </span>
+                                    <span className="sr-only">Días de prueba restantes</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-64" align="end" forceMount>
+                                <DropdownMenuLabel>Prueba Gratuita</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="flex-col items-start !cursor-default whitespace-normal">
+                                    <p className="text-sm">Te quedan {remainingTrialDays} día(s) de tu prueba PRO.</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Suscríbete para no perder el acceso.</p>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                    <Link href="/planes">
+                                        <Star className="mr-2 h-4 w-4" />
+                                        <span>Ver Planes</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+
+                    <Button asChild variant="ghost" size="icon" className="relative hover:bg-primary/80">
+                        <Link href="/notificaciones">
+                            <Info className="h-5 w-5" />
+                            {unreadInfoCount > 0 && (
+                                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
+                                    {unreadInfoCount}
+                                </span>
+                            )}
+                            <span className="sr-only">Notificaciones</span>
+                        </Link>
+                    </Button>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="relative hover:bg-primary/80">
+                                <User className="h-5 w-5" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56" align="end" forceMount>
+                            <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none text-foreground">{user.displayName || 'Usuario'}</p>
+                                <p className="text-xs leading-none text-muted-foreground">
+                                {user.email}
+                                </p>
+                            </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                                <Link href="/perfil">
+                                    <User className="mr-2 h-4 w-4" />
+                                    <span>Mi Perfil</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link href="/suscripcion">
+                                    <Star className="mr-2 h-4 w-4" />
+                                    <span>Suscripción y Puntos</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleLogout}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Cerrar Sesión</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </>
+            ) : (
+                 <div className="flex items-center gap-2">
+                    <Button variant="secondary" size="sm" asChild>
+                        <Link href="/login">Iniciar Sesión</Link>
+                    </Button>
+                </div>
+            )}
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="hover:bg-primary/80">
+                    <Menu className="h-6 w-6" />
+                    <span className="sr-only">Abrir menú</span>
+                </Button>
+                </SheetTrigger>
+                <SheetContent side="right">
+                <SheetTitle className="sr-only">Menú</SheetTitle>
+                <nav className="grid gap-6 text-lg font-medium mt-8">
+                    {navLinks.map((link) => (
+                    <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={handleLinkClick}
+                        className={cn(
+                        "flex items-center gap-2 text-lg font-semibold transition-colors hover:text-foreground/80",
+                        (pathname.startsWith(link.href) && link.href !== '/') || pathname === link.href
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                        )}
+                    >
+                        {link.icon}
+                        {link.label}
+                    </Link>
+                    ))}
+                    {visibleAdminNavLinks.map((link) => (
+                    <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={handleLinkClick}
+                        className={cn(
+                        "flex items-center gap-2 text-lg font-semibold transition-colors hover:text-foreground/80",
+                        pathname.startsWith(link.href)
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                        )}
+                    >
+                        {link.icon}
+                        {link.label}
+                    </Link>
+                    ))}
+                </nav>
+                    <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-2">
+                    {!isLoggedIn && (
                         <Button variant="secondary" asChild>
                             <Link href="/registro" onClick={handleLinkClick}>
                                 Registrarse
                             </Link>
                         </Button>
-                    </>
-                  )}
-              </div>
-            </SheetContent>
-          </Sheet>
+                    )}
+                </div>
+                </SheetContent>
+            </Sheet>
+          </div>
         </div>
         <div className="hidden md:flex flex-1 items-center justify-end space-x-2">
             {isLoggedIn ? (
