@@ -10,7 +10,7 @@ import { askMisterGlobal, type MisterGlobalOutput } from '@/ai/flows/mister-glob
 import { useToast } from '@/hooks/use-toast';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useDocumentData } from 'react-firebase-hooks/firestore';
-import { collection, doc, addDoc, updateDoc, Timestamp, getFirestore, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, getFirestore, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { app } from '@/firebase/config';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -21,7 +21,7 @@ const auth = getAuth(app);
 type Message = {
     role: 'user' | 'assistant';
     content: string | MisterGlobalOutput;
-    createdAt: Timestamp;
+    createdAt: Date;
 }
 
 function Chat() {
@@ -42,10 +42,12 @@ function Chat() {
 
     useEffect(() => {
         if (conversationDoc?.messages) {
-            const sortedMessages = [...conversationDoc.messages].sort((a: any, b: any) => {
-                const timeA = a.createdAt?.toMillis() || 0;
-                const timeB = b.createdAt?.toMillis() || 0;
-                return timeA - timeB;
+            const convertedMessages = conversationDoc.messages.map((msg: any) => ({
+                ...msg,
+                createdAt: msg.createdAt?.toDate ? msg.createdAt.toDate() : new Date()
+            }));
+            const sortedMessages = convertedMessages.sort((a: Message, b: Message) => {
+                return a.createdAt.getTime() - b.createdAt.getTime();
             });
             setMessages(sortedMessages);
         } else if (!chatId) {
@@ -62,7 +64,7 @@ function Chat() {
         if (!input.trim() || isAiLoading || !user) return;
         
         const userMessageContent = input;
-        const userMessage: Message = { role: 'user', content: userMessageContent, createdAt: Timestamp.now() };
+        const userMessage: Message = { role: 'user', content: userMessageContent, createdAt: new Date() };
 
         const currentMessages = messages;
         const newMessages = [...currentMessages, userMessage];
@@ -78,7 +80,7 @@ function Chat() {
             
             const response = await askMisterGlobal({ history: historyForAI, question: userMessageContent });
             
-            const aiMessage: Message = { role: 'assistant', content: response, createdAt: Timestamp.now() };
+            const aiMessage: Message = { role: 'assistant', content: response, createdAt: new Date() };
 
             const finalMessages = [...newMessages, aiMessage];
             setMessages(finalMessages);
@@ -94,7 +96,7 @@ function Chat() {
                 return {
                   role: msg.role,
                   content: content,
-                  createdAt: msg.createdAt.toDate(),
+                  createdAt: msg.createdAt,
                 };
             });
 
