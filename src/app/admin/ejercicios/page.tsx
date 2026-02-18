@@ -30,9 +30,9 @@ export default function GestionEjerciciosPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <Button variant="outline" asChild>
-            <Link href="/admin">
+            <Link href="/panel">
               <ArrowLeft className="mr-2" />
-              Volver al Panel de Admin
+              Volver a Mi Panel
             </Link>
           </Button>
         </div>
