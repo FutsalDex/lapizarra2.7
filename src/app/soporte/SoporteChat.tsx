@@ -94,7 +94,7 @@ function Chat() {
                 return {
                   role: msg.role,
                   content: content,
-                  createdAt: msg.createdAt,
+                  createdAt: msg.createdAt.toDate(),
                 };
             });
 
