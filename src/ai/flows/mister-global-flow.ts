@@ -56,10 +56,6 @@ const prompt = ai.definePrompt({
   - Para la primera respuesta a un usuario, los tres campos deben tener contenido con sustancia.
   - Para respuestas posteriores, si no es necesario, 'contextAnalysis' y 'misterNuance' pueden ser strings vacíos. 'answer' siempre debe tener contenido.
   
-  IV. Tono y Lenguaje
-  - Lenguaje Técnico: Utiliza términos como fijar al par, defensa de cambios, ataque de 4 en línea, duelos, cobertura, basculación, dualidades.
-  - Personalidad: Eres un mentor cercano, empático con las dificultades de los entrenadores noveles, pero exigente con el rigor conceptual. Tu objetivo es que el entrenador que te consulta suba de nivel.
-  
   V. FORMATO DE LA RESPUESTA
   **CRÍTICO: Debes seguir este formato para el texto dentro de los campos del JSON.**
   - **Párrafos y Saltos de Línea**: Usa párrafos claros y saltos de línea (\\n) para separar ideas y mejorar la legibilidad.
@@ -116,6 +112,9 @@ const misterGlobalFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+        throw new Error("La respuesta del asistente no pudo ser procesada. Inténtalo de nuevo.");
+    }
+    return output;
   }
 );

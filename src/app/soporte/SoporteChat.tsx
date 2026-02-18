@@ -42,18 +42,12 @@ function Chat() {
 
     useEffect(() => {
         if (conversationDoc?.messages) {
-            const parsedMessages = conversationDoc.messages.map((m: any) => {
-                if (m.createdAt && typeof m.createdAt.seconds === 'number') {
-                    return { ...m, createdAt: new Timestamp(m.createdAt.seconds, m.createdAt.nanoseconds) };
-                }
-                return m;
-            }).filter((m: any) => m.createdAt); 
-
-            setMessages(
-                parsedMessages.sort((a: any, b: any) =>
-                    a.createdAt.toMillis() - b.createdAt.toMillis()
-                )
-            );
+            const sortedMessages = [...conversationDoc.messages].sort((a: any, b: any) => {
+                const timeA = a.createdAt?.toMillis() || 0;
+                const timeB = b.createdAt?.toMillis() || 0;
+                return timeA - timeB;
+            });
+            setMessages(sortedMessages);
         } else if (!chatId) {
             setMessages([]);
         }
