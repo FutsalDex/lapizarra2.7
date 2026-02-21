@@ -1,8 +1,15 @@
+"use client";
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Shield, Calendar, BookUser, BarChart3, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { getAuth } from 'firebase/auth';
+import { app } from '@/firebase/config';
+import { useMemo } from 'react';
+
+const auth = getAuth(app);
 
 const panelItems = [
   {
@@ -40,10 +47,18 @@ const panelItems = [
     buttonText: 'Chatear con el Míster',
     href: '/soporte',
     disabled: false,
+    adminOnly: true,
   },
 ];
 
 export default function PanelPage() {
+  const [user] = useAuthState(auth);
+  const isAdmin = user?.email === 'futsaldex@gmail.com';
+
+  const visiblePanelItems = useMemo(() => {
+    return panelItems.filter(item => !item.adminOnly || isAdmin);
+  }, [isAdmin]);
+
   return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-12">
@@ -54,7 +69,7 @@ export default function PanelPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {panelItems.map((item) => (
+          {visiblePanelItems.map((item) => (
             <Card key={item.title} className="flex flex-col">
               <CardHeader>
                   <div className="bg-muted rounded-lg w-14 h-14 flex items-center justify-center mb-4">
