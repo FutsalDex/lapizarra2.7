@@ -19,7 +19,7 @@ import { z } from "zod";
 import { useDocumentData } from "react-firebase-hooks/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { doc, getFirestore, addDoc, updateDoc, collection } from "firebase/firestore";
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { app, auth, db, storage } from "@/firebase/config";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,7 +57,6 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
     
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
-    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
     const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<ExerciseFormData>({
         resolver: zodResolver(exerciseSchema),
@@ -83,7 +82,6 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
             reset({ Visible: true, Edad: [], youtubeUrl: '', Imagen: '' });
             setImageFile(null);
             setImagePreview(null);
-            setUploadProgress(null);
         }
     }, [isEditMode, exerciseDoc, reset]);
 
@@ -92,7 +90,6 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
             const file = e.target.files[0];
             setImageFile(file);
             setImagePreview(URL.createObjectURL(file));
-            setUploadProgress(null);
         } else {
             setImageFile(null);
             setImagePreview(null);
@@ -106,44 +103,18 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
         }
 
         try {
-            let imageUrl = ''; // Default to empty string
+            let imageUrl = isEditMode ? exerciseDoc?.Imagen || '' : '';
 
-            // If there's a new file, upload it and get the URL
             if (imageFile) {
                 const filePath = `exercises/${user.uid}/${Date.now()}_${imageFile.name}`;
                 const storageRef = ref(storage, filePath);
-                const uploadTask = uploadBytesResumable(storageRef, imageFile);
-
-                // Use a promise to wait for the upload
-                imageUrl = await new Promise<string>((resolve, reject) => {
-                    uploadTask.on('state_changed',
-                        (snapshot) => {
-                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                            setUploadProgress(progress);
-                        },
-                        (error) => {
-                            console.error("Upload error:", error);
-                            reject(new Error(`Error al subir la imagen: ${error.message}`));
-                        },
-                        async () => {
-                            try {
-                                const url = await getDownloadURL(uploadTask.snapshot.ref);
-                                resolve(url);
-                            } catch (urlError: any) {
-                                console.error("Get URL error:", urlError);
-                                reject(new Error(`Error al obtener la URL: ${urlError.message}`));
-                            }
-                        }
-                    );
-                });
-            } else if (isEditMode && exerciseDoc?.Imagen) {
-                // If editing and no new file, keep the existing image URL
-                imageUrl = exerciseDoc.Imagen;
+                const uploadResult = await uploadBytes(storageRef, imageFile);
+                imageUrl = await getDownloadURL(uploadResult.ref);
             }
 
             const exerciseData = {
                 ...data,
-                Imagen: imageUrl
+                Imagen: imageUrl,
             };
 
             if (isEditMode && exerciseId) {
@@ -163,12 +134,10 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                 reset();
                 setImageFile(null);
                 setImagePreview(null);
-                setUploadProgress(null);
                 onCancel();
             }
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error al guardar', description: error.message });
-            setUploadProgress(null);
         }
     };
     
@@ -338,7 +307,6 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                                 <ImageIcon className="h-8 w-8" />
                             </div>
                         )}
-                        {uploadProgress !== null && <Progress value={uploadProgress} className="mt-2 w-48" />}
                     </div>
 
                     <div className="space-y-2">
@@ -442,3 +410,5 @@ export default function MisEjerciciosPage() {
         </Suspense>
     );
 }
+
+    
