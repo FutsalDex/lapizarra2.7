@@ -24,13 +24,9 @@ import { auth } from "@/firebase/config";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import AuthGuard from "@/components/auth/AuthGuard";
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
 
 const db = getFirestore(app);
-const storage = getStorage(app);
-
 
 const exerciseSchema = z.object({
     Ejercicio: z.string().min(1, "El nombre es obligatorio."),
@@ -45,6 +41,7 @@ const exerciseSchema = z.object({
     'Espacio y materiales necesarios': z.string().min(1, "Este campo es obligatorio."),
     Variantes: z.string().optional(),
     'Consejos para el entrenador': z.string().optional(),
+    Imagen: z.string().url("Debe ser una URL de imagen válida.").or(z.literal("")).optional(),
     youtubeUrl: z.string().url("Debe ser una URL de YouTube válida.").or(z.literal("")).optional(),
     Visible: z.boolean(),
 });
@@ -59,40 +56,30 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
     
     const [exerciseDoc, loadingExercise] = useDocumentData(isEditMode ? doc(db, 'exercises', exerciseId) : null);
     
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string>("");
-    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-
-    const { register, handleSubmit, control, setValue, watch, reset, formState: { errors, isSubmitting: isFormSubmitting } } = useForm<ExerciseFormData>({
+    const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<ExerciseFormData>({
         resolver: zodResolver(exerciseSchema),
         defaultValues: {
             Visible: true,
             Edad: [],
             youtubeUrl: '',
+            Imagen: '',
         }
     });
-    
-    const isSubmitting = isFormSubmitting || uploadProgress !== null;
 
     useEffect(() => {
         if (isEditMode && exerciseDoc) {
-            const { Imagen, ...formData } = exerciseDoc;
             reset({
-                ...formData,
+                ...exerciseDoc,
                 'Duración (min)': exerciseDoc['Duración (min)'],
                 'Número de jugadores': exerciseDoc['Número de jugadores'],
             } as any);
-            if (Imagen) {
-                setImagePreview(Imagen);
-            }
         } else {
             reset({
                  Visible: true,
                  Edad: [],
                  youtubeUrl: '',
+                 Imagen: '',
             });
-            setImagePreview("");
-            setImageFile(null);
         }
     }, [isEditMode, exerciseDoc, reset]);
 
@@ -104,39 +91,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
         }
 
         try {
-            let imageUrl = imagePreview || "";
-
-            if (imageFile) {
-                const storageRef = ref(storage, `exercise_images/${user.uid}/${Date.now()}_${imageFile.name}`);
-                const uploadTask = uploadBytesResumable(storageRef, imageFile);
-
-                imageUrl = await new Promise((resolve, reject) => {
-                    uploadTask.on('state_changed',
-                        (snapshot) => {
-                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                            setUploadProgress(progress);
-                        },
-                        (error) => {
-                            console.error("Upload error", error);
-                            setUploadProgress(null);
-                            reject(error);
-                        },
-                        async () => {
-                            try {
-                                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                                setUploadProgress(null);
-                                resolve(downloadURL);
-                            } catch (e) {
-                                console.error("Error getting download URL", e);
-                                setUploadProgress(null);
-                                reject(e);
-                            }
-                        }
-                    );
-                });
-            }
-            
-            const exerciseData = { ...data, Imagen: imageUrl };
+            const exerciseData = { ...data };
 
             if (isEditMode && exerciseId) {
                 await updateDoc(doc(db, 'exercises', exerciseId), {
@@ -153,25 +108,10 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                 });
                 toast({ title: "Ejercicio añadido", description: "Tu ejercicio se ha guardado en la biblioteca." });
                 reset();
-                setImageFile(null);
-                setImagePreview("");
                 onCancel();
             }
         } catch (error: any) {
-            setUploadProgress(null);
             toast({ variant: 'destructive', title: 'Error al guardar', description: error.message });
-        }
-    };
-    
-     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setImageFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
         }
     };
     
@@ -330,25 +270,9 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                     </div>
                     
                     <div className="space-y-2">
-                        <Label htmlFor="imagen-file">Imagen del Ejercicio</Label>
-                        <Input 
-                            id="imagen-file" 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={handleImageChange}
-                            disabled={isSubmitting}
-                        />
-                        {imagePreview && (
-                            <div className="mt-4 relative w-full max-w-sm h-48">
-                                <Image src={imagePreview} alt="Previsualización" fill objectFit="contain" className="rounded-md border"/>
-                            </div>
-                        )}
-                        {uploadProgress !== null && (
-                            <div className="mt-2 space-y-1">
-                                <Progress value={uploadProgress} className="w-full" />
-                                <p className="text-sm text-muted-foreground">{Math.round(uploadProgress)}% subido</p>
-                            </div>
-                        )}
+                        <Label htmlFor="Imagen">URL de la Imagen (Opcional)</Label>
+                        <Input id="Imagen" placeholder="https://ejemplo.com/imagen.jpg" {...register('Imagen')} disabled={isSubmitting}/>
+                        {errors.Imagen && <p className="text-sm text-destructive">{errors.Imagen.message}</p>}
                     </div>
                     
                     <div className="space-y-2">
