@@ -18,7 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useDocumentData } from "react-firebase-hooks/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { doc, getFirestore, addDoc, updateDoc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, getFirestore, addDoc, updateDoc, collection } from "firebase/firestore";
 import { app } from "@/firebase/config";
 import { auth } from "@/firebase/config";
 import { useToast } from "@/hooks/use-toast";
@@ -141,7 +141,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
             if (isEditMode && exerciseId) {
                 await updateDoc(doc(db, 'exercises', exerciseId), {
                     ...exerciseData,
-                    updatedAt: serverTimestamp()
+                    updatedAt: new Date()
                 });
                 toast({ title: "Ejercicio actualizado", description: "Los cambios han sido guardados." });
                 router.push('/admin/ejercicios/biblioteca');
@@ -149,7 +149,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                 await addDoc(collection(db, 'exercises'), {
                     ...exerciseData,
                     userId: user.uid,
-                    createdAt: serverTimestamp()
+                    createdAt: new Date()
                 });
                 toast({ title: "Ejercicio añadido", description: "Tu ejercicio se ha guardado en la biblioteca." });
                 reset();
@@ -340,7 +340,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                         />
                         {imagePreview && (
                             <div className="mt-4 relative w-full max-w-sm h-48">
-                                <Image src={imagePreview} alt="Previsualización" layout="fill" objectFit="contain" className="rounded-md border"/>
+                                <Image src={imagePreview} alt="Previsualización" fill objectFit="contain" className="rounded-md border"/>
                             </div>
                         )}
                         {uploadProgress !== null && (
@@ -405,9 +405,9 @@ function PageContent() {
         <div className="container mx-auto px-4 py-8">
             <div className="mb-6">
                 <Button variant="outline" asChild>
-                    <Link href="/admin/ejercicios">
+                    <Link href="/panel">
                         <ArrowLeft className="mr-2" />
-                        Volver a Gestión de Ejercicios
+                        Volver a Mi Panel
                     </Link>
                 </Button>
             </div>
