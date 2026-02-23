@@ -106,14 +106,16 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
         }
 
         try {
-            const exerciseData = { ...data, Imagen: imagePreview || '' };
+            let imageUrl = ''; // Default to empty string
 
+            // If there's a new file, upload it and get the URL
             if (imageFile) {
                 const filePath = `exercises/${user.uid}/${Date.now()}_${imageFile.name}`;
                 const storageRef = ref(storage, filePath);
                 const uploadTask = uploadBytesResumable(storageRef, imageFile);
 
-                const downloadURL = await new Promise<string>((resolve, reject) => {
+                // Use a promise to wait for the upload
+                imageUrl = await new Promise<string>((resolve, reject) => {
                     uploadTask.on('state_changed',
                         (snapshot) => {
                             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -134,8 +136,15 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                         }
                     );
                 });
-                exerciseData.Imagen = downloadURL;
+            } else if (isEditMode && exerciseDoc?.Imagen) {
+                // If editing and no new file, keep the existing image URL
+                imageUrl = exerciseDoc.Imagen;
             }
+
+            const exerciseData = {
+                ...data,
+                Imagen: imageUrl
+            };
 
             if (isEditMode && exerciseId) {
                 await updateDoc(doc(db, 'exercises', exerciseId), {
