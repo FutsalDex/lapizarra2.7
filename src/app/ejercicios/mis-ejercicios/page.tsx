@@ -122,17 +122,18 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                             reject(error);
                         },
                         async () => {
-                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                            setUploadProgress(null);
-                            resolve(downloadURL);
+                            try {
+                                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                                setUploadProgress(null);
+                                resolve(downloadURL);
+                            } catch (e) {
+                                console.error("Error getting download URL", e);
+                                setUploadProgress(null);
+                                reject(e);
+                            }
                         }
                     );
                 });
-            }
-
-            if (!imageUrl) {
-                 toast({ variant: 'destructive', title: 'Imagen requerida', description: 'Por favor, sube una imagen para el ejercicio.' });
-                 return;
             }
             
             const exerciseData = { ...data, Imagen: imageUrl };
@@ -450,5 +451,3 @@ export default function MisEjerciciosPage() {
         </Suspense>
     );
 }
-
-    
