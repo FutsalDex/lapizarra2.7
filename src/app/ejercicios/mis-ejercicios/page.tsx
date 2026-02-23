@@ -24,8 +24,13 @@ import { auth } from "@/firebase/config";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import AuthGuard from "@/components/auth/AuthGuard";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { Progress } from "@/components/ui/progress";
+import Image from "next/image";
 
 const db = getFirestore(app);
+const storage = getStorage(app);
+
 
 const exerciseSchema = z.object({
     Ejercicio: z.string().min(1, "El nombre es obligatorio."),
@@ -40,7 +45,6 @@ const exerciseSchema = z.object({
     'Espacio y materiales necesarios': z.string().min(1, "Este campo es obligatorio."),
     Variantes: z.string().optional(),
     'Consejos para el entrenador': z.string().optional(),
-    Imagen: z.string().url("Debe ser una URL válida.").or(z.literal("")),
     youtubeUrl: z.string().url("Debe ser una URL de YouTube válida.").or(z.literal("")).optional(),
     Visible: z.boolean(),
 });
@@ -54,26 +58,44 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
     const isEditMode = !!exerciseId;
     
     const [exerciseDoc, loadingExercise] = useDocumentData(isEditMode ? doc(db, 'exercises', exerciseId) : null);
+    
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string>("");
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
-    const { register, handleSubmit, control, setValue, watch, reset, formState: { errors, isSubmitting } } = useForm<ExerciseFormData>({
+    const { register, handleSubmit, control, setValue, watch, reset, formState: { errors, isSubmitting: isFormSubmitting } } = useForm<ExerciseFormData>({
         resolver: zodResolver(exerciseSchema),
         defaultValues: {
             Visible: true,
             Edad: [],
-            Imagen: '',
             youtubeUrl: '',
         }
     });
+    
+    const isSubmitting = isFormSubmitting || uploadProgress !== null;
 
     useEffect(() => {
         if (isEditMode && exerciseDoc) {
+            const { Imagen, ...formData } = exerciseDoc;
             reset({
-                ...exerciseDoc,
+                ...formData,
                 'Duración (min)': exerciseDoc['Duración (min)'],
                 'Número de jugadores': exerciseDoc['Número de jugadores'],
-            } as ExerciseFormData);
+            } as any);
+            if (Imagen) {
+                setImagePreview(Imagen);
+            }
+        } else {
+            reset({
+                 Visible: true,
+                 Edad: [],
+                 youtubeUrl: '',
+            });
+            setImagePreview("");
+            setImageFile(null);
         }
     }, [isEditMode, exerciseDoc, reset]);
+
 
     const onSubmit = async (data: ExerciseFormData) => {
         if (!user) {
@@ -82,25 +104,73 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
         }
 
         try {
+            let imageUrl = imagePreview || "";
+
+            if (imageFile) {
+                const storageRef = ref(storage, `exercise_images/${user.uid}/${Date.now()}_${imageFile.name}`);
+                const uploadTask = uploadBytesResumable(storageRef, imageFile);
+
+                imageUrl = await new Promise((resolve, reject) => {
+                    uploadTask.on('state_changed',
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            setUploadProgress(progress);
+                        },
+                        (error) => {
+                            console.error("Upload error", error);
+                            setUploadProgress(null);
+                            reject(error);
+                        },
+                        async () => {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            setUploadProgress(null);
+                            resolve(downloadURL);
+                        }
+                    );
+                });
+            }
+
+            if (!imageUrl) {
+                 toast({ variant: 'destructive', title: 'Imagen requerida', description: 'Por favor, sube una imagen para el ejercicio.' });
+                 return;
+            }
+            
+            const exerciseData = { ...data, Imagen: imageUrl };
+
             if (isEditMode && exerciseId) {
                 await updateDoc(doc(db, 'exercises', exerciseId), {
-                    ...data,
+                    ...exerciseData,
                     updatedAt: serverTimestamp()
                 });
                 toast({ title: "Ejercicio actualizado", description: "Los cambios han sido guardados." });
                 router.push('/admin/ejercicios/biblioteca');
             } else {
                 await addDoc(collection(db, 'exercises'), {
-                    ...data,
+                    ...exerciseData,
                     userId: user.uid,
                     createdAt: serverTimestamp()
                 });
                 toast({ title: "Ejercicio añadido", description: "Tu ejercicio se ha guardado en la biblioteca." });
                 reset();
+                setImageFile(null);
+                setImagePreview("");
                 onCancel();
             }
         } catch (error: any) {
+            setUploadProgress(null);
             toast({ variant: 'destructive', title: 'Error al guardar', description: error.message });
+        }
+    };
+    
+     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
         }
     };
     
@@ -147,23 +217,23 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2 md:col-span-2">
                             <Label htmlFor="Ejercicio">Nombre del Ejercicio</Label>
-                            <Input id="Ejercicio" placeholder="Ej: Rondo 4 vs 1" {...register('Ejercicio')} />
+                            <Input id="Ejercicio" placeholder="Ej: Rondo 4 vs 1" {...register('Ejercicio')} disabled={isSubmitting} />
                              {errors.Ejercicio && <p className="text-sm text-destructive">{errors.Ejercicio.message}</p>}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="Número">Número/ID</Label>
-                            <Input id="Número" type="number" placeholder="Ej: 1" {...register('Número')} />
+                            <Input id="Número" type="number" placeholder="Ej: 1" {...register('Número')} disabled={isSubmitting}/>
                              {errors.Número && <p className="text-sm text-destructive">{errors.Número.message}</p>}
                         </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="Descripción de la tarea">Descripción</Label>
-                        <Textarea id="Descripción de la tarea" placeholder="Explica en qué consiste el ejercicio..." {...register('Descripción de la tarea')} />
+                        <Textarea id="Descripción de la tarea" placeholder="Explica en qué consiste el ejercicio..." {...register('Descripción de la tarea')} disabled={isSubmitting}/>
                          {errors['Descripción de la tarea'] && <p className="text-sm text-destructive">{errors['Descripción de la tarea'].message}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="Objetivos">Objetivos</Label>
-                        <Textarea id="Objetivos" placeholder="¿Qué se busca mejorar con este ejercicio?" {...register('Objetivos')} />
+                        <Textarea id="Objetivos" placeholder="¿Qué se busca mejorar con este ejercicio?" {...register('Objetivos')} disabled={isSubmitting}/>
                         {errors.Objetivos && <p className="text-sm text-destructive">{errors.Objetivos.message}</p>}
                     </div>
 
@@ -171,7 +241,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                         <Controller name="Fase" control={control} render={({ field }) => (
                              <div className="space-y-2">
                                 <Label>Fase</Label>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                                     <SelectTrigger><SelectValue placeholder="Seleccionar fase" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="Calentamiento">Calentamiento</SelectItem>
@@ -187,7 +257,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                        <Controller name="Categoría" control={control} render={({ field }) => (
                              <div className="space-y-2">
                                 <Label>Categoría</Label>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                                     <SelectTrigger><SelectValue placeholder="Seleccionar categoría" /></SelectTrigger>
                                     <SelectContent>
                                         {categorias.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
@@ -198,7 +268,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                         )}/>
                         <div className="space-y-2">
                             <Label htmlFor="Duración (min)">Duración (min)</Label>
-                            <Input id="Duración (min)" type="number" placeholder="Ej: 15" {...register('Duración (min)')} />
+                            <Input id="Duración (min)" type="number" placeholder="Ej: 15" {...register('Duración (min)')} disabled={isSubmitting}/>
                             {errors['Duración (min)'] && <p className="text-sm text-destructive">{errors['Duración (min)'].message}</p>}
                         </div>
                     </div>
@@ -224,6 +294,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                                                             field.onChange(currentValues.filter(value => value !== edad));
                                                         }
                                                     }}
+                                                    disabled={isSubmitting}
                                                 />
                                                 <Label htmlFor={edad} className="font-normal text-sm">{edad}</Label>
                                             </div>
@@ -238,33 +309,50 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="Número de jugadores">Nº de Jugadores</Label>
-                            <Input id="Número de jugadores" type="number" placeholder="Ej: 5" {...register('Número de jugadores')} />
+                            <Input id="Número de jugadores" type="number" placeholder="Ej: 5" {...register('Número de jugadores')} disabled={isSubmitting}/>
                              {errors['Número de jugadores'] && <p className="text-sm text-destructive">{errors['Número de jugadores'].message}</p>}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="Espacio y materiales necesarios">Espacio y Materiales</Label>
-                            <Input id="Espacio y materiales necesarios" placeholder="Ej: Medio campo, 5 conos, 1 balón" {...register('Espacio y materiales necesarios')} />
+                            <Input id="Espacio y materiales necesarios" placeholder="Ej: Medio campo, 5 conos, 1 balón" {...register('Espacio y materiales necesarios')} disabled={isSubmitting}/>
                              {errors['Espacio y materiales necesarios'] && <p className="text-sm text-destructive">{errors['Espacio y materiales necesarios'].message}</p>}
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="Variantes">Variantes (Opcional)</Label>
-                        <Textarea id="Variantes" placeholder="Añade posibles variaciones..." {...register('Variantes')} />
+                        <Textarea id="Variantes" placeholder="Añade posibles variaciones..." {...register('Variantes')} disabled={isSubmitting}/>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="Consejos para el entrenador">Consejos (Opcional)</Label>
-                        <Textarea id="Consejos para el entrenador" placeholder="Ofrece consejos para la ejecución..." {...register('Consejos para el entrenador')} />
+                        <Textarea id="Consejos para el entrenador" placeholder="Ofrece consejos para la ejecución..." {...register('Consejos para el entrenador')} disabled={isSubmitting}/>
                     </div>
-
+                    
                     <div className="space-y-2">
-                        <Label htmlFor="Imagen">URL de la Imagen</Label>
-                        <Input id="Imagen" placeholder="https://ejemplo.com/imagen.jpg" {...register('Imagen')} />
-                         {errors.Imagen && <p className="text-sm text-destructive">{errors.Imagen.message}</p>}
+                        <Label htmlFor="imagen-file">Imagen del Ejercicio</Label>
+                        <Input 
+                            id="imagen-file" 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={handleImageChange}
+                            disabled={isSubmitting}
+                        />
+                        {imagePreview && (
+                            <div className="mt-4 relative w-full max-w-sm h-48">
+                                <Image src={imagePreview} alt="Previsualización" layout="fill" objectFit="contain" className="rounded-md border"/>
+                            </div>
+                        )}
+                        {uploadProgress !== null && (
+                            <div className="mt-2 space-y-1">
+                                <Progress value={uploadProgress} className="w-full" />
+                                <p className="text-sm text-muted-foreground">{Math.round(uploadProgress)}% subido</p>
+                            </div>
+                        )}
                     </div>
+                    
                     <div className="space-y-2">
                         <Label htmlFor="youtubeUrl">URL del Vídeo (Opcional)</Label>
-                        <Input id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." {...register('youtubeUrl')} />
+                        <Input id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." {...register('youtubeUrl')} disabled={isSubmitting}/>
                         {errors.youtubeUrl && <p className="text-sm text-destructive">{errors.youtubeUrl.message}</p>}
                     </div>
                      <Controller
@@ -276,7 +364,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                                     <Label htmlFor="visibility-switch" className="text-sm">Visible en la biblioteca pública</Label>
                                     <p className="text-xs text-muted-foreground">Si está desactivado, el ejercicio no será visible para otros usuarios.</p>
                                 </div>
-                                <Switch id="visibility-switch" checked={field.value} onCheckedChange={field.onChange} />
+                                <Switch id="visibility-switch" checked={field.value} onCheckedChange={field.onChange} disabled={isSubmitting}/>
                             </div>
                         )}
                     />
@@ -362,3 +450,5 @@ export default function MisEjerciciosPage() {
         </Suspense>
     );
 }
+
+    
