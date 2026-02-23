@@ -4,7 +4,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ArrowLeft, Upload, PlusCircle, X, Save, Loader2, Edit } from "lucide-react";
+import { ArrowLeft, Upload, PlusCircle, X, Save, Loader2, Edit, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,14 +19,13 @@ import { z } from "zod";
 import { useDocumentData } from "react-firebase-hooks/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { doc, getFirestore, addDoc, updateDoc, collection } from "firebase/firestore";
-import { app } from "@/firebase/config";
-import { auth } from "@/firebase/config";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { app, auth, db, storage } from "@/firebase/config";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import AuthGuard from "@/components/auth/AuthGuard";
 import Image from "next/image";
-
-const db = getFirestore(app);
+import { Progress } from "@/components/ui/progress";
 
 const exerciseSchema = z.object({
     Ejercicio: z.string().min(1, "El nombre es obligatorio."),
@@ -41,7 +40,7 @@ const exerciseSchema = z.object({
     'Espacio y materiales necesarios': z.string().min(1, "Este campo es obligatorio."),
     Variantes: z.string().optional(),
     'Consejos para el entrenador': z.string().optional(),
-    Imagen: z.string().url("Debe ser una URL de imagen válida.").or(z.literal("")).optional(),
+    Imagen: z.string().optional(),
     youtubeUrl: z.string().url("Debe ser una URL de YouTube válida.").or(z.literal("")).optional(),
     Visible: z.boolean(),
 });
@@ -56,6 +55,10 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
     
     const [exerciseDoc, loadingExercise] = useDocumentData(isEditMode ? doc(db, 'exercises', exerciseId) : null);
     
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
     const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<ExerciseFormData>({
         resolver: zodResolver(exerciseSchema),
         defaultValues: {
@@ -73,16 +76,28 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                 'Duración (min)': exerciseDoc['Duración (min)'],
                 'Número de jugadores': exerciseDoc['Número de jugadores'],
             } as any);
+            if (exerciseDoc.Imagen) {
+                setImagePreview(exerciseDoc.Imagen);
+            }
         } else {
-            reset({
-                 Visible: true,
-                 Edad: [],
-                 youtubeUrl: '',
-                 Imagen: '',
-            });
+            reset({ Visible: true, Edad: [], youtubeUrl: '', Imagen: '' });
+            setImageFile(null);
+            setImagePreview(null);
+            setUploadProgress(null);
         }
     }, [isEditMode, exerciseDoc, reset]);
 
+    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+            setUploadProgress(null);
+        } else {
+            setImageFile(null);
+            setImagePreview(null);
+        }
+    };
 
     const onSubmit = async (data: ExerciseFormData) => {
         if (!user) {
@@ -91,7 +106,36 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
         }
 
         try {
-            const exerciseData = { ...data };
+            const exerciseData = { ...data, Imagen: imagePreview || '' };
+
+            if (imageFile) {
+                const filePath = `exercises/${user.uid}/${Date.now()}_${imageFile.name}`;
+                const storageRef = ref(storage, filePath);
+                const uploadTask = uploadBytesResumable(storageRef, imageFile);
+
+                const downloadURL = await new Promise<string>((resolve, reject) => {
+                    uploadTask.on('state_changed',
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            setUploadProgress(progress);
+                        },
+                        (error) => {
+                            console.error("Upload error:", error);
+                            reject(new Error(`Error al subir la imagen: ${error.message}`));
+                        },
+                        async () => {
+                            try {
+                                const url = await getDownloadURL(uploadTask.snapshot.ref);
+                                resolve(url);
+                            } catch (urlError: any) {
+                                console.error("Get URL error:", urlError);
+                                reject(new Error(`Error al obtener la URL: ${urlError.message}`));
+                            }
+                        }
+                    );
+                });
+                exerciseData.Imagen = downloadURL;
+            }
 
             if (isEditMode && exerciseId) {
                 await updateDoc(doc(db, 'exercises', exerciseId), {
@@ -108,10 +152,14 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                 });
                 toast({ title: "Ejercicio añadido", description: "Tu ejercicio se ha guardado en la biblioteca." });
                 reset();
+                setImageFile(null);
+                setImagePreview(null);
+                setUploadProgress(null);
                 onCancel();
             }
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error al guardar', description: error.message });
+            setUploadProgress(null);
         }
     };
     
@@ -270,16 +318,26 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                     </div>
                     
                     <div className="space-y-2">
-                        <Label htmlFor="Imagen">URL de la Imagen (Opcional)</Label>
-                        <Input id="Imagen" placeholder="https://ejemplo.com/imagen.jpg" {...register('Imagen')} disabled={isSubmitting}/>
-                        {errors.Imagen && <p className="text-sm text-destructive">{errors.Imagen.message}</p>}
+                        <Label htmlFor="image-upload">Imagen del Ejercicio</Label>
+                        <Input id="image-upload" type="file" accept="image/*" onChange={handleImageSelect} disabled={isSubmitting} />
+                        {imagePreview ? (
+                            <div className="mt-2 relative w-48 h-32">
+                                <Image src={imagePreview} alt="Previsualización" layout="fill" className="rounded-md object-contain border p-1" />
+                            </div>
+                        ) : (
+                            <div className="mt-2 flex items-center justify-center w-48 h-32 rounded-md border border-dashed text-muted-foreground">
+                                <ImageIcon className="h-8 w-8" />
+                            </div>
+                        )}
+                        {uploadProgress !== null && <Progress value={uploadProgress} className="mt-2 w-48" />}
                     </div>
-                    
+
                     <div className="space-y-2">
                         <Label htmlFor="youtubeUrl">URL del Vídeo (Opcional)</Label>
                         <Input id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." {...register('youtubeUrl')} disabled={isSubmitting}/>
                         {errors.youtubeUrl && <p className="text-sm text-destructive">{errors.youtubeUrl.message}</p>}
                     </div>
+
                      <Controller
                         name="Visible"
                         control={control}
