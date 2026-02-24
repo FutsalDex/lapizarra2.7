@@ -17,6 +17,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useDocumentData } from "react-firebase-hooks/firestore";
+import { useAuthState } from 'react-firebase-hooks/auth';
 import { doc, getFirestore, addDoc, updateDoc, collection } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { app, auth, db, storage } from "@/firebase/config";
@@ -48,6 +49,7 @@ type ExerciseFormData = z.infer<typeof exerciseSchema>;
 const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, exerciseId?: string | null }) => {
     const { toast } = useToast();
     const router = useRouter();
+    const [user, loadingAuth] = useAuthState(auth);
     const isEditMode = !!exerciseId;
     
     const [exerciseDoc, loadingExercise] = useDocumentData(isEditMode ? doc(db, 'exercises', exerciseId) : null);
@@ -95,7 +97,6 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
     };
 
     const onSubmit = async (data: ExerciseFormData) => {
-        const user = auth.currentUser;
         if (!user) {
             toast({ variant: "destructive", title: "No autenticado", description: "Debes iniciar sesión para guardar un ejercicio." });
             return;
@@ -156,7 +157,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
         "Desmarques y movilidad", "Juego reducido y condicionado", "Calentamiento y activación",
     ];
 
-    if (loadingExercise) {
+    if (loadingExercise || loadingAuth) {
         return (
              <Card className="max-w-4xl mx-auto mt-8">
                 <CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader>
