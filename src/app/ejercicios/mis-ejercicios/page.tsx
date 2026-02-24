@@ -97,8 +97,8 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
     };
 
     const onSubmit = async (data: ExerciseFormData) => {
-        if (!user) {
-            toast({ variant: "destructive", title: "No autenticado", description: "Debes iniciar sesión para guardar un ejercicio." });
+        if (!user || !user.uid) {
+            toast({ variant: "destructive", title: "No autenticado", description: "Tu sesión puede haber expirado. Por favor, inicia sesión de nuevo." });
             return;
         }
 

@@ -68,7 +68,7 @@ service cloud.firestore {
     match /exercises/{exerciseId} {
       allow get: if true;
       allow list: if isSignedIn() || request.query.limit <= 10;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn();
       allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
