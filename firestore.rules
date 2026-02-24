@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -8,17 +7,14 @@ service cloud.firestore {
     // 🔐 FUNCIONES REUTILIZABLES
     // ============================================================
 
-    // Usuario autenticado
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Usuario dueño de su propio documento
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Usuario administrador
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'futsaldex@gmail.com' ||
@@ -29,14 +25,12 @@ service cloud.firestore {
       );
     }
 
-    // Dueño de un equipo
     function isTeamOwner(teamId) {
       return isSignedIn() &&
              exists(/databases/$(database)/documents/teams/$(teamId)) &&
              get(/databases/$(database)/documents/teams/$(teamId)).data.ownerId == request.auth.uid;
     }
 
-    // Miembro de un equipo (o dueño)
     function isTeamMember(teamId) {
       return isSignedIn() &&
              exists(/databases/$(database)/documents/teams/$(teamId)) &&
@@ -55,7 +49,6 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       allow update, delete: if isOwner(userId) || isAdmin();
 
-      // Favoritos
       match /favorites/{favoriteId} {
         allow read, write: if isOwner(userId);
       }
@@ -63,13 +56,33 @@ service cloud.firestore {
 
     // ============================================================
     // 🏋️ EXERCISES
+    // ✅ CORRECCIÓN PRINCIPAL: create exige que userId del documento
+    //    sea igual al uid del usuario autenticado.
+    //    Esto evita que se guarden documentos con userId incorrecto
+    //    y garantiza que update/delete siempre funcionen.
     // ============================================================
 
     match /exercises/{exerciseId} {
       allow get: if true;
-      allow list: if isSignedIn() || request.query.limit <= 10;
-      allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if true;
+
+      // 🔑 CLAVE: forzamos que el campo userId del documento
+      // sea exactamente el uid del usuario que está creando
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid;
+
+      // update y delete: el dueño o un admin
+      allow update: if isSignedIn()
+                    && (
+                      resource.data.userId == request.auth.uid
+                      || isAdmin()
+                    );
+
+      allow delete: if isSignedIn()
+                    && (
+                      resource.data.userId == request.auth.uid
+                      || isAdmin()
+                    );
     }
 
     // ============================================================
@@ -77,31 +90,20 @@ service cloud.firestore {
     // ============================================================
 
     match /teams/{teamId} {
-
-      // Leer info de un equipo concreto
       allow get: if isTeamMember(teamId) || isAdmin();
-      // Listar todos los equipos (para filtrar en cliente)
       allow list: if isSignedIn();
-
-      // Crear equipo
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-
-      // Modificar o eliminar
       allow update, delete: if isTeamOwner(teamId) || isAdmin();
 
-      // --- 📅 Asistencias ---
       match /attendance/{date} {
         allow get, list, create, update, delete: if isTeamMember(teamId) || isAdmin();
       }
 
-      // --- 🧍 Jugadores ---
       match /players/{playerId} {
-        allow list: if isTeamMember(teamId) || isAdmin();
-        allow get: if isTeamMember(teamId) || isAdmin();
+        allow list, get: if isTeamMember(teamId) || isAdmin();
         allow create, update, delete: if isTeamOwner(teamId) || isAdmin();
       }
 
-      // --- 👥 Staff Técnico ---
       match /staff/{staffId} {
         allow list, get: if isTeamMember(teamId) || isAdmin();
         allow create, update, delete: if isTeamOwner(teamId) || isAdmin();
@@ -109,47 +111,79 @@ service cloud.firestore {
     }
 
     // ============================================================
-    // 💬 CONVERSATIONS (Míster Global AI)
+    // 💬 CONVERSATIONS
     // ============================================================
-     match /conversations/{conversationId} {
+
+    match /conversations/{conversationId} {
       allow list: if isSignedIn();
-      allow get, update, delete: if resource.data.userId == request.auth.uid || isAdmin();
-      allow create: if request.auth.uid == request.resource.data.userId;
+      allow get, update, delete: if isSignedIn()
+                                  && (
+                                    resource.data.userId == request.auth.uid
+                                    || isAdmin()
+                                  );
+      allow create: if isSignedIn()
+                    && request.auth.uid == request.resource.data.userId;
     }
 
-
     // ============================================================
-    // 📅 MATCHES / SESSIONS / INVITATIONS
+    // 📅 MATCHES
     // ============================================================
 
     match /matches/{matchId} {
-        allow get: if isTeamMember(resource.data.teamId) || resource.data.userId == request.auth.uid || isAdmin();
-        allow list: if isSignedIn();
-        allow create: if isTeamMember(request.resource.data.teamId) || request.resource.data.userId == request.auth.uid;
-        allow update, delete: if isTeamMember(resource.data.teamId) || resource.data.userId == request.auth.uid || isAdmin();
+      allow get: if isSignedIn()
+                  && (
+                    isTeamMember(resource.data.teamId)
+                    || resource.data.userId == request.auth.uid
+                    || isAdmin()
+                  );
+      allow list: if isSignedIn();
+      allow create: if isSignedIn()
+                    && (
+                      isTeamMember(request.resource.data.teamId)
+                      || request.resource.data.userId == request.auth.uid
+                    );
+      allow update, delete: if isSignedIn()
+                             && (
+                               isTeamMember(resource.data.teamId)
+                               || resource.data.userId == request.auth.uid
+                               || isAdmin()
+                             );
     }
 
+    // ============================================================
+    // 📅 SESSIONS
+    // ============================================================
 
     match /sessions/{sessionId} {
-       allow get, list: if isSignedIn();
-       allow create: if request.resource.data.userId == request.auth.uid;
-       allow update, delete: if resource.data.userId == request.auth.uid || isAdmin();
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn()
+                             && (
+                               resource.data.userId == request.auth.uid
+                               || isAdmin()
+                             );
     }
+
+    // ============================================================
+    // 📨 INVITATIONS
+    // ============================================================
 
     match /invitations/{invitationId} {
       allow get, list, create, update, delete: if isSignedIn();
     }
-    
+
     // ============================================================
     // 📢 NOTIFICATIONS
     // ============================================================
+
     match /notifications/{notificationId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
     // ============================================================
-    // ❌ Colecciones obsoletas (bloqueadas)
+    // ❌ Colecciones obsoletas bloqueadas
     // ============================================================
 
     match /teamMembers/{memberId} { allow read, write: if false; }

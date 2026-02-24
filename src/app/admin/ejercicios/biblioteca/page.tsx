@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -46,6 +45,8 @@ export default function LibraryManagementPage() {
   const [user, loadingAuth] = useAuthState(auth);
   const [exercisesSnapshot, loadingExercises, errorExercises] = useCollection(collection(db, 'exercises'));
 
+  const isAdmin = user?.email === 'futsaldex@gmail.com';
+
   const exercises = useMemo(() => 
     exercisesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise)) || [],
   [exercisesSnapshot]);
@@ -89,21 +90,30 @@ export default function LibraryManagementPage() {
   };
   
   const filteredExercises = useMemo(() => {
-      if (loadingExercises || loadingAuth) return [];
+      if (loadingExercises || loadingAuth || !user) return [];
+
       return exercises.filter(exercise => {
+        // For non-admins, only show their own exercises.
+        if (!isAdmin && exercise.userId !== user.uid) {
+            return false;
+        }
+
         const matchesSearch = exercise['Ejercicio'].toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = categoryFilter === 'Todas' || exercise['Categoría'] === categoryFilter;
         
         let matchesAuthor = true;
-        if (authorFilter === 'Mis Ejercicios') {
-            matchesAuthor = user ? exercise.userId === user.uid : false;
-        } else if (authorFilter === 'Otros Usuarios') {
-            matchesAuthor = user ? exercise.userId !== user.uid : true;
+        // The author filter is only applied for admins.
+        if (isAdmin) {
+            if (authorFilter === 'Mis Ejercicios') {
+                matchesAuthor = exercise.userId === user.uid;
+            } else if (authorFilter === 'Otros Usuarios') {
+                matchesAuthor = exercise.userId !== user.uid;
+            }
         }
 
         return matchesSearch && matchesCategory && matchesAuthor;
       }).sort((a, b) => (a['Número'] || 0) - (b['Número'] || 0));
-  }, [exercises, searchTerm, categoryFilter, authorFilter, user, loadingExercises, loadingAuth]);
+  }, [exercises, searchTerm, categoryFilter, authorFilter, user, loadingExercises, loadingAuth, isAdmin]);
 
   const isLoading = loadingAuth || loadingExercises;
 
@@ -112,24 +122,26 @@ export default function LibraryManagementPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <Button variant="outline" asChild>
-            <Link href="/admin/ejercicios">
+            <Link href={isAdmin ? "/admin/ejercicios" : "/ejercicios/mis-ejercicios"}>
               <ArrowLeft className="mr-2" />
-              Volver a Gestión de Ejercicios
+              Volver
             </Link>
           </Button>
         </div>
 
         <div className="mb-8">
-          <h1 className="text-4xl font-bold font-headline text-primary">Gestionar Biblioteca de Ejercicios</h1>
+          <h1 className="text-4xl font-bold font-headline text-primary">
+            {isAdmin ? 'Gestionar Biblioteca' : 'Mis Ejercicios Subidos'}
+          </h1>
           <p className="text-lg text-muted-foreground mt-2">
-            Activa o desactiva la visibilidad de los ejercicios para los usuarios.
+            {isAdmin ? 'Activa o desactiva la visibilidad de los ejercicios para los usuarios.' : 'Aquí puedes ver y editar los ejercicios que has aportado.'}
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Listado de Todos los Ejercicios</CardTitle>
-            <CardDescription>Usa el interruptor para cambiar la visibilidad de un ejercicio en la biblioteca pública.</CardDescription>
+            <CardTitle>{isAdmin ? 'Listado de Todos los Ejercicios' : 'Mis Ejercicios'}</CardTitle>
+            <CardDescription>{isAdmin ? 'Usa el interruptor para cambiar la visibilidad de un ejercicio en la biblioteca pública.' : 'Edita la visibilidad o los detalles de tus ejercicios.'}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-4 mb-4">
@@ -153,16 +165,18 @@ export default function LibraryManagementPage() {
                       ))}
                   </SelectContent>
               </Select>
-              <Select value={authorFilter} onValueChange={setAuthorFilter}>
-                  <SelectTrigger className="w-full sm:w-[240px]">
-                      <SelectValue placeholder="Filtrar por autor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="Todos">Todos los Autores</SelectItem>
-                      <SelectItem value="Mis Ejercicios">Mis Ejercicios</SelectItem>
-                      <SelectItem value="Otros Usuarios">Otros Usuarios</SelectItem>
-                  </SelectContent>
-              </Select>
+              {isAdmin && (
+                <Select value={authorFilter} onValueChange={setAuthorFilter}>
+                    <SelectTrigger className="w-full sm:w-[240px]">
+                        <SelectValue placeholder="Filtrar por autor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Todos">Todos los Autores</SelectItem>
+                        <SelectItem value="Mis Ejercicios">Mis Ejercicios</SelectItem>
+                        <SelectItem value="Otros Usuarios">Otros Usuarios</SelectItem>
+                    </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="border rounded-lg">
               <Table>
