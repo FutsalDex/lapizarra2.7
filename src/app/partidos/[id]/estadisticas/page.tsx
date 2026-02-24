@@ -608,11 +608,6 @@ export default function EstadisticasPartidoPage() {
                                         ))}
                                     </TableBody>
                                     <TableFooter>
-                                        <TableRow>
-                                            <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
-                                            <TableHead className="px-1 py-2 text-center">Min</TableHead>
-                                            {statHeaders.map(header => <TableHead key={header.key} className="px-1 py-2 text-center">{header.label}</TableHead>)}
-                                        </TableRow>
                                         <TableRow className="font-bold bg-muted/50 hover:bg-muted/50">
                                             <TableCell className="sticky left-0 bg-muted/50 px-1 py-2 min-w-[150px] text-center z-10">Total</TableCell>
                                             <TableCell className="px-1 py-2 text-center">-</TableCell>
@@ -701,11 +696,6 @@ export default function EstadisticasPartidoPage() {
                                             ))}
                                         </TableBody>
                                         <TableFooter>
-                                            <TableRow>
-                                                <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] px-1 py-2 text-center">Jugador</TableHead>
-                                                <TableHead className="px-1 py-2 text-center">Min</TableHead>
-                                                {statHeaders.map(header => <TableHead key={header.key} className="px-1 py-2 text-center">{header.label}</TableHead>)}
-                                            </TableRow>
                                             <TableRow className="font-bold bg-muted/50 hover:bg-muted/50">
                                                 <TableCell className="sticky left-0 bg-muted/50 px-1 py-2 min-w-[150px] text-center z-10">Total</TableCell>
                                                 <TableCell className="px-1 py-2 text-center">-</TableCell>
