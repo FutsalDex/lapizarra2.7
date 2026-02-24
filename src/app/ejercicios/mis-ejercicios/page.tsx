@@ -4,7 +4,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ArrowLeft, Upload, PlusCircle, X, Save, Loader2, Edit, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Upload, PlusCircle, X, Save, Loader2, Edit, Image as ImageIcon, List, ArrowRight, BookUser } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,13 +103,14 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
         }
 
         try {
-            let imageUrl = isEditMode ? exerciseDoc?.Imagen || '' : '';
-
+            let imageUrl = '';
             if (imageFile) {
                 const filePath = `exercises/${user.uid}/${Date.now()}_${imageFile.name}`;
                 const storageRef = ref(storage, filePath);
                 const uploadResult = await uploadBytes(storageRef, imageFile);
                 imageUrl = await getDownloadURL(uploadResult.ref);
+            } else if (isEditMode) {
+                imageUrl = exerciseDoc?.Imagen || '';
             }
 
             const exerciseData = {
@@ -359,6 +360,27 @@ function PageContent() {
         router.push('/ejercicios/mis-ejercicios');
     };
 
+    const isEditing = view === 'form' && exerciseId;
+    const isCreating = view === 'form' && !exerciseId;
+
+    const getTitle = () => {
+        if (isEditing) return 'Editar Ejercicio';
+        if (isCreating) return 'Añadir Ejercicio';
+        return 'Mis Ejercicios';
+    };
+
+    const getDescription = () => {
+        if (isEditing) return 'Modifica los datos y guarda los cambios.';
+        if (isCreating) return 'Completa el formulario para añadir un nuevo ejercicio a la biblioteca.';
+        return 'Añade nuevos ejercicios a la biblioteca o gestiona los que ya has creado.';
+    };
+
+    const getIcon = () => {
+        if (isEditing) return <Edit className="w-8 h-8 text-primary" />;
+        if (isCreating) return <PlusCircle className="w-8 h-8 text-primary" />;
+        return <BookUser className="w-8 h-8 text-primary" />;
+    };
+
     return (
       <AuthGuard>
         <div className="container mx-auto px-4 py-8">
@@ -373,27 +395,51 @@ function PageContent() {
             <div className="text-center mb-8">
                 <div className="flex justify-center mb-4">
                     <div className="bg-muted p-3 rounded-full inline-flex">
-                        {view === 'form' && exerciseId ? <Edit className="w-8 h-8 text-primary" /> : <Upload className="w-8 h-8 text-primary" />}
+                        {getIcon()}
                     </div>
                 </div>
-                <h1 className="text-4xl font-bold font-headline">{view === 'form' && exerciseId ? 'Editar Ejercicio' : 'Alta de Ejercicios'}</h1>
+                <h1 className="text-4xl font-bold font-headline">{getTitle()}</h1>
                 <p className="text-lg text-muted-foreground mt-2">
-                    {view === 'form' && exerciseId ? 'Modifica los datos y guarda los cambios.' : 'Añade nuevos ejercicios a la biblioteca pública.'}
+                    {getDescription()}
                 </p>
             </div>
             {view === 'list' && (
-                <div className="grid grid-cols-1 md:grid-cols-1 gap-8 max-w-lg mx-auto">
-                    <Card className="flex flex-col text-center items-center justify-center p-8">
-                        <CardHeader>
-                            <div className="bg-muted rounded-lg w-14 h-14 flex items-center justify-center mb-4 mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <Card className="flex flex-col">
+                        <CardHeader className="items-center text-center">
+                            <div className="bg-muted rounded-lg w-14 h-14 flex items-center justify-center mb-4">
                                 <PlusCircle className="w-8 h-8 text-primary" />
                             </div>
-                            <CardTitle>Añadir Ejercicio Individual</CardTitle>
+                            <CardTitle>Añadir Ejercicio</CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="flex-grow text-center">
                             <p className="text-muted-foreground">Completa el formulario para añadir un nuevo ejercicio a la biblioteca pública.</p>
                         </CardContent>
-                        <Button onClick={() => setView('form')}>Acceder</Button>
+                        <CardFooter>
+                            <Button onClick={() => setView('form')} className="w-full">
+                                Acceder
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                    <Card className="flex flex-col">
+                        <CardHeader className="items-center text-center">
+                            <div className="bg-muted rounded-lg w-14 h-14 flex items-center justify-center mb-4">
+                                <List className="w-8 h-8 text-primary" />
+                            </div>
+                            <CardTitle>Gestionar Mis Ejercicios</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow text-center">
+                            <p className="text-muted-foreground">Visualiza, edita y gestiona los ejercicios que has creado y gana puntos.</p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button asChild variant="default" className="w-full">
+                                <Link href="/admin/ejercicios/biblioteca">
+                                    Acceder
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Link>
+                            </Button>
+                        </CardFooter>
                     </Card>
                 </div>
             )}
@@ -403,6 +449,7 @@ function PageContent() {
     );
 }
 
+
 export default function MisEjerciciosPage() {
     return (
         <Suspense fallback={<div className="container mx-auto px-4 py-8"><Loader2 className="animate-spin" /></div>}>
@@ -410,5 +457,3 @@ export default function MisEjerciciosPage() {
         </Suspense>
     );
 }
-
-    
