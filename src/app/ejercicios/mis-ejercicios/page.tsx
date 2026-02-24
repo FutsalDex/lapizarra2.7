@@ -17,7 +17,6 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useDocumentData } from "react-firebase-hooks/firestore";
-import { useAuthState } from "react-firebase-hooks/auth";
 import { doc, getFirestore, addDoc, updateDoc, collection } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { app, auth, db, storage } from "@/firebase/config";
@@ -25,7 +24,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import AuthGuard from "@/components/auth/AuthGuard";
 import Image from "next/image";
-import { Progress } from "@/components/ui/progress";
 
 const exerciseSchema = z.object({
     Ejercicio: z.string().min(1, "El nombre es obligatorio."),
@@ -50,15 +48,15 @@ type ExerciseFormData = z.infer<typeof exerciseSchema>;
 const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, exerciseId?: string | null }) => {
     const { toast } = useToast();
     const router = useRouter();
-    const [user] = useAuthState(auth);
     const isEditMode = !!exerciseId;
     
     const [exerciseDoc, loadingExercise] = useDocumentData(isEditMode ? doc(db, 'exercises', exerciseId) : null);
     
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<ExerciseFormData>({
+    const { register, handleSubmit, control, reset, formState: { errors } } = useForm<ExerciseFormData>({
         resolver: zodResolver(exerciseSchema),
         defaultValues: {
             Visible: true,
@@ -97,13 +95,15 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
     };
 
     const onSubmit = async (data: ExerciseFormData) => {
+        const user = auth.currentUser;
         if (!user) {
-            toast({ variant: "destructive", title: "No autenticado", description: "Debes iniciar sesión." });
+            toast({ variant: "destructive", title: "No autenticado", description: "Debes iniciar sesión para guardar un ejercicio." });
             return;
         }
-    
+
+        setIsSaving(true);
         try {
-            let imageUrl = isEditMode ? (exerciseDoc?.Imagen || '') : '';
+            let imageUrl = isEditMode && exerciseDoc ? (exerciseDoc.Imagen || '') : '';
     
             if (imageFile) {
                 const filePath = `exercises/${user.uid}/${Date.now()}_${imageFile.name}`;
@@ -113,11 +113,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
             }
     
             if (isEditMode && exerciseId) {
-                const updatedData = {
-                    ...data,
-                    Imagen: imageUrl,
-                    updatedAt: new Date()
-                };
+                const updatedData = { ...data, Imagen: imageUrl, updatedAt: new Date() };
                 await updateDoc(doc(db, 'exercises', exerciseId), updatedData);
                 toast({ title: "Ejercicio actualizado", description: "Los cambios han sido guardados." });
                 router.push('/admin/ejercicios/biblioteca');
@@ -130,13 +126,20 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                 };
                 await addDoc(collection(db, 'exercises'), newExercise);
                 toast({ title: "Ejercicio añadido", description: "Tu ejercicio se ha guardado en la biblioteca." });
-                reset();
-                setImageFile(null);
-                setImagePreview(null);
+            }
+            
+            reset();
+            setImageFile(null);
+            setImagePreview(null);
+            if (!isEditMode) {
                 onCancel();
             }
+
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error al guardar', description: error.message });
+            console.error("Error saving exercise:", error);
+            toast({ variant: 'destructive', title: 'Error al guardar', description: error.message || 'Ocurrió un error inesperado.' });
+        } finally {
+            setIsSaving(false);
         }
     };
     
@@ -183,23 +186,23 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2 md:col-span-2">
                             <Label htmlFor="Ejercicio">Nombre del Ejercicio</Label>
-                            <Input id="Ejercicio" placeholder="Ej: Rondo 4 vs 1" {...register('Ejercicio')} disabled={isSubmitting} />
+                            <Input id="Ejercicio" placeholder="Ej: Rondo 4 vs 1" {...register('Ejercicio')} disabled={isSaving} />
                              {errors.Ejercicio && <p className="text-sm text-destructive">{errors.Ejercicio.message}</p>}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="Número">Número/ID</Label>
-                            <Input id="Número" type="number" placeholder="Ej: 1" {...register('Número')} disabled={isSubmitting}/>
+                            <Input id="Número" type="number" placeholder="Ej: 1" {...register('Número')} disabled={isSaving}/>
                              {errors.Número && <p className="text-sm text-destructive">{errors.Número.message}</p>}
                         </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="Descripción de la tarea">Descripción</Label>
-                        <Textarea id="Descripción de la tarea" placeholder="Explica en qué consiste el ejercicio..." {...register('Descripción de la tarea')} disabled={isSubmitting}/>
+                        <Textarea id="Descripción de la tarea" placeholder="Explica en qué consiste el ejercicio..." {...register('Descripción de la tarea')} disabled={isSaving}/>
                          {errors['Descripción de la tarea'] && <p className="text-sm text-destructive">{errors['Descripción de la tarea'].message}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="Objetivos">Objetivos</Label>
-                        <Textarea id="Objetivos" placeholder="¿Qué se busca mejorar con este ejercicio?" {...register('Objetivos')} disabled={isSubmitting}/>
+                        <Textarea id="Objetivos" placeholder="¿Qué se busca mejorar con este ejercicio?" {...register('Objetivos')} disabled={isSaving}/>
                         {errors.Objetivos && <p className="text-sm text-destructive">{errors.Objetivos.message}</p>}
                     </div>
 
@@ -207,7 +210,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                         <Controller name="Fase" control={control} render={({ field }) => (
                              <div className="space-y-2">
                                 <Label>Fase</Label>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSaving}>
                                     <SelectTrigger><SelectValue placeholder="Seleccionar fase" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="Calentamiento">Calentamiento</SelectItem>
@@ -223,7 +226,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                        <Controller name="Categoría" control={control} render={({ field }) => (
                              <div className="space-y-2">
                                 <Label>Categoría</Label>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSaving}>
                                     <SelectTrigger><SelectValue placeholder="Seleccionar categoría" /></SelectTrigger>
                                     <SelectContent>
                                         {categorias.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
@@ -234,7 +237,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                         )}/>
                         <div className="space-y-2">
                             <Label htmlFor="Duración (min)">Duración (min)</Label>
-                            <Input id="Duración (min)" type="number" placeholder="Ej: 15" {...register('Duración (min)')} disabled={isSubmitting}/>
+                            <Input id="Duración (min)" type="number" placeholder="Ej: 15" {...register('Duración (min)')} disabled={isSaving}/>
                             {errors['Duración (min)'] && <p className="text-sm text-destructive">{errors['Duración (min)'].message}</p>}
                         </div>
                     </div>
@@ -260,7 +263,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                                                             field.onChange(currentValues.filter(value => value !== edad));
                                                         }
                                                     }}
-                                                    disabled={isSubmitting}
+                                                    disabled={isSaving}
                                                 />
                                                 <Label htmlFor={edad} className="font-normal text-sm">{edad}</Label>
                                             </div>
@@ -275,28 +278,28 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="Número de jugadores">Nº de Jugadores</Label>
-                            <Input id="Número de jugadores" type="number" placeholder="Ej: 5" {...register('Número de jugadores')} disabled={isSubmitting}/>
+                            <Input id="Número de jugadores" type="number" placeholder="Ej: 5" {...register('Número de jugadores')} disabled={isSaving}/>
                              {errors['Número de jugadores'] && <p className="text-sm text-destructive">{errors['Número de jugadores'].message}</p>}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="Espacio y materiales necesarios">Espacio y Materiales</Label>
-                            <Input id="Espacio y materiales necesarios" placeholder="Ej: Medio campo, 5 conos, 1 balón" {...register('Espacio y materiales necesarios')} disabled={isSubmitting}/>
+                            <Input id="Espacio y materiales necesarios" placeholder="Ej: Medio campo, 5 conos, 1 balón" {...register('Espacio y materiales necesarios')} disabled={isSaving}/>
                              {errors['Espacio y materiales necesarios'] && <p className="text-sm text-destructive">{errors['Espacio y materiales necesarios'].message}</p>}
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="Variantes">Variantes (Opcional)</Label>
-                        <Textarea id="Variantes" placeholder="Añade posibles variaciones..." {...register('Variantes')} disabled={isSubmitting}/>
+                        <Textarea id="Variantes" placeholder="Añade posibles variaciones..." {...register('Variantes')} disabled={isSaving}/>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="Consejos para el entrenador">Consejos (Opcional)</Label>
-                        <Textarea id="Consejos para el entrenador" placeholder="Ofrece consejos para la ejecución..." {...register('Consejos para el entrenador')} disabled={isSubmitting}/>
+                        <Textarea id="Consejos para el entrenador" placeholder="Ofrece consejos para la ejecución..." {...register('Consejos para el entrenador')} disabled={isSaving}/>
                     </div>
                     
                     <div className="space-y-2">
                         <Label htmlFor="image-upload">Imagen del Ejercicio</Label>
-                        <Input id="image-upload" type="file" accept="image/*" onChange={handleImageSelect} disabled={isSubmitting} />
+                        <Input id="image-upload" type="file" accept="image/*" onChange={handleImageSelect} disabled={isSaving} />
                         {imagePreview ? (
                             <div className="mt-2 relative w-48 h-32">
                                 <Image src={imagePreview} alt="Previsualización" layout="fill" className="rounded-md object-contain border p-1" />
@@ -310,7 +313,7 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
 
                     <div className="space-y-2">
                         <Label htmlFor="youtubeUrl">URL del Vídeo (Opcional)</Label>
-                        <Input id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." {...register('youtubeUrl')} disabled={isSubmitting}/>
+                        <Input id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." {...register('youtubeUrl')} disabled={isSaving}/>
                         {errors.youtubeUrl && <p className="text-sm text-destructive">{errors.youtubeUrl.message}</p>}
                     </div>
 
@@ -323,15 +326,15 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
                                     <Label htmlFor="visibility-switch" className="text-sm">Visible en la biblioteca pública</Label>
                                     <p className="text-xs text-muted-foreground">Si está desactivado, el ejercicio no será visible para otros usuarios.</p>
                                 </div>
-                                <Switch id="visibility-switch" checked={field.value} onCheckedChange={field.onChange} disabled={isSubmitting}/>
+                                <Switch id="visibility-switch" checked={field.value} onCheckedChange={field.onChange} disabled={isSaving}/>
                             </div>
                         )}
                     />
                 </CardContent>
                 <CardFooter>
                     <div className="flex justify-end pt-4 w-full">
-                        <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? <Loader2 className="mr-2 animate-spin" /> : isEditMode ? <Save className="mr-2" /> : <PlusCircle className="mr-2" />}
+                        <Button type="submit" disabled={isSaving}>
+                            {isSaving ? <Loader2 className="mr-2 animate-spin" /> : isEditMode ? <Save className="mr-2" /> : <PlusCircle className="mr-2" />}
                             {isEditMode ? 'Guardar Cambios' : 'Añadir Ejercicio'}
                         </Button>
                     </div>
