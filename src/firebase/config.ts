@@ -12,9 +12,9 @@ export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyA2XHO-VnkYuAwx3-cQ8xrWb3gzdzvTSow",
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "lapizarra-95eqd.firebaseapp.com",
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "lapizarra-95eqd",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "lapizarra-95eqd.appspot.com",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "lapizarra-95eqd.firebasestorage.app",
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "303306895935",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:303306895935:web:8111132726548fb6ccfe8a"
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:303306895935:web:463b38b92cc31842ccfe8a"
 };
 
 // Initialize Firebase only once
