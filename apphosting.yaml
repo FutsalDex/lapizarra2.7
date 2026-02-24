@@ -10,7 +10,7 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
     value: "lapizarra-95eqd"
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: "lapizarra-95eqd.firebasestorage.app"
+    value: "lapizarra-95eqd.appspot.com"
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
     value: "303306895935"
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
