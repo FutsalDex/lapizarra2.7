@@ -101,36 +101,34 @@ const SubirEjercicioForm = ({ onCancel, exerciseId }: { onCancel: () => void, ex
             toast({ variant: "destructive", title: "No autenticado", description: "Debes iniciar sesión." });
             return;
         }
-
+    
         try {
-            let imageUrl = '';
+            let imageUrl = isEditMode ? (exerciseDoc?.Imagen || '') : '';
+    
             if (imageFile) {
                 const filePath = `exercises/${user.uid}/${Date.now()}_${imageFile.name}`;
                 const storageRef = ref(storage, filePath);
-                const uploadResult = await uploadBytes(storageRef, imageFile);
-                imageUrl = await getDownloadURL(uploadResult.ref);
-            } else if (isEditMode) {
-                imageUrl = exerciseDoc?.Imagen || '';
+                await uploadBytes(storageRef, imageFile);
+                imageUrl = await getDownloadURL(storageRef);
             }
-
-            const exerciseData = {
-                ...data,
-                Imagen: imageUrl,
-            };
-
+    
             if (isEditMode && exerciseId) {
-                await updateDoc(doc(db, 'exercises', exerciseId), {
-                    ...exerciseData,
+                const updatedData = {
+                    ...data,
+                    Imagen: imageUrl,
                     updatedAt: new Date()
-                });
+                };
+                await updateDoc(doc(db, 'exercises', exerciseId), updatedData);
                 toast({ title: "Ejercicio actualizado", description: "Los cambios han sido guardados." });
                 router.push('/admin/ejercicios/biblioteca');
             } else {
-                await addDoc(collection(db, 'exercises'), {
-                    ...exerciseData,
+                const newExercise = {
+                    ...data,
+                    Imagen: imageUrl,
                     userId: user.uid,
-                    createdAt: new Date()
-                });
+                    createdAt: new Date(),
+                };
+                await addDoc(collection(db, 'exercises'), newExercise);
                 toast({ title: "Ejercicio añadido", description: "Tu ejercicio se ha guardado en la biblioteca." });
                 reset();
                 setImageFile(null);
